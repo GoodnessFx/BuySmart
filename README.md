@@ -103,3 +103,14 @@ This is a static frontend and can be deployed on providers such as:
 - Cloudflare Pages
 
 Run `npm run build` before deployment and publish the generated `dist/` directory.
+
+### Vercel
+
+The project includes a `vercel.json` file so Vercel uses the correct static-site settings:
+
+- `npm install` for dependency installation
+- `npm run build` for the production build
+- `dist/` as the output directory
+- SPA rewrite fallback to `index.html` for non-file requests
+
+If Vercel does not auto-detect the project correctly in the dashboard, set the framework to `Vite`, keep the build command as `npm run build`, and set the output directory to `dist`.
