@@ -651,19 +651,48 @@ export function QuoteForm({ compact = false }: { compact?: boolean }) {
     [form],
   );
 
-  const handleSubmit = (event: FormEvent) => {
+  const sendQuoteToCompany = async () => {
+    try {
+      await fetch("/api/quote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name,
+          phoneNumber: form.phoneNumber,
+          whatsappNumber: form.whatsappNumber,
+          productLink: form.productLink,
+          quantity: form.quantity,
+          preferredShippingMethod: form.preferredShippingMethod,
+          contactPreference: form.contactPreference,
+          additionalInformation: form.additionalInformation,
+          productImageName: form.productImageName,
+          requestedAt: new Date().toISOString(),
+          honeypot: form.honeypot,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to send quote request to company email:", error);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
 
     if (form.honeypot) {
       return;
     }
 
+    const mailto = `mailto:${EMAIL}?subject=${encodeURIComponent("BuySmart Quote Request")}&body=${encodeURIComponent(formattedMessage)}`;
+
     if (form.contactPreference === "WhatsApp") {
       window.open(createWhatsAppUrl(formattedMessage), "_blank", "noopener,noreferrer");
+      sendQuoteToCompany();
       return;
     }
 
-    const mailto = `mailto:${EMAIL}?subject=${encodeURIComponent("BuySmart Quote Request")}&body=${encodeURIComponent(formattedMessage)}`;
+    await sendQuoteToCompany();
     window.location.href = mailto;
   };
 

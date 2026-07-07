@@ -130,9 +130,9 @@ export function HomePage() {
     <>
       <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
         <div className="absolute inset-0 hero-slideshow">
-          <div className="hero-slide hero-slide-0" style={{ backgroundImage: "url('/media/hero/hero-port.jpg')" }} />
-          <div className="hero-slide hero-slide-1" style={{ backgroundImage: "url('/media/hero/hero-warehouse.jpg')" }} />
-          <div className="hero-slide hero-slide-2" style={{ backgroundImage: "url('/media/hero/hero-phone.jpg')" }} />
+          <div className="hero-slide hero-slide-0" style={{ backgroundImage: "url('/media/hero/hero-background-1.jpg')" }} />
+          <div className="hero-slide hero-slide-1" style={{ backgroundImage: "url('/media/hero/hero-background-2.jpg')" }} />
+          <div className="hero-slide hero-slide-2" style={{ backgroundImage: "url('/media/hero/hero-background-3.jpg')" }} />
           <div className="absolute inset-0 bg-black/30" />
         </div>
 
