@@ -133,6 +133,9 @@ export function HomePage() {
           <div className="hero-slide hero-slide-0" style={{ backgroundImage: "url('/media/hero/hero-background-1.jpg')" }} />
           <div className="hero-slide hero-slide-1" style={{ backgroundImage: "url('/media/hero/hero-background-2.jpg')" }} />
           <div className="hero-slide hero-slide-2" style={{ backgroundImage: "url('/media/hero/hero-background-3.jpg')" }} />
+          <div className="hero-slide hero-slide-3" style={{ backgroundImage: "url('/media/hero/hero-background-1.jpg')" }} />
+          <div className="hero-slide hero-slide-4" style={{ backgroundImage: "url('/media/hero/hero-background-2.jpg')" }} />
+          <div className="hero-slide hero-slide-5" style={{ backgroundImage: "url('/media/hero/hero-background-3.jpg')" }} />
           <div className="absolute inset-0 bg-black/30" />
         </div>
 

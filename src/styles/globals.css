@@ -42,7 +42,7 @@ canvas {
   background-blend-mode: multiply;
   opacity: 0;
   transform: scale(1.08);
-  animation: heroFade 18s ease-in-out infinite, heroZoom 18s ease-in-out infinite;
+  animation: heroFade 36s ease-in-out infinite, heroZoom 36s ease-in-out infinite;
   will-change: opacity, transform;
   pointer-events: none;
 }
@@ -59,13 +59,25 @@ canvas {
   animation-delay: 12s, 12s;
 }
 
+.hero-slide-3 {
+  animation-delay: 18s, 18s;
+}
+
+.hero-slide-4 {
+  animation-delay: 24s, 24s;
+}
+
+.hero-slide-5 {
+  animation-delay: 30s, 30s;
+}
+
 @keyframes heroFade {
   0%,
-  33.33% {
+  16.67% {
     opacity: 1;
   }
 
-  38.88%,
+  22.22%,
   100% {
     opacity: 0;
   }
@@ -73,7 +85,7 @@ canvas {
 
 @keyframes heroZoom {
   0%,
-  33.33% {
+  16.67% {
     transform: scale(1.08);
   }
 
