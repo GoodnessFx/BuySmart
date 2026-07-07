@@ -62,16 +62,59 @@ export const pageLinks = [
   { label: "Testimonials", href: "/testimonials" },
   { label: "FAQ", href: "/faq" },
   { label: "Blog", href: "/blog" },
+  { label: "Why Choose Us", href: "/why-choose-us" },
+  { label: "Verified in Lagos", href: "/verified-lagos" },
+  { label: "How It Works", href: "/how-it-works" },
+  { label: "Contact Us", href: "/contact" },
+];
+
+export type MenuItem = {
+  label: string;
+  href: string;
+};
+
+export type MenuGroup = {
+  label: string;
+  links: MenuItem[];
+};
+
+export const menuGroups: MenuGroup[] = [
+  {
+    label: "Services",
+    links: [
+      { label: "Our Services", href: "/services" },
+      { label: "Order Process", href: "/how-it-works" },
+      { label: "Installment Plan", href: "/installment-plan" },
+    ],
+  },
+  {
+    label: "Shipping",
+    links: [
+      { label: "Shipping Info", href: "/shipping-information" },
+      { label: "Cost Estimator", href: "/shipment-cost-estimator" },
+      { label: "Recent Imports", href: "/recent-projects" },
+    ],
+  },
+  {
+    label: "About Us",
+    links: [
+      { label: "Why Choose Us", href: "/why-choose-us" },
+      { label: "Verified in Lagos", href: "/verified-lagos" },
+      { label: "Testimonials", href: "/testimonials" },
+    ],
+  },
+  {
+    label: "Resources",
+    links: [
+      { label: "FAQs", href: "/faq" },
+      { label: "Blog & Updates", href: "/blog" },
+      { label: "Contact Us", href: "/contact" },
+    ],
+  },
 ];
 
 export const homeSectionLinks = [
   { label: "What We Do", href: "/#what-we-do" },
-  { label: "Verified in Lagos", href: "/#verified-lagos" },
-  { label: "Gallery", href: "/#recent-imports" },
-  { label: "Who It's For", href: "/#who-its-for" },
-  { label: "How It Works", href: "/#how-it-works" },
-  { label: "FAQ", href: "/#faq" },
-  { label: "Contact", href: "/#contact" },
 ];
 
 export const routeMeta: Record<string, RouteMeta> = {
@@ -124,6 +167,22 @@ export const routeMeta: Record<string, RouteMeta> = {
     title: "Privacy Policy | BuySmart Procurement",
     description:
       "Read how BuySmart collects, uses, stores, and protects customer information under NDPR-aligned privacy terms.",
+  },
+  "/why-choose-us": {
+    title: "Why Choose BuySmart | Sourcing & Shipping",
+    description: "Learn why BuySmart is the trusted sourcing and shipping partner for Nigerian business owners and bulk buyers.",
+  },
+  "/verified-lagos": {
+    title: "Verified in Lagos | BuySmart Trust & Location",
+    description: "Check BuySmart's business CAC registration, Google reviews, and Egbeda Lagos location map profile.",
+  },
+  "/how-it-works": {
+    title: "How It Works | Order Process Step-by-Step",
+    description: "Understand the five simple steps from submitting your product link or description to handoff delivery in Nigeria.",
+  },
+  "/contact": {
+    title: "Contact Us | BuySmart Procurement Limited",
+    description: "Get in touch with BuySmart for quick sourcing and shipping quotes. Call, email, or chat with us on WhatsApp.",
   },
 };
 
@@ -342,9 +401,11 @@ export function Header({
   onNavigate: (path: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeMobileGroup, setActiveMobileGroup] = useState<string | null>(null);
+  const [activeDesktopGroup, setActiveDesktopGroup] = useState<string | null>(null);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#ECE8DF] bg-[#FAFAF8]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-[#ECE8DF] bg-[#FAFAF8]/95 backdrop-blur-md">
       <Container className="flex h-20 items-center justify-between gap-6">
         <a
           href="/"
@@ -366,10 +427,66 @@ export function Header({
           </div>
         </a>
 
-        <nav className="hidden items-center gap-6 lg:flex">
-          {pageLinks.map((item) => (
-            <NavAnchor key={item.href} href={item.href} label={item.label} currentPath={currentPath} onNavigate={onNavigate} />
-          ))}
+        <nav className="hidden items-center gap-7 lg:flex">
+          <NavAnchor href="/" label="Home" currentPath={currentPath} onNavigate={onNavigate} />
+          {menuGroups.map((group) => {
+            const isGroupActive = group.links.some(
+              (link) => link.href === currentPath || (link.href !== "/" && currentPath.startsWith(link.href))
+            );
+            const isDesktopOpen = activeDesktopGroup === group.label;
+
+            return (
+              <div 
+                key={group.label} 
+                className="relative group py-2"
+                onMouseEnter={() => setActiveDesktopGroup(group.label)}
+                onMouseLeave={() => setActiveDesktopGroup(null)}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveDesktopGroup(isDesktopOpen ? null : group.label)}
+                  className={classNames(
+                    "flex items-center gap-1.5 text-sm font-semibold transition cursor-pointer outline-none bg-transparent border-none",
+                    isGroupActive ? "text-[#C9A227]" : "text-[#66615B] hover:text-[#C9A227]"
+                  )}
+                >
+                  {group.label}
+                  <ChevronDown className={classNames("h-3.5 w-3.5 transition duration-200", isDesktopOpen ? "rotate-180" : "group-hover:rotate-180")} />
+                </button>
+
+                {/* Dropdown Menu */}
+                <div className={classNames(
+                  "absolute top-full left-1/2 -translate-x-1/2 z-50 pt-2 w-52 transition-all duration-200 ease-out transform",
+                  isDesktopOpen ? "opacity-100 visible scale-100" : "opacity-0 invisible scale-95"
+                )}>
+                  <div className="rounded-2xl border border-[#ECE8DF] bg-white p-2.5 shadow-[0_12px_32px_rgba(17,17,17,0.08)]">
+                    {group.links.map((link) => {
+                      const isLinkActive = currentPath === link.href;
+                      return (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            onNavigate(link.href);
+                            setActiveDesktopGroup(null);
+                          }}
+                          className={classNames(
+                            "block rounded-xl px-3.5 py-2.5 text-sm font-medium transition",
+                            isLinkActive
+                              ? "bg-[#C9A227]/10 text-[#C9A227]"
+                              : "text-[#4A4A4A] hover:bg-[#FAFAF8] hover:text-[#C9A227]"
+                          )}
+                        >
+                          {link.label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -400,27 +517,62 @@ export function Header({
 
       {menuOpen ? (
         <div className="border-t border-[#ECE8DF] bg-white lg:hidden">
-          <Container className="flex flex-col gap-5 py-6">
-            {pageLinks.map((item) => (
-              <NavAnchor
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                currentPath={currentPath}
-                onNavigate={onNavigate}
-                onClick={() => setMenuOpen(false)}
-              />
-            ))}
-            <div className="border-t border-[#ECE8DF] pt-4">
-              <div className="mb-3 text-xs uppercase tracking-[0.2em] text-[#7C746C]">Homepage sections</div>
-              <div className="flex flex-col gap-3">
-                {homeSectionLinks.map((item) => (
-                  <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="text-sm font-medium text-[#4A4A4A]">
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-            </div>
+          <Container className="flex flex-col gap-4 py-6">
+            <NavAnchor
+              href="/"
+              label="Home"
+              currentPath={currentPath}
+              onNavigate={onNavigate}
+              onClick={() => setMenuOpen(false)}
+            />
+            
+            {menuGroups.map((group) => {
+              const isGroupOpen = activeMobileGroup === group.label;
+              const isGroupActive = group.links.some(
+                (link) => link.href === currentPath || (link.href !== "/" && currentPath.startsWith(link.href))
+              );
+
+              return (
+                <div key={group.label} className="border-t border-[#FAFAF8] pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMobileGroup(isGroupOpen ? null : group.label)}
+                    className={classNames(
+                      "flex w-full items-center justify-between py-2 text-sm font-semibold transition cursor-pointer text-left bg-transparent border-none outline-none",
+                      isGroupActive ? "text-[#C9A227]" : "text-[#4A4A4A] hover:text-[#C9A227]"
+                    )}
+                  >
+                    <span>{group.label}</span>
+                    <ChevronDown className={classNames("h-4 w-4 transition-transform duration-200", isGroupOpen && "rotate-180")} />
+                  </button>
+                  {isGroupOpen ? (
+                    <div className="mt-1 flex flex-col gap-2.5 border-l border-[#ECE8DF] pl-4 py-1">
+                      {group.links.map((link) => {
+                        const isLinkActive = currentPath === link.href;
+                        return (
+                          <a
+                            key={link.href}
+                            href={link.href}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              onNavigate(link.href);
+                              setMenuOpen(false);
+                            }}
+                            className={classNames(
+                              "block py-1 text-sm font-medium transition",
+                              isLinkActive ? "text-[#C9A227]" : "text-[#66615B] hover:text-[#C9A227]"
+                            )}
+                          >
+                            {link.label}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+
             <div className="border-t border-[#ECE8DF] pt-4">
               <SocialLinks />
             </div>
@@ -811,20 +963,35 @@ export function FaqList({
     answer: string;
   }>;
 }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
   return (
     <div className="grid gap-4">
-      {items.map((item) => (
-        <details
-          key={item.question}
-          className={`group rounded-[24px] border bg-white p-5 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-base font-semibold text-[#111111]">
-            <span>{item.question}</span>
-            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" style={{ color: gold }} />
-          </summary>
-          <p className="mt-4 text-sm leading-7 text-[#4A4A4A]">{item.answer}</p>
-        </details>
-      ))}
+      {items.map((item, index) => {
+        const isOpen = openIndex === index;
+        return (
+          <div
+            key={item.question}
+            className={`rounded-[24px] border bg-white shadow-[0_10px_24px_rgba(17,17,17,0.03)] overflow-hidden transition-all duration-300 ${cardBorder}`}
+          >
+            <button
+              type="button"
+              onClick={() => setOpenIndex(isOpen ? null : index)}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left text-base font-semibold text-[#111111]"
+            >
+              <span>{item.question}</span>
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} style={{ color: gold }} />
+            </button>
+            <div
+              className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+            >
+              <div className="overflow-hidden">
+                <p className="px-5 pb-5 text-sm leading-7 text-[#4A4A4A]">{item.answer}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -919,7 +1086,6 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
                 </div>
               </div>
             </div>
-            {!compact ? <NewsletterSignup inline title="Newsletter updates" body="Join the BuySmart newsletter to receive import tips, shipping updates, and product news. Each signup is also sent to the business email for follow-up." /> : null}
           </div>
         </div>
 

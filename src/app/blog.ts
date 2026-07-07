@@ -5,6 +5,7 @@ type BlogPost = {
   date: string;
   readTime: string;
   excerpt: string;
+  image?: string;
   body: string[];
 };
 

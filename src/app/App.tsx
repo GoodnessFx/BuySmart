@@ -5,15 +5,19 @@ import { Footer, Header, normalizePath, routeMeta, setMetaTag, upsertLink } from
 import {
   BlogPage,
   BlogPostPage,
+  ContactPage,
   EstimatorPage,
   FaqPage,
   HomePage,
+  HowItWorksPage,
   InstallmentPage,
   PrivacyPage,
   ProjectsPage,
   ServicesPage,
   ShippingPage,
   TestimonialsPage,
+  VerifiedLagosPage,
+  WhyChoosePage,
 } from "./pages";
 import { getPostBySlug } from "./blog";
 
@@ -257,6 +261,14 @@ export default function App() {
         return <BlogPage />;
       case "/privacy-policy":
         return <PrivacyPage />;
+      case "/why-choose-us":
+        return <WhyChoosePage />;
+      case "/verified-lagos":
+        return <VerifiedLagosPage />;
+      case "/how-it-works":
+        return <HowItWorksPage />;
+      case "/contact":
+        return <ContactPage />;
       default:
         return <HomePage />;
     }

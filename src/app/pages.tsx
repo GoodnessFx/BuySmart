@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Banknote,
-  Clock3,
   BriefcaseBusiness,
   Calculator,
   CalendarClock,
+  Clock3,
   Camera,
   ClipboardCheck,
   ExternalLink,
@@ -13,13 +13,11 @@ import {
   FileCheck2,
   Image as ImageIcon,
   Landmark,
-  LayoutGrid,
   MapPin,
   Package,
   PackageCheck,
   Phone,
   Plane,
-  RefreshCcw,
   Scale,
   Search,
   ShieldCheck,
@@ -27,6 +25,7 @@ import {
   ShoppingBag,
   Star,
   Truck,
+  RefreshCcw,
   UserRound,
   Warehouse,
 } from "lucide-react";
@@ -116,16 +115,6 @@ function buildProjectInsight(item: (typeof galleryItems)[number]) {
 }
 
 export function HomePage() {
-  const [homeGalleryExpanded, setHomeGalleryExpanded] = useState<string | null>(galleryItems[0]?.media ?? null);
-  const [homeBlogExpanded, setHomeBlogExpanded] = useState<string | null>(blogPosts[0]?.slug ?? null);
-  const generalFaqs = faqItems.filter((item) => item.category === "general").slice(0, 8);
-  const homeGalleryPreview = [
-    galleryItems.find((item) => item.title === "Verified electronics shipment"),
-    galleryItems.find((item) => item.title === "Baby clothing order"),
-    galleryItems.find((item) => item.title === "Warehouse consolidation order"),
-    galleryItems.find((item) => item.title === "General goods inspection image"),
-  ].filter(Boolean) as typeof galleryItems;
-
   return (
     <>
       <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
@@ -152,74 +141,38 @@ export function HomePage() {
         </Container>
       </section>
 
-      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-20">
-        <Container className="grid gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
-          <div>
+      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-16">
+        <Container>
+          <div className="mb-10">
             <SectionHeading eyebrow="What we do" title="Direct from factory. Straight to your door." body="BuySmart sources genuine products from verified manufacturers and trusted suppliers in China and Vietnam, then handles procurement, inspection, shipping, customs support, and final delivery." />
-            <div className="grid gap-4 sm:grid-cols-2">
-              {services.slice(0, 6).map((service) => {
-                const Icon = serviceIconMap[service.icon] ?? PackageCheck;
-                return (
-                  <div key={service.title} className={`rounded-2xl border bg-[#FAFAF8] p-5 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white" style={{ color: gold }}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="mt-4 text-lg font-semibold text-[#111111]">{service.title}</div>
-                    <p className="mt-2 text-sm leading-6 text-[#4A4A4A]">{service.description}</p>
-                  </div>
-                );
-              })}
-            </div>
           </div>
-
-          <div className="grid gap-5">
-            <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.07)] ${cardBorder}`}>
-              <img src="/media/procurement-notice.png" alt="BuySmart procurement notice" className="w-full object-cover" />
-            </div>
-            <div className={`overflow-hidden rounded-[28px] border bg-[#FAFAF8] shadow-[0_18px_48px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-              <img src={testimonialMedia[2]?.image} alt={testimonialMedia[2]?.alt} className="h-72 w-full object-cover object-top" />
-              <div className="p-6">
-                <div className="mb-4 flex items-center gap-3 text-[#111111]">
-                  <Landmark className="h-5 w-5" style={{ color: gold }} />
-                  <span className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7C746C]">Business certificate</span>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {services.slice(0, 6).map((service) => {
+              const Icon = serviceIconMap[service.icon] ?? PackageCheck;
+              return (
+                <div key={service.title} className={`rounded-xl border bg-[#FAFAF8] p-4.5 shadow-[0_8px_20px_rgba(17,17,17,0.02)] transition hover:shadow-[0_12px_28px_rgba(17,17,17,0.04)] ${cardBorder}`}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm" style={{ color: gold }}>
+                    <Icon className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="mt-3 text-base font-bold text-[#111111]">{service.title}</div>
+                  <p className="mt-1.5 text-xs leading-relaxed text-[#4A4A4A]">{service.description}</p>
                 </div>
-                <p className="text-base leading-7 text-[#4A4A4A]">
-                  The CAC certificate is now visible on the homepage so first-time visitors can see that BuySmart is a registered business, not just a contact number on social media.
-                </p>
-                <div className="mt-5 flex items-center gap-2 text-sm font-medium text-[#111111]">
-                  <MapPin className="h-4 w-4" style={{ color: gold }} />
-                  {ADDRESS_LINE_1}, {ADDRESS_LINE_2}
-                </div>
-              </div>
-            </div>
-            <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_18px_48px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-              <div className="mb-4 flex items-center gap-3 text-[#111111]">
-                <Landmark className="h-5 w-5" style={{ color: gold }} />
-                <span className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7C746C]">Trust signal</span>
-              </div>
-              <p className="text-base leading-7 text-[#4A4A4A]">
-                The process is built for clarity. Supplier checks, inspection updates, delivery guidance, and handoff communication are handled in one place instead of being scattered across different agents.
-              </p>
-              <div className="mt-5 flex items-center gap-2 text-sm font-medium text-[#111111]">
-                <MapPin className="h-4 w-4" style={{ color: gold }} />
-                {ADDRESS_LINE_1}, {ADDRESS_LINE_2}
-              </div>
-            </div>
+              );
+            })}
           </div>
         </Container>
       </section>
-
       <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
         <Container>
-          <SectionHeading eyebrow="Why choose BuySmart?" title="Built for buyers who want less risk, clearer updates, and dependable delivery." body="The core promise is simple: verified suppliers, transparent pricing, inspection before shipment, and support all the way to delivery." center />
+          <SectionHeading eyebrow="Why choose BuySmart?" title="Built for buyers who want less risk, clearer updates, and dependable delivery." center />
           <WhyChooseGrid />
         </Container>
       </section>
 
-      <section id="who-its-for" className="border-b border-[#EFEAE1] bg-white py-20">
+      <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Who it's for" title="Built for buyers who mean business." body="From personal shopping to repeat wholesale procurement, the site is designed to be clear, fast, and professional on every device." center />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <SectionHeading eyebrow="Who it's for" title="Built for buyers who mean business." center />
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
               const Icon = audienceIcons[index] ?? ShoppingBag;
               return (
@@ -235,15 +188,45 @@ export function HomePage() {
         </Container>
       </section>
 
-      <section id="verified-lagos" className="border-b border-[#EFEAE1] bg-[#0D0D0D] py-20">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
+        <Container>
+          <SectionHeading eyebrow="Recent projects" title="See what we’ve brought in recently." center />
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+             {galleryItems.slice(0, 3).map((item) => (
+                <div key={item.id} className="group relative overflow-hidden rounded-[20px] bg-black">
+                  <div className="aspect-[4/3] w-full">
+                    {item.mediaType === "video" ? (
+                      <video src={item.mediaUrl} className="h-full w-full object-cover opacity-60 transition duration-500 group-hover:scale-105 group-hover:opacity-80" autoPlay muted loop playsInline />
+                    ) : (
+                      <img src={item.mediaUrl} alt={item.title} className="h-full w-full object-cover opacity-60 transition duration-500 group-hover:scale-105 group-hover:opacity-80" loading="lazy" />
+                    )}
+                  </div>
+                  <div className="absolute inset-0 flex flex-col justify-end p-6">
+                    <div className="mb-2 inline-flex w-fit items-center rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
+                      {item.category}
+                    </div>
+                    <div className="text-lg font-bold text-white">{item.title}</div>
+                  </div>
+                </div>
+             ))}
+          </div>
+          <div className="mt-10 text-center">
+            <a href="/#projects" className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: gold }}>
+              View all projects <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-[#0D0D0D] py-20">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
             <SectionTag>Trusted business</SectionTag>
-            <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="max-w-2xl text-[clamp(2.2rem,4.8vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-white">
+            <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="max-w-2xl text-[clamp(2.2rem,4.8vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-white">
               Verified in Lagos.
               <br />
               Trusted by buyers.
-            </h2>
+            </h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-[#D2CCC1]">
               BuySmart is a registered import-export business operating from Lagos. Customers can see the business location, map listing, rating, and trust documentation before sending a request.
             </p>
@@ -287,7 +270,7 @@ export function HomePage() {
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-[0.18em]" style={{ color: gold }}>Business certificate</div>
-                    <div className="mt-2 text-lg font-semibold text-white">CAC registration shown on the homepage</div>
+                    <div className="mt-2 text-lg font-semibold text-white">CAC registration certificate</div>
                     <p className="mt-3 text-sm leading-7 text-[#D2CCC1]">
                       The certificate is visible here so first-time visitors can immediately see BuySmart is a registered business and not an anonymous online seller.
                     </p>
@@ -333,90 +316,152 @@ export function HomePage() {
           </div>
         </Container>
       </section>
+    </>
+  );
+}
 
-      <section id="recent-imports" className="border-b border-[#EFEAE1] bg-white py-20">
+export function WhyChoosePage() {
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Recent imports gallery" title="Recent orders customers can open and inspect before they ask for a quote." body="This section keeps the gallery practical. Each card shows real shipment proof, and opening it reveals more useful context about the product, route, and shipment stage." />
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {homeGalleryPreview.map((item) => {
-              const itemKey = `${item.media}-${item.title}`;
-              const isExpanded = homeGalleryExpanded === itemKey;
+          <SectionHeading eyebrow="Why choose BuySmart?" title="Built for buyers who want less risk, clearer updates, and dependable delivery." body="The core promise is simple: verified suppliers, transparent pricing, inspection before shipment, and support all the way to delivery." center />
+          <WhyChooseGrid />
+        </Container>
+      </section>
+
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
+        <Container>
+          <SectionHeading eyebrow="Who it's for" title="Built for buyers who mean business." body="From personal shopping to repeat wholesale procurement, the site is designed to be clear, fast, and professional on every device." center />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
+              const Icon = audienceIcons[index] ?? ShoppingBag;
               return (
-                <div key={itemKey} className={`overflow-hidden rounded-[28px] border bg-[#FAFAF8] shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                  <img src={item.media} alt={item.alt} className="h-64 w-full object-cover" loading="lazy" />
-                  <div className="p-5">
-                    <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{item.category}</div>
-                    <div className="mt-2 text-lg font-semibold text-[#111111]">{item.title}</div>
-                    <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{item.caption}</p>
-                    <button
-                      type="button"
-                      onClick={() => setHomeGalleryExpanded((current) => (current === itemKey ? null : itemKey))}
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
-                    >
-                      {isExpanded ? "Hide details" : "See more"} <ArrowRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} style={{ color: gold }} />
-                    </button>
-                    {isExpanded ? (
-                      <div className="mt-5 grid gap-3 rounded-[22px] border border-[#E5E2DA] bg-white p-4">
-                        <p className="text-sm leading-7 text-[#4A4A4A]">{buildProjectInsight(item)}</p>
-                        <div className="grid gap-2 text-sm text-[#4A4A4A]">
-                          <div><span className="font-semibold text-[#111111]">Origin:</span> {item.shippedFrom}</div>
-                          <div><span className="font-semibold text-[#111111]">Shipping route:</span> {inferFreightMode(item.timeline)}</div>
-                          <div><span className="font-semibold text-[#111111]">Expected timeline:</span> {item.timeline}</div>
-                          <div><span className="font-semibold text-[#111111]">Why it matters:</span> Buyers can see the type of goods BuySmart handles before they place an order.</div>
-                        </div>
-                      </div>
-                    ) : null}
+                <div key={audience} className={`rounded-2xl border bg-white p-6 text-center shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="mt-4 text-sm font-semibold leading-6 text-[#111111]">{audience}</div>
+                </div>
+              );
+            })}
+          </div>
+        </Container>
+      </section>
+
+    </main>
+  );
+}
+
+export function VerifiedLagosPage() {
+  return (
+    <main className="bg-[#0D0D0D]">
+      <section className="py-20">
+        <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <div>
+            <SectionTag>Trusted business</SectionTag>
+            <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="max-w-2xl text-[clamp(2.2rem,4.8vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-white">
+              Verified in Lagos.
+              <br />
+              Trusted by buyers.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-8 text-[#D2CCC1]">
+              BuySmart is a registered import-export business operating from Lagos. Customers can see the business location, map listing, rating, and trust documentation before sending a request.
+            </p>
+            <div className="mt-8 grid gap-4">
+              <div className="rounded-[28px] border border-[rgba(212,175,55,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.03)_100%)] p-6 shadow-[0_18px_48px_rgba(0,0,0,0.3)]">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
+                    <MapPin className="h-5 w-5 text-[#4285F4]" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-white">Google Reviews</div>
+                    <div className="text-sm text-[#ACA497]">Import export company · Egbeda, Lagos</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-          <a href="/recent-projects" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]">
-            Open full gallery <ArrowRight className="h-4 w-4" style={{ color: gold }} />
-          </a>
-        </Container>
-      </section>
-
-      <section id="blog-preview" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
-        <Container>
-          <SectionHeading eyebrow="Blog / updates" title="Useful buying and shipping content customers can open before they reach out." body="The blog copy is kept practical for an MVP. Open any post here for a longer preview, then continue to the full article if you want the full read." />
-          <div className="grid gap-5 lg:grid-cols-3">
-            {blogPosts.slice(0, 3).map((post) => {
-              const isExpanded = homeBlogExpanded === post.slug;
-              return (
-                <div key={post.slug} className={`rounded-[28px] border bg-white p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                  <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{post.category}</div>
-                  <div className="mt-3 text-xl font-semibold text-[#111111]">{post.title}</div>
-                  <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{post.excerpt}</p>
-                  <div className="mt-4 text-xs font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
-                  <button
-                    type="button"
-                    onClick={() => setHomeBlogExpanded((current) => (current === post.slug ? null : post.slug))}
-                    className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
-                  >
-                    {isExpanded ? "Hide preview" : "Read more"} <ArrowRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} style={{ color: gold }} />
-                  </button>
-                  {isExpanded ? (
-                    <div className="mt-5 grid gap-4 rounded-[22px] border border-[#E5E2DA] bg-[#FAFAF8] p-4">
-                      {post.body.slice(0, 5).map((paragraph) => (
-                        <p key={paragraph} className="text-sm leading-7 text-[#4A4A4A]">{paragraph}</p>
+                <div className="mt-5 flex flex-wrap items-end gap-4">
+                  <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-6xl font-extrabold tracking-[-0.05em] text-white">
+                    5.0
+                  </div>
+                  <div className="pb-2">
+                    <div className="flex gap-1.5">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Star key={index} className="h-4 w-4 fill-[#C9A227] text-[#C9A227]" />
                       ))}
-                      <a href={`/blog/${post.slug}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#111111]">
-                        Continue reading <ArrowRight className="h-4 w-4" style={{ color: gold }} />
-                      </a>
                     </div>
-                  ) : null}
+                    <div className="mt-2 text-sm text-[#ACA497]">Based on verified reviews</div>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+              <div className="rounded-[28px] border border-[rgba(212,175,55,0.14)] bg-[rgba(255,255,255,0.03)] p-5 text-[#F4F1EA] shadow-[0_12px_34px_rgba(0,0,0,0.24)]">
+                <div className="flex items-start gap-3">
+                  <Landmark className="mt-1 h-5 w-5" style={{ color: gold }} />
+                  <p className="text-sm leading-7">
+                    BuySmart Procurement Limited is a verified import-export business registered and actively operating in Lagos, Nigeria.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-[28px] border border-[rgba(212,175,55,0.14)] bg-[rgba(255,255,255,0.03)] p-5 shadow-[0_12px_34px_rgba(0,0,0,0.24)]">
+                <div className="grid gap-4 sm:grid-cols-[0.75fr_1.25fr] sm:items-center">
+                  <div className="overflow-hidden rounded-2xl border border-[rgba(212,175,55,0.14)] bg-[#111111]">
+                    <img src={testimonialMedia[2]?.image} alt={testimonialMedia[2]?.alt} className="h-48 w-full object-cover object-top" />
+                  </div>
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.18em]" style={{ color: gold }}>Business certificate</div>
+                    <div className="mt-2 text-lg font-semibold text-white">CAC registration certificate</div>
+                    <p className="mt-3 text-sm leading-7 text-[#D2CCC1]">
+                      The certificate is visible here so first-time visitors can immediately see BuySmart is a registered business and not an anonymous online seller.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <a href="/blog" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]">
-            Open all blog posts <ArrowRight className="h-4 w-4" style={{ color: gold }} />
-          </a>
+
+          <div className="rounded-[30px] border border-[rgba(212,175,55,0.14)] bg-[rgba(255,255,255,0.03)] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.32)]">
+            <div className="overflow-hidden rounded-[24px] border border-[rgba(212,175,55,0.14)]">
+              <iframe
+                title="BuySmart Lagos location map"
+                src="https://www.google.com/maps?q=6+Bassey+Street,+Egbeda,+Lagos&z=15&output=embed"
+                className="h-[24rem] w-full bg-white"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div className="grid gap-4 p-4 text-white sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="grid gap-3">
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-1 h-4 w-4" style={{ color: gold }} />
+                  <div>
+                    <div className="text-sm font-semibold">{ADDRESS_LINE_1}, Egbeda</div>
+                    <div className="text-sm text-[#ACA497]">{ADDRESS_LINE_2}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Clock3 className="mt-1 h-4 w-4" style={{ color: gold }} />
+                  <div className="text-sm text-[#D2CCC1]">Open daily, closes 6pm</div>
+                </div>
+              </div>
+              <a
+                href={GOOGLE_MAPS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.24)] bg-[rgba(255,255,255,0.04)] px-4 py-3 text-sm font-semibold text-white transition hover:border-[#C9A227]"
+              >
+                View map profile <ExternalLink className="h-4 w-4" style={{ color: gold }} />
+              </a>
+            </div>
+          </div>
         </Container>
       </section>
+    </main>
+  );
+}
 
-      <section id="how-it-works" className="border-b border-[#EFEAE1] bg-white py-20">
+export function HowItWorksPage() {
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
           <SectionHeading eyebrow="Order process" title="Five clear steps from request to delivery." body="Customers should know exactly what happens after they send a product link or description, so the process is shown clearly on both desktop and mobile." center />
           <div className="hidden lg:block">
@@ -452,17 +497,29 @@ export function HomePage() {
         </Container>
       </section>
 
-      <section id="faq" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
-        <Container>
-          <SectionHeading eyebrow="FAQ" title="Straight answers before you place an order." body="These are the most common questions customers ask first, so they are easy to scan on the homepage before anyone has to start a chat." />
-          <FaqList items={generalFaqs} />
+    </main>
+  );
+}
+
+export function ContactPage() {
+  return (
+    <main className="bg-[#FAFAF8]">
+      <ContactSection />
+      <section className="border-b border-[#EFEAE1] bg-white py-14">
+        <Container className="max-w-4xl">
+          <SectionHeading eyebrow="Location map" title="Visit our office in Lagos" center />
+          <div className="overflow-hidden rounded-[24px] border border-[#E5E2DA] shadow-sm">
+            <iframe
+              title="BuySmart Lagos location map"
+              src="https://www.google.com/maps?q=6+Bassey+Street,+Egbeda,+Lagos&z=15&output=embed"
+              className="h-[30rem] w-full bg-white"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </Container>
       </section>
-
-      <TestimonialsPreview />
-      <ContactSection />
-      <CtaBanner />
-    </>
+    </main>
   );
 }
 
@@ -581,7 +638,7 @@ export function InstallmentPage() {
           <FaqList items={installmentFaqs} />
         </Container>
       </section>
-      <CtaBanner />
+
     </main>
   );
 }
@@ -729,7 +786,7 @@ export function EstimatorPage() {
           </div>
         </Container>
       </section>
-      <CtaBanner />
+
     </main>
   );
 }
@@ -798,7 +855,7 @@ export function ProjectsPage() {
           )}
         </Container>
       </section>
-      <CtaBanner />
+
     </main>
   );
 }
@@ -875,7 +932,7 @@ export function FaqPage() {
           <FaqList items={faqItems} />
         </Container>
       </section>
-      <CtaBanner />
+
     </main>
   );
 }
@@ -888,6 +945,15 @@ export function BlogPage() {
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
           <SectionHeading eyebrow="Blog / updates" title="Tips, updates, and honest buying guides from people who actually do this." body="Open any post for a longer preview here, then continue to the full article if you want the complete read." />
+          <div className="mb-14 overflow-hidden rounded-[28px] border bg-black shadow-[0_18px_48px_rgba(17,17,17,0.08)]">
+            <div className="aspect-video w-full lg:aspect-[21/9]">
+              <video src="/media/video/gallery-video.mp4" className="h-full w-full object-cover opacity-80" autoPlay muted loop playsInline />
+            </div>
+            <div className="bg-[#111111] p-6 text-center text-white sm:p-8">
+              <h3 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-bold">Products in Motion</h3>
+              <p className="mt-2 text-sm text-[#D2CCC1]">See exactly how we source, inspect, and ship items straight from the factory line to your door.</p>
+            </div>
+          </div>
           <div className="grid gap-5 lg:grid-cols-3">
             {blogPosts.map((post) => {
               const isExpanded = expandedPost === post.slug;
@@ -952,7 +1018,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
           </div>
         </Container>
       </section>
-      <CtaBanner />
+
     </main>
   );
 }
