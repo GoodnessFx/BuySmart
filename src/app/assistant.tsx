@@ -224,19 +224,7 @@ export function AssistantWidget() {
 
   return (
     <>
-      {!open ? (
-        <div className="fixed bottom-24 right-6 z-40 hidden max-w-xs rounded-2xl border border-[#E5E2DA] bg-white p-4 shadow-[0_18px_40px_rgba(17,17,17,0.12)] md:block">
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
-              <Bot className="h-5 w-5" />
-            </span>
-            <div>
-              <div className="text-sm font-semibold text-[#111111]">Need a quick answer?</div>
-              <p className="mt-1 text-xs leading-6 text-[#4A4A4A]">{previewText}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {!open ? null : null}
 
       <div className="fixed inset-0 z-40">
         {open ? (

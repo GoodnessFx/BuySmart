@@ -128,88 +128,23 @@ export function HomePage() {
 
   return (
     <>
-      <section className="overflow-hidden border-b border-[#EFEAE1] bg-[linear-gradient(180deg,#FFFFFF_0%,#FAFAF8_100%)]">
-        <Container className="grid gap-12 py-14 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:py-20">
-          <div className="max-w-2xl">
+      <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
+        <div className="absolute inset-0 hero-slideshow">
+          <div className="hero-slide hero-slide-0" style={{ backgroundImage: "url('/media/hero/hero-port.jpg')" }} />
+          <div className="hero-slide hero-slide-1" style={{ backgroundImage: "url('/media/hero/hero-warehouse.jpg')" }} />
+          <div className="hero-slide hero-slide-2" style={{ backgroundImage: "url('/media/hero/hero-phone.jpg')" }} />
+          <div className="absolute inset-0 bg-black/30" />
+        </div>
+
+        <Container className="relative z-10 py-14 lg:py-20">
+          <div className="max-w-2xl text-white">
             <SectionTag>BuySmart Procurement Limited</SectionTag>
-            <h1 style={{ fontFamily: "'Sora', sans-serif", color: dark }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
+            <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
               Source with <span style={{ color: gold }}>clarity</span>. Ship with <span style={{ color: gold }}>confidence</span>.
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8" style={{ color: bodyText }}>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#F0F0F0]">
               BuySmart helps Nigerian business owners and everyday buyers source from trusted suppliers in China and Vietnam, verify what they are paying for, and move goods into Nigeria without unnecessary back and forth.
             </p>
-            <div className="mt-6 inline-flex flex-wrap items-center gap-2 rounded-2xl border border-[#D6C18A]/35 bg-white/80 p-1.5 shadow-[0_12px_32px_rgba(17,17,17,0.04)] backdrop-blur-md">
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#0D0D0D] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#C9A227] animate-pulse" />
-                <span style={{ color: gold }}>BuySmart</span> Way
-              </span>
-              <div className="flex items-center gap-3 px-2.5 py-0.5 text-[11px] font-extrabold text-[#111111] uppercase tracking-wide">
-                <span className="flex items-center gap-1.5">
-                  <Ship className="h-3.5 w-3.5 text-[#C9A227]" />
-                  We Ship
-                </span>
-                <span className="h-3.5 w-px bg-[#E5E0D8]" />
-                <span className="flex items-center gap-1.5">
-                  <ShoppingBag className="h-3.5 w-3.5 text-[#C9A227]" />
-                  You Sell
-                </span>
-                <span className="h-3.5 w-px bg-[#E5E0D8]" />
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[#C9A227]" />
-                  No Wahala
-                </span>
-              </div>
-            </div>
-            <p className="mt-4 max-w-xl text-base leading-7 text-[#6C655E]">
-              <span className="font-semibold text-[#111111]">Factory-price sourcing, supplier verification, inspection, and shipping</span> handled in one place, so you can focus on selling and growing your business.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="/#contact" className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: gold }}>
-                Request a Quote <ArrowRight className="h-4 w-4" />
-              </a>
-              <a href="/#how-it-works" className="inline-flex items-center justify-center gap-2 rounded-full border border-[#DED9CF] bg-white px-6 py-4 text-sm font-semibold text-[#111111] transition hover:border-[#C9A227] hover:text-[#C9A227]">
-                How It Works
-              </a>
-            </div>
-            <div className="mt-10 flex flex-wrap items-center gap-5">
-              <div className="flex items-center gap-1.5">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} className="h-4 w-4 fill-[#C9A227] text-[#C9A227]" />
-                ))}
-                <span className="ml-2 text-sm font-medium text-[#4A4A4A]">5.0 Google rating</span>
-              </div>
-              <span className="hidden h-4 w-px bg-[#DDD6CA] sm:block" />
-              <span className="text-sm text-[#4A4A4A]">Lagos delivery hub</span>
-              <span className="hidden h-4 w-px bg-[#DDD6CA] sm:block" />
-              <span className="text-sm text-[#4A4A4A]">Air and sea freight</span>
-            </div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {homeStats.map((item) => (
-                <div key={item.label} className={`rounded-2xl border bg-white p-4 shadow-[0_16px_40px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                  <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{item.label}</div>
-                  <div className="mt-2 text-base font-semibold text-[#111111]">{item.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-[0.98fr_1.02fr]">
-            <div className="grid gap-4">
-              <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-port.jpg" alt="Cargo ship at the port for international shipping" className="h-56 w-full object-cover object-center" />
-              </div>
-              <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-warehouse.jpg" alt="Warehouse shelves with packed goods ready for shipment" className="h-56 w-full object-cover object-center" />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-inspection.jpg" alt="Goods being checked before shipment" className="h-56 w-full object-cover object-center" />
-              </div>
-              <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-phone.jpg" alt="Customer using a phone to send a product or quote request" className="h-56 w-full object-cover object-center" />
-              </div>
-            </div>
           </div>
         </Container>
       </section>
