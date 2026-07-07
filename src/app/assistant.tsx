@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { faqItems, services, volumetricFormula } from "./content";
 import { WhatsAppBrandIcon, createWhatsAppUrl, gold } from "./layout";
@@ -164,19 +164,44 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", text: greeting }]);
 
+  useEffect(() => {
+    const saved = window.sessionStorage.getItem("buysmart-assistant-messages");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as ChatMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      } catch {
+        /* ignore invalid saved chat */
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem("buysmart-assistant-messages", JSON.stringify(messages));
+  }, [messages]);
+
   const previewText = useMemo(() => messages[messages.length - 1]?.text ?? greeting, [messages]);
 
   const pushReply = (question: string) => {
     const trimmed = question.trim();
     if (!trimmed) return;
 
-    const reply = findReply(trimmed);
-    setMessages((current) => [
-      ...current,
-      { role: "user", text: trimmed },
-      { role: "assistant", text: "Thinking...", pending: true },
-    ]);
+    setMessages((current) => {
+      const lastUser = [...current].reverse().find((message) => message.role === "user")?.text;
+      if (lastUser?.toLowerCase() === trimmed.toLowerCase()) {
+        return current;
+      }
 
+      return [
+        ...current,
+        { role: "user", text: trimmed },
+        { role: "assistant", text: "Thinking...", pending: true },
+      ];
+    });
+
+    const reply = findReply(trimmed);
     const delay = Math.min(1400, 600 + trimmed.length * 25);
     window.setTimeout(() => {
       setMessages((current) => {
@@ -213,9 +238,14 @@ export function AssistantWidget() {
         </div>
       ) : null}
 
-      <div className="fixed bottom-24 right-6 z-40">
+      <div className="fixed inset-0 z-40">
         {open ? (
-          <div className="w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-[28px] border border-[#E5E2DA] bg-white shadow-[0_22px_54px_rgba(17,17,17,0.14)]">
+          <>
+            <div className="absolute inset-0 bg-black/20 md:hidden" onClick={() => setOpen(false)} />
+            <div
+              onClick={(event) => event.stopPropagation()}
+              className="pointer-events-auto fixed left-4 right-4 bottom-4 top-6 z-50 mx-auto w-full max-w-sm overflow-hidden rounded-[28px] border border-[#E5E2DA] bg-white shadow-[0_22px_54px_rgba(17,17,17,0.14)] md:left-auto md:right-6 md:bottom-6 md:top-auto md:w-[22rem] md:max-h-[calc(100vh-6rem)]"
+            >
             <div className="flex items-center justify-between border-b border-[#EFEAE1] px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
@@ -230,7 +260,7 @@ export function AssistantWidget() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="max-h-[24rem] space-y-3 overflow-y-auto px-5 py-4">
+            <div className="max-h-[calc(100vh-22rem)] md:max-h-[24rem] space-y-3 overflow-y-auto px-5 py-4">
               {messages.map((message, index) => (
                 <div
                   key={`${message.role}-${index}`}
@@ -247,7 +277,7 @@ export function AssistantWidget() {
                       <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
                       Typing...
                     </div>
-                  ) : (
+                    ) : (
                     message.text
                   )}
                 </div>
@@ -292,18 +322,21 @@ export function AssistantWidget() {
                 Continue on WhatsApp if you need a live quote
               </a>
             </div>
-          </div>
+              </div>
+            </>
         ) : (
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="inline-flex items-center gap-3 rounded-full border border-[#E5E2DA] bg-white px-4 py-3 text-sm font-semibold text-[#111111] shadow-[0_18px_40px_rgba(17,17,17,0.12)] transition hover:border-[#C9A227]"
-          >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
-              <Bot className="h-5 w-5" />
-            </span>
-            Ask BuySmart
-          </button>
+          <div className="pointer-events-auto fixed bottom-24 right-6 z-50">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="inline-flex items-center gap-3 rounded-full border border-[#E5E2DA] bg-white px-4 py-3 text-sm font-semibold text-[#111111] shadow-[0_18px_40px_rgba(17,17,17,0.12)] transition hover:border-[#C9A227]"
+            >
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
+                <Bot className="h-5 w-5" />
+              </span>
+              Ask BuySmart
+            </button>
+          </div>
         )}
       </div>
     </>
