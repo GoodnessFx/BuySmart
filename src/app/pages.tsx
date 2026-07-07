@@ -193,24 +193,21 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-[1.02fr_0.98fr]">
-            <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.08)] ${cardBorder} sm:row-span-2`}>
-              <img src="/media/hero/hero-handoff.jpg" alt="Customer receiving a package delivered through BuySmart" className="h-full min-h-[22rem] w-full object-cover" />
-            </div>
+          <div className="grid gap-4 sm:grid-cols-[0.98fr_1.02fr]">
             <div className="grid gap-4">
               <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-port.jpg" alt="Cargo ship at the port for international shipping" className="h-56 w-full object-cover" />
+                <img src="/media/hero/hero-port.jpg" alt="Cargo ship at the port for international shipping" className="h-56 w-full object-cover object-center" />
               </div>
               <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-warehouse.jpg" alt="Warehouse shelves with packed goods ready for shipment" className="h-56 w-full object-cover" />
+                <img src="/media/hero/hero-warehouse.jpg" alt="Warehouse shelves with packed goods ready for shipment" className="h-56 w-full object-cover object-center" />
               </div>
             </div>
-            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-inspection.jpg" alt="Goods being checked before shipment" className="h-56 w-full object-cover" />
+                <img src="/media/hero/hero-inspection.jpg" alt="Goods being checked before shipment" className="h-56 w-full object-cover object-center" />
               </div>
               <div className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-                <img src="/media/hero/hero-phone.jpg" alt="Customer using a phone to send a product or quote request" className="h-56 w-full object-cover" />
+                <img src="/media/hero/hero-phone.jpg" alt="Customer using a phone to send a product or quote request" className="h-56 w-full object-cover object-center" />
               </div>
             </div>
           </div>

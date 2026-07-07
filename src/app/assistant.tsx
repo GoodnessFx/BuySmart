@@ -6,13 +6,14 @@ import { WhatsAppBrandIcon, createWhatsAppUrl, gold } from "./layout";
 type ChatMessage = {
   role: "assistant" | "user";
   text: string;
+  pending?: boolean;
 };
 
 const greeting =
-  "Hello. I can answer questions about services, shipping, inspections, order steps, customs basics, and installment plans. For exact quotes, account issues, complaints, or anything outside the published information, please continue on WhatsApp.";
+  "Hello. I can answer questions about services, shipping, inspections, order steps, customs basics, and installment plans. Ask me anything and I’ll think it through before replying.";
 
 const fallback =
-  "I can only answer from the information published on this site. For exact quotes, account-specific issues, complaints, or anything outside the published information, please continue on WhatsApp.";
+  "I can answer from the information published on this site. For exact quotes, account-specific issues, complaints, or anything outside the published information, please continue on WhatsApp.";
 
 const handoffTerms = [
   "quote",
@@ -63,6 +64,26 @@ const knowledge = [
     patterns: ["restricted", "prohibited", "battery", "liquid", "counterfeit"],
     answer:
       "Some items are restricted or prohibited, including batteries and battery-powered devices without prior approval, flammable liquids, hazardous chemicals, counterfeit goods, weapons, and illegal or regulated products. It is best to confirm before ordering.",
+  },
+  {
+    patterns: ["quote", "cost", "price", "fee", "pricing", "how much", "amount"],
+    answer:
+      "A quote depends on your specific item, supplier pricing, shipping route, and weight. BuySmart compares actual and volumetric weight, shipping costs, and supplier charges before sending a total landed cost estimate.",
+  },
+  {
+    patterns: ["payment", "deposit", "installment", "pay", "transfer"],
+    answer:
+      "Payment is handled based on the agreed quote. Selected orders can use installment plans with a deposit, and the final balance is cleared before shipment or release.",
+  },
+  {
+    patterns: ["customs documents", "documents", "paperwork", "invoice", "packing list"],
+    answer:
+      "Import paperwork depends on the goods category and delivery method. Typically, you need an invoice, packing list, and any relevant customs documents. BuySmart helps coordinate paperwork once your order is ready.",
+  },
+  {
+    patterns: ["who are you", "what do you do", "what is buysmart", "services offered", "how can you help"],
+    answer:
+      "I’m the BuySmart Assistant. I answer questions about procurement, supplier verification, shipping, inspections, customs, and installment plans using the published site information.",
   },
 ];
 
@@ -143,14 +164,32 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: "assistant", text: greeting }]);
 
-  const previewText = useMemo(() => messages[0]?.text ?? "", [messages]);
+  const previewText = useMemo(() => messages[messages.length - 1]?.text ?? greeting, [messages]);
 
   const pushReply = (question: string) => {
     const trimmed = question.trim();
     if (!trimmed) return;
 
     const reply = findReply(trimmed);
-    setMessages((current) => [...current, { role: "user", text: trimmed }, { role: "assistant", text: reply }]);
+    setMessages((current) => [
+      ...current,
+      { role: "user", text: trimmed },
+      { role: "assistant", text: "Thinking...", pending: true },
+    ]);
+
+    const delay = Math.min(1400, 600 + trimmed.length * 25);
+    window.setTimeout(() => {
+      setMessages((current) => {
+        const updated = [...current];
+        const pendingIndex = updated.map((message) => message.pending).lastIndexOf(true);
+        if (pendingIndex >= 0) {
+          updated[pendingIndex] = { role: "assistant", text: reply };
+        } else {
+          updated.push({ role: "assistant", text: reply });
+        }
+        return updated;
+      });
+    }, delay);
   };
 
   const handleSend = () => {
@@ -201,7 +240,16 @@ export function AssistantWidget() {
                       : "ml-6 rounded-2xl border border-[#E5E2DA] bg-white px-4 py-3 text-sm leading-6 text-[#111111]"
                   }
                 >
-                  {message.text}
+                  {message.pending ? (
+                    <div className="flex items-center gap-2 text-[#4A4A4A]">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
+                      Typing...
+                    </div>
+                  ) : (
+                    message.text
+                  )}
                 </div>
               ))}
             </div>

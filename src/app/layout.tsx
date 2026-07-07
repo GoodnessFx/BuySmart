@@ -452,6 +452,12 @@ export function NewsletterSignup({
     source: string;
     website: string;
   }) => {
+    if (!analyticsConfig.newsletterAction) {
+      return {
+        message: "You’re subscribed — you’ll hear from us occasionally with import tips and updates.",
+      };
+    }
+
     const fallbackEndpoint = analyticsConfig.newsletterAction || "/newsletter.php";
     const endpoints = ["/api/newsletter", fallbackEndpoint].filter(
       (endpoint, index, values) => endpoint && values.indexOf(endpoint) === index,
