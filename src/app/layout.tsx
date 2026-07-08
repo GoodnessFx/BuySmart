@@ -189,6 +189,10 @@ export const routeMeta: Record<string, RouteMeta> = {
     title: "Contact Us | BuySmart Procurement Limited",
     description: "Get in touch with BuySmart for quick sourcing and shipping quotes. Call, email, or chat with us on WhatsApp.",
   },
+  "/cookie-policy": {
+    title: "Cookie Policy | BuySmart Procurement Limited",
+    description: "Learn how BuySmart uses cookies, pixels, and similar technologies — including GA4, Meta Pixel, and TikTok Pixel.",
+  },
 };
 
 export function normalizePath(pathname: string) {
@@ -1160,7 +1164,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Pages</div>
           <div className="mt-4 grid gap-3">
-            {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }].map((item) => (
+            {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }].map((item) => (
               <a
                 key={item.href}
                 href={item.href}

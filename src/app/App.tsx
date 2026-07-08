@@ -6,6 +6,7 @@ import {
   BlogPage,
   BlogPostPage,
   ContactPage,
+  CookiePolicyPage,
   EstimatorPage,
   FaqPage,
   HomePage,
@@ -20,6 +21,7 @@ import {
   WhyChoosePage,
 } from "./pages";
 import { getPostBySlug } from "./blog";
+import { CookieConsent, getConsent } from "./cookie-consent";
 
 function buildLocalBusinessSchema() {
   return {
@@ -76,8 +78,8 @@ function buildProjectsSchema() {
   };
 }
 
-function injectAnalyticsScripts() {
-  if (analyticsConfig.ga4Id && !document.head.querySelector(`script[data-ga4="${analyticsConfig.ga4Id}"]`)) {
+function injectCategory(category: "analytics" | "marketing") {
+  if (category === "analytics" && analyticsConfig.ga4Id && !document.head.querySelector(`script[data-ga4="${analyticsConfig.ga4Id}"]`)) {
     const gaScript = document.createElement("script");
     gaScript.async = true;
     gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsConfig.ga4Id}`;
@@ -90,37 +92,47 @@ function injectAnalyticsScripts() {
     document.head.appendChild(gaInline);
   }
 
-  if (analyticsConfig.metaPixelId && !document.head.querySelector(`script[data-meta-pixel="${analyticsConfig.metaPixelId}"]`)) {
-    const metaPixel = document.createElement("script");
-    metaPixel.dataset.metaPixel = analyticsConfig.metaPixelId;
-    metaPixel.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-    (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '${analyticsConfig.metaPixelId}');
-    fbq('track', 'PageView');`;
-    document.head.appendChild(metaPixel);
-  }
+  if (category === "marketing") {
+    if (analyticsConfig.metaPixelId && !document.head.querySelector(`script[data-meta-pixel="${analyticsConfig.metaPixelId}"]`)) {
+      const metaPixel = document.createElement("script");
+      metaPixel.dataset.metaPixel = analyticsConfig.metaPixelId;
+      metaPixel.text = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+      (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '${analyticsConfig.metaPixelId}');
+      fbq('track', 'PageView');`;
+      document.head.appendChild(metaPixel);
+    }
 
-  if (analyticsConfig.tikTokPixelId && !document.head.querySelector(`script[data-tiktok-pixel="${analyticsConfig.tikTokPixelId}"]`)) {
-    const tikTokPixel = document.createElement("script");
-    tikTokPixel.dataset.tiktokPixel = analyticsConfig.tikTokPixelId;
-    tikTokPixel.text = `!function (w, d, t) {
-      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
-      ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
-      ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
-      for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-      ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js";
-      ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=r;ttq._t=ttq._t||{};ttq._t[e]=+new Date;
-      ttq._o=ttq._o||{};ttq._o[e]=n||{};var o=document.createElement("script");
-      o.type="text/javascript";o.async=!0;o.src=r+"?sdkid="+e+"&lib="+t;
-      var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
-      ttq.load('${analyticsConfig.tikTokPixelId}');
-      ttq.page();
-    }(window, document, 'ttq');`;
-    document.head.appendChild(tikTokPixel);
+    if (analyticsConfig.tikTokPixelId && !document.head.querySelector(`script[data-tiktok-pixel="${analyticsConfig.tikTokPixelId}"]`)) {
+      const tikTokPixel = document.createElement("script");
+      tikTokPixel.dataset.tiktokPixel = analyticsConfig.tikTokPixelId;
+      tikTokPixel.text = `!function (w, d, t) {
+        w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
+        ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+        ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
+        for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
+        ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js";
+        ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=r;ttq._t=ttq._t||{};ttq._t[e]=+new Date;
+        ttq._o=ttq._o||{};ttq._o[e]=n||{};var o=document.createElement("script");
+        o.type="text/javascript";o.async=!0;o.src=r+"?sdkid="+e+"&lib="+t;
+        var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
+        ttq.load('${analyticsConfig.tikTokPixelId}');
+        ttq.page();
+      }(window, document, 'ttq');`;
+      document.head.appendChild(tikTokPixel);
+    }
   }
+}
+
+function injectAllowedScripts() {
+  const consent = getConsent();
+  if (!consent) return;
+
+  if (consent.analytics) injectCategory("analytics");
+  if (consent.marketing) injectCategory("marketing");
 
   if (analyticsConfig.searchConsoleVerification) {
     setMetaTag("google-site-verification", analyticsConfig.searchConsoleVerification);
@@ -143,7 +155,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    injectAnalyticsScripts();
+    injectAllowedScripts();
+    const handler = () => injectAllowedScripts();
+    window.addEventListener("consent-updated", handler);
+    return () => window.removeEventListener("consent-updated", handler);
   }, []);
 
   useEffect(() => {
@@ -268,6 +283,8 @@ export default function App() {
         return <VerifiedLagosPage />;
       case "/how-it-works":
         return <HowItWorksPage />;
+      case "/cookie-policy":
+        return <CookiePolicyPage />;
       case "/contact":
         return <ContactPage />;
       default:
@@ -282,6 +299,7 @@ export default function App() {
       <Footer onNavigate={navigate} />
       <AssistantWidget />
       <FloatingWhatsAppButton />
+      <CookieConsent />
     </div>
   );
 }

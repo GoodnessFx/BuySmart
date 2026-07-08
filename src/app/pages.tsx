@@ -1129,6 +1129,74 @@ export function BlogPostPage({ slug }: { slug: string }) {
   );
 }
 
+export function CookiePolicyPage() {
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-20">
+        <Container className="max-w-4xl">
+          <SectionHeading eyebrow="Cookie policy" title="How BuySmart uses cookies and similar technologies." body="This page explains what cookies and tracking technologies we use, what each does, and how you can control them." />
+          <div className="grid gap-5">
+            <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="text-lg font-semibold text-[#111111]">What are cookies?</div>
+              <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
+                Cookies are small text files stored on your device by your browser. They help websites remember your
+                preferences, understand how the site is used, and deliver relevant advertising. BuySmart also uses similar
+                technologies such as pixels and local storage for the same purposes.
+              </p>
+            </div>
+            <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="text-lg font-semibold text-[#111111]">Essential</div>
+              <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
+                These are required for the site to function. They include session management for the chat assistant,
+                form handling for quote requests, and the cookie consent preference itself — which is stored in local
+                storage, not a cookie, so no prior consent is needed to record your choice.
+              </p>
+            </div>
+            <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="text-lg font-semibold text-[#111111]">Analytics — Google Analytics (GA4)</div>
+              <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
+                GA4 collects anonymised data about how visitors navigate the site, which pages are most popular, and
+                where traffic comes from. This helps us improve the site experience. No personally identifiable
+                information is sent to Google Analytics. This is only loaded if you consent to analytics cookies.
+              </p>
+            </div>
+            <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="text-lg font-semibold text-[#111111]">Marketing — Meta Pixel and TikTok Pixel</div>
+              <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
+                Meta (Facebook) and TikTok pixels allow us to measure the performance of our ad campaigns and show
+                relevant advertisements to people who have visited the site. These pixels may set cookies on your
+                device and share limited browsing activity with Meta and TikTok respectively. These are only loaded
+                if you consent to marketing cookies.
+              </p>
+            </div>
+            <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="text-lg font-semibold text-[#111111]">Your rights under NDPR</div>
+              <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
+                BuySmart operates in compliance with the Nigeria Data Protection Regulation (NDPR). You have the right
+                to withdraw or change your consent at any time by clearing your browser cookies and local storage, or
+                by using the consent banner which will reappear after consent is reset. For more information about how
+                we handle your data, see our{" "}
+                <a
+                  href="/privacy-policy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.history.pushState({}, "", "/privacy-policy");
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                  }}
+                  className="font-semibold underline underline-offset-2 transition hover:no-underline"
+                  style={{ color: gold }}
+                >
+                  Privacy Policy
+                </a>.
+              </p>
+            </div>
+          </div>
+        </Container>
+      </section>
+    </main>
+  );
+}
+
 export function PrivacyPage() {
   return (
     <main className="bg-[#FAFAF8]">
