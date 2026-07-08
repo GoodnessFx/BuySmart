@@ -174,7 +174,7 @@ export function BackToTopButton() {
       type="button"
       aria-label="Back to top"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed bottom-28 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(201,162,39,0.3)] transition-all duration-300 ${
+      className={`fixed bottom-28 left-6 z-50 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(201,162,39,0.3)] transition-all duration-300 ${
         visible ? "scale-100 opacity-100" : "scale-75 opacity-0 pointer-events-none"
       }`}
       style={{ backgroundColor: gold }}
