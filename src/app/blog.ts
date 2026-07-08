@@ -57,9 +57,15 @@ function toParagraphs(content: string) {
 }
 
 export const blogPosts: BlogPost[] = Object.entries(rawPosts)
-  .map(([path, raw]) => {
+  .map(([path, raw], index) => {
     const { meta, content } = parseFrontMatter(raw);
     const slug = path.split("/").pop()?.replace(/\.mdx$/, "") ?? "";
+
+    const fallbackImages = [
+      "/media/Electronic 1.jpeg",
+      "/media/Electronic 2.jpeg",
+      "/media/Electronic 3.jpeg",
+    ];
 
     return {
       slug,
@@ -68,6 +74,7 @@ export const blogPosts: BlogPost[] = Object.entries(rawPosts)
       date: meta.date ?? "",
       readTime: meta.readTime ?? "",
       excerpt: meta.excerpt ?? "",
+      image: meta.image || fallbackImages[index % fallbackImages.length],
       body: toParagraphs(content),
     };
   })

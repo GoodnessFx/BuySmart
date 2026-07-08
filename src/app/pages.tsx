@@ -193,15 +193,15 @@ export function HomePage() {
           <SectionHeading eyebrow="Recent projects" title="See what we’ve brought in recently." center />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
              {galleryItems.slice(0, 3).map((item) => (
-                <div key={item.id} className="group relative overflow-hidden rounded-[20px] bg-black">
+                <div key={item.title} className="group relative overflow-hidden rounded-[20px] bg-[#111111]">
                   <div className="aspect-[4/3] w-full">
                     {item.mediaType === "video" ? (
-                      <video src={item.mediaUrl} className="h-full w-full object-cover opacity-60 transition duration-500 group-hover:scale-105 group-hover:opacity-80" autoPlay muted loop playsInline />
+                      <video src={item.media} className="h-full w-full object-cover opacity-60 transition-transform duration-[800ms] ease-out group-hover:scale-110 group-hover:opacity-80" autoPlay muted loop playsInline />
                     ) : (
-                      <img src={item.mediaUrl} alt={item.title} className="h-full w-full object-cover opacity-60 transition duration-500 group-hover:scale-105 group-hover:opacity-80" loading="lazy" />
+                      <img src={item.media} alt={item.title} className="h-full w-full object-cover opacity-60 transition-transform duration-[800ms] ease-out group-hover:scale-110 group-hover:opacity-80" loading="lazy" />
                     )}
                   </div>
-                  <div className="absolute inset-0 flex flex-col justify-end p-6">
+                  <div className="absolute inset-0 flex flex-col justify-end p-6 pointer-events-none">
                     <div className="mb-2 inline-flex w-fit items-center rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
                       {item.category}
                     </div>
@@ -211,7 +211,7 @@ export function HomePage() {
              ))}
           </div>
           <div className="mt-10 text-center">
-            <a href="/#projects" className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: gold }}>
+            <a href="/recent-projects" className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: gold }}>
               View all projects <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -817,7 +817,9 @@ export function ProjectsPage() {
                 return (
                 <div key={itemKey} className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
                   {item.mediaType === "image" ? (
-                    <img src={item.media} alt={item.alt} className="h-72 w-full object-cover" loading="lazy" />
+                    <div className="group relative overflow-hidden bg-[#111111]">
+                      <img src={item.media} alt={item.alt} className="h-72 w-full object-cover opacity-90 transition-transform duration-[800ms] ease-out group-hover:scale-110 group-hover:opacity-100" loading="lazy" />
+                    </div>
                   ) : (
                     <video src={item.media} className="h-72 w-full object-cover" muted playsInline loop controls preload="metadata" />
                   )}
@@ -945,41 +947,39 @@ export function BlogPage() {
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
           <SectionHeading eyebrow="Blog / updates" title="Tips, updates, and honest buying guides from people who actually do this." body="Open any post for a longer preview here, then continue to the full article if you want the complete read." />
-          <div className="mb-14 overflow-hidden rounded-[28px] border bg-black shadow-[0_18px_48px_rgba(17,17,17,0.08)]">
-            <div className="aspect-video w-full lg:aspect-[21/9]">
-              <video src="/media/video/gallery-video.mp4" className="h-full w-full object-cover opacity-80" autoPlay muted loop playsInline />
-            </div>
-            <div className="bg-[#111111] p-6 text-center text-white sm:p-8">
-              <h3 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-bold">Products in Motion</h3>
-              <p className="mt-2 text-sm text-[#D2CCC1]">See exactly how we source, inspect, and ship items straight from the factory line to your door.</p>
-            </div>
-          </div>
           <div className="grid gap-5 lg:grid-cols-3">
             {blogPosts.map((post) => {
               const isExpanded = expandedPost === post.slug;
               return (
-              <div key={post.slug} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{post.category}</div>
-                <div className="mt-3 text-xl font-semibold text-[#111111]">{post.title}</div>
-                <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{post.excerpt}</p>
-                <div className="mt-4 text-xs font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
-                <button
-                  type="button"
-                  onClick={() => setExpandedPost((current) => (current === post.slug ? null : post.slug))}
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
-                >
-                  {isExpanded ? "Hide preview" : "Open preview"} <ArrowRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} style={{ color: gold }} />
-                </button>
-                {isExpanded ? (
-                  <div className="mt-5 grid gap-4 rounded-[22px] border border-[#E5E2DA] bg-white p-4">
-                    {post.body.slice(0, 5).map((paragraph) => (
-                      <p key={paragraph} className="text-sm leading-7 text-[#4A4A4A]">{paragraph}</p>
-                    ))}
-                    <a href={`/blog/${post.slug}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#111111]">
-                      Continue reading <ArrowRight className="h-4 w-4" style={{ color: gold }} />
-                    </a>
+              <div key={post.slug} className={`group rounded-[28px] border bg-[#FAFAF8] shadow-[0_10px_24px_rgba(17,17,17,0.03)] overflow-hidden flex flex-col ${cardBorder}`}>
+                <div className="relative overflow-hidden bg-[#111111]">
+                  <div className="aspect-[16/10] w-full">
+                    <img src={post.image} alt={post.title} className="h-full w-full object-cover opacity-80 transition-transform duration-[800ms] ease-out group-hover:scale-110" loading="lazy" />
                   </div>
-                ) : null}
+                </div>
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{post.category}</div>
+                  <div className="mt-3 text-xl font-semibold text-[#111111]">{post.title}</div>
+                  <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{post.excerpt}</p>
+                  <div className="mt-4 text-xs font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedPost((current) => (current === post.slug ? null : post.slug))}
+                    className="mt-auto pt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
+                  >
+                    {isExpanded ? "Hide preview" : "Open preview"} <ArrowRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} style={{ color: gold }} />
+                  </button>
+                  {isExpanded ? (
+                    <div className="mt-5 grid gap-4 rounded-[22px] border border-[#E5E2DA] bg-white p-4">
+                      {post.body.slice(0, 5).map((paragraph) => (
+                        <p key={paragraph} className="text-sm leading-7 text-[#4A4A4A]">{paragraph}</p>
+                      ))}
+                      <a href={`/blog/${post.slug}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#111111]">
+                        Continue reading <ArrowRight className="h-4 w-4" style={{ color: gold }} />
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             )})}
           </div>
@@ -1007,13 +1007,18 @@ export function BlogPostPage({ slug }: { slug: string }) {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container className="max-w-4xl">
+          <div className="group relative mb-10 overflow-hidden rounded-[28px] bg-[#111111] shadow-[0_18px_48px_rgba(17,17,17,0.08)]">
+            <div className="aspect-[16/9] w-full">
+              <img src={post.image} alt={post.title} className="h-full w-full object-cover opacity-80 transition-transform duration-[800ms] ease-out group-hover:scale-105" loading="lazy" />
+            </div>
+          </div>
           <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{post.category}</div>
           <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="mt-4 text-[clamp(2.3rem,5vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#111111]">{post.title}</h1>
           <div className="mt-4 text-sm font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
           <div className="mt-8 grid gap-6">
             {post.body.map((paragraph) => <p key={paragraph} className="text-base leading-8 text-[#4A4A4A]">{paragraph}</p>)}
           </div>
-          <div className="mt-10">
+          <div className="mt-16">
             <NewsletterSignup inline title="Stay updated" body="Get new buying guides, importation tips, shipping updates, and market trends in your inbox." />
           </div>
         </Container>
