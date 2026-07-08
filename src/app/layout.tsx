@@ -143,6 +143,11 @@ export const routeMeta: Record<string, RouteMeta> = {
     description:
       "Estimate chargeable weight and see a BuySmart shipping cost range for air or sea freight to Lagos and beyond.",
   },
+  "/projects": {
+    title: "Projects | BuySmart Imports Gallery",
+    description:
+      "Browse all BuySmart projects — electronics, baby products, and general goods with proof media and delivery timelines.",
+  },
   "/recent-projects": {
     title: "Recent Projects | BuySmart Imports Gallery",
     description:
@@ -977,17 +982,15 @@ export function FaqList({
             <button
               type="button"
               onClick={() => setOpenIndex(isOpen ? null : index)}
-              className="flex w-full items-center justify-between gap-4 p-5 text-left text-base font-semibold text-[#111111]"
+              className="flex w-full items-center justify-between gap-4 p-5 text-left text-base font-semibold text-[#111111] cursor-pointer"
             >
               <span>{item.question}</span>
               <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} style={{ color: gold }} />
             </button>
             <div
-              className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}
             >
-              <div className="overflow-hidden">
-                <p className="px-5 pb-5 text-sm leading-7 text-[#4A4A4A]">{item.answer}</p>
-              </div>
+              <p className="px-5 pb-5 text-sm leading-7 text-[#4A4A4A]">{item.answer}</p>
             </div>
           </div>
         );

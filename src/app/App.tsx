@@ -251,6 +251,7 @@ export default function App() {
         return <ShippingPage />;
       case "/shipment-cost-estimator":
         return <EstimatorPage />;
+      case "/projects":
       case "/recent-projects":
         return <ProjectsPage />;
       case "/testimonials":

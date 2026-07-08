@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Banknote,
@@ -13,6 +13,7 @@ import {
   FileCheck2,
   Image as ImageIcon,
   Landmark,
+  LayoutGrid,
   MapPin,
   Package,
   PackageCheck,
@@ -44,6 +45,8 @@ import {
   installmentPlans,
   installmentPolicies,
   installmentSchedule,
+  isLagos,
+  nigerianStates,
   orderSteps,
   prohibitedItems,
   services,
@@ -77,7 +80,7 @@ import {
 
 type EstimatorState = {
   mode: "air" | "sea";
-  destination: "Lagos" | "Outside Lagos";
+  state: string;
   actualWeight: string;
   length: string;
   width: string;
@@ -114,19 +117,50 @@ function buildProjectInsight(item: (typeof galleryItems)[number]) {
   return `${proofLabel} from a real ${item.category.toLowerCase()} order handled by BuySmart. It helps a new customer understand what was sourced, the shipping route used, and the kind of update they can expect before goods arrive in Nigeria.`;
 }
 
+const HERO_IMAGES = [
+  "/media/hero/hero-background-1.jpg",
+  "/media/hero/hero-background-2.jpg",
+  "/media/hero/hero-background-3.jpg",
+];
+
+function HeroBackground() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {HERO_IMAGES.map((src, index) => (
+        <div
+          key={src}
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-[1500ms] ease-in-out"
+          style={{
+            backgroundImage: `url('${src}')`,
+            opacity: index === activeIndex ? 1 : 0,
+            transform: index === activeIndex ? "scale(1.1)" : "scale(1.08)",
+            transition: "opacity 1500ms ease-in-out, transform 7000ms ease-out",
+            backgroundColor: "rgba(0,0,0,0.24)",
+            backgroundBlendMode: "multiply",
+          }}
+        />
+      ))}
+      <div className="absolute inset-0 bg-black/30" />
+    </div>
+  );
+}
+
 export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   return (
     <>
       <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
-        <div className="absolute inset-0 hero-slideshow">
-          <div className="hero-slide hero-slide-0" style={{ backgroundImage: "url('/media/hero/hero-background-1.jpg')" }} />
-          <div className="hero-slide hero-slide-1" style={{ backgroundImage: "url('/media/hero/hero-background-2.jpg')" }} />
-          <div className="hero-slide hero-slide-2" style={{ backgroundImage: "url('/media/hero/hero-background-3.jpg')" }} />
-          <div className="hero-slide hero-slide-3" style={{ backgroundImage: "url('/media/hero/hero-background-1.jpg')" }} />
-          <div className="hero-slide hero-slide-4" style={{ backgroundImage: "url('/media/hero/hero-background-2.jpg')" }} />
-          <div className="hero-slide hero-slide-5" style={{ backgroundImage: "url('/media/hero/hero-background-3.jpg')" }} />
-          <div className="absolute inset-0 bg-black/30" />
-        </div>
+        <HeroBackground />
+
 
         <Container className="relative z-10 py-14 lg:py-20">
           <div className="max-w-2xl text-white">
@@ -194,7 +228,21 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
 
       <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
         <Container>
-          <SectionHeading eyebrow="Recent projects" title="See what we’ve brought in recently." center />
+          <div className="mb-12 text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#D6C18A]/35 bg-white px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)]" style={{ color: gold }}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+              </span>
+              <span className="text-[#111111]/90">Recent projects</span>
+            </div>
+            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-extrabold leading-[1.02] tracking-[-0.04em] mx-auto max-w-3xl" style={{ color: dark, fontFamily: "'Sora', sans-serif" }}>
+              See what we&rsquo;ve brought in <span style={{ color: gold }}>recently</span>.
+            </h2>
+            <p className="mt-4 mx-auto max-w-2xl text-[17px] leading-relaxed" style={{ color: bodyText }}>
+              Every item listed here is a real client order&mdash;sourced, inspected, and shipped through BuySmart.
+            </p>
+          </div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
              {galleryItems.slice(0, 3).map((item) => (
                 <div key={item.title} className="group relative overflow-hidden rounded-[20px] bg-[#111111]">
@@ -216,11 +264,11 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
           </div>
           <div className="mt-10 text-center">
             <a 
-              href="/recent-projects" 
+              href="/projects" 
               onClick={(e) => {
                 if (onNavigate) {
                   e.preventDefault();
-                  onNavigate("/recent-projects");
+                  onNavigate("/projects");
                 }
               }}
               className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" 
@@ -668,17 +716,23 @@ export function ShippingPage() {
           <div className="grid gap-5 lg:grid-cols-2">
             {shippingModes.map((mode) => (
               <div key={mode.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white" style={{ color: gold }}>{mode.title.toLowerCase().includes("air") ? <Plane className="h-5 w-5" /> : <Ship className="h-5 w-5" />}</div>
-                <h2 className="mt-4 text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>{mode.title}</h2>
-                <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">{mode.description}</p>
-                <div className="mt-4 rounded-2xl border border-[#E5E2DA] bg-white p-4">
-                  <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Estimated delivery timeline</div>
-                  <div className="mt-2 text-sm font-semibold text-[#111111]">{mode.timeline}</div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {mode.bestFor.map((item) => (
-                    <span key={item} className="rounded-full border border-[#E5E2DA] bg-white px-3 py-2 text-xs font-medium text-[#4A4A4A]">{item}</span>
-                  ))}
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+                  <div className="flex shrink-0 items-center gap-4 lg:flex-col lg:items-center lg:pt-1">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shrink-0" style={{ color: gold }}>{mode.title.toLowerCase().includes("air") ? <Plane className="h-5 w-5" /> : <Ship className="h-5 w-5" />}</div>
+                    <h2 className="text-[clamp(1.3rem,2.5vw,1.8rem)] font-extrabold tracking-[-0.04em] text-[#111111] lg:text-center lg:mt-1" style={{ fontFamily: "'Sora', sans-serif" }}>{mode.title}</h2>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] leading-relaxed text-[#4A4A4A]">{mode.description}</p>
+                    <div className="mt-3 rounded-2xl border border-[#E5E2DA] bg-white p-4">
+                      <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Estimated delivery timeline</div>
+                      <div className="mt-2 text-sm font-semibold text-[#111111]">{mode.timeline}</div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {mode.bestFor.map((item) => (
+                        <span key={item} className="rounded-full border border-[#E5E2DA] bg-white px-3 py-2 text-xs font-medium text-[#4A4A4A]">{item}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -686,23 +740,18 @@ export function ShippingPage() {
         </Container>
       </section>
       <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
-        <Container className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-          <div>
-            <SectionHeading eyebrow="How fees are calculated" title="Chargeable weight is the point most customers need explained clearly." />
-            <div className="grid gap-4">
-              <div className={`rounded-2xl border bg-white p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#111111]"><Scale className="h-4 w-4" style={{ color: gold }} />Volumetric weight formula</div>
-                <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-[clamp(1.2rem,2vw,1.7rem)] font-bold tracking-[-0.03em] text-[#111111]">{volumetricFormula}</div>
-                <p className="mt-4 text-sm leading-7 text-[#4A4A4A]">Example: {volumetricExample.dimensions}. Calculation: {volumetricExample.calculation}.</p>
-              </div>
-              <div className={`rounded-2xl border bg-white p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#111111]"><Calculator className="h-4 w-4" style={{ color: gold }} />Actual weight versus volumetric weight</div>
-                <p className="text-sm leading-7 text-[#4A4A4A]">BuySmart compares the actual scale weight of the shipment with the volumetric weight. Whichever figure is higher becomes the billed chargeable weight.</p>
-              </div>
+        <Container>
+          <SectionHeading eyebrow="How fees are calculated" title="Chargeable weight is the point most customers need explained clearly." />
+          <div className="grid gap-4">
+            <div className={`rounded-2xl border bg-white p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#111111]"><Scale className="h-4 w-4" style={{ color: gold }} />Volumetric weight formula</div>
+              <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-[clamp(1.2rem,2vw,1.7rem)] font-bold tracking-[-0.03em] text-[#111111]">{volumetricFormula}</div>
+              <p className="mt-4 text-sm leading-7 text-[#4A4A4A]">Example: {volumetricExample.dimensions}. Calculation: {volumetricExample.calculation}.</p>
             </div>
-          </div>
-          <div className={`overflow-hidden rounded-[30px] border bg-white shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
-            <img src="/media/shipping-notice.png" alt="Shipping charges notice by BuySmart" className="w-full object-cover" />
+            <div className={`rounded-2xl border bg-white p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#111111]"><Calculator className="h-4 w-4" style={{ color: gold }} />Actual weight versus volumetric weight</div>
+              <p className="text-sm leading-7 text-[#4A4A4A]">BuySmart compares the actual scale weight of the shipment with the volumetric weight. Whichever figure is higher becomes the billed chargeable weight.</p>
+            </div>
           </div>
         </Container>
       </section>
@@ -740,17 +789,18 @@ export function ShippingPage() {
 }
 
 export function EstimatorPage() {
-  const [state, setState] = useState<EstimatorState>({ mode: "air", destination: "Lagos", actualWeight: "", length: "", width: "", height: "" });
+  const [form, setForm] = useState<EstimatorState>({ mode: "air", state: "Lagos", actualWeight: "", length: "", width: "", height: "" });
+  const destination = isLagos(form.state) ? "Lagos" : "Outside Lagos";
   const volumetricWeight = useMemo(() => {
-    const length = Number(state.length);
-    const width = Number(state.width);
-    const height = Number(state.height);
+    const length = Number(form.length);
+    const width = Number(form.width);
+    const height = Number(form.height);
     if (!length || !width || !height) return 0;
     return Number(((length * width * height) / estimatorConfig.divisor).toFixed(2));
-  }, [state.height, state.length, state.width]);
-  const actualWeight = Number(state.actualWeight) || 0;
+  }, [form.height, form.length, form.width]);
+  const actualWeight = Number(form.actualWeight) || 0;
   const chargeableWeight = Math.max(actualWeight, volumetricWeight, estimatorConfig.minimumChargeableWeight);
-  const rates = estimatorConfig.rates[state.mode][state.destination];
+  const rates = estimatorConfig.rates[form.mode][destination];
   const lowEstimate = Math.round(chargeableWeight * rates.low);
   const highEstimate = Math.round(chargeableWeight * rates.high);
 
@@ -763,21 +813,21 @@ export function EstimatorPage() {
             <div className={`rounded-[30px] border bg-[#FAFAF8] p-6 shadow-[0_18px_48px_rgba(17,17,17,0.04)] ${cardBorder}`}>
               <div className="flex flex-wrap gap-3">
                 {(["air", "sea"] as const).map((mode) => (
-                  <button key={mode} type="button" onClick={() => setState((current) => ({ ...current, mode }))} className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: state.mode === mode ? gold : dark }}>
+                  <button key={mode} type="button" onClick={() => setForm((current) => ({ ...current, mode }))} className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: form.mode === mode ? gold : dark }}>
                     {mode === "air" ? "Air" : "Sea"}
                   </button>
                 ))}
               </div>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm font-medium text-[#111111]">
-                  Destination
-                  <select value={state.destination} onChange={(event) => setState((current) => ({ ...current, destination: event.target.value as EstimatorState["destination"] }))} className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none">
-                    {estimatorConfig.destinations.map((destination) => <option key={destination} value={destination}>{destination}</option>)}
+                  Destination state
+                  <select value={form.state} onChange={(event) => setForm((current) => ({ ...current, state: event.target.value }))} className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none">
+                    {nigerianStates.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-[#111111]">
                   Actual weight (kg)
-                  <input type="number" min="0" step="0.1" value={state.actualWeight} onChange={(event) => setState((current) => ({ ...current, actualWeight: event.target.value }))} className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none" placeholder="e.g. 12" />
+                  <input type="number" min="0" step="0.1" value={form.actualWeight} onChange={(event) => setForm((current) => ({ ...current, actualWeight: event.target.value }))} className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none" placeholder="e.g. 12" />
                 </label>
                 {[
                   ["Length (cm)", "length"],
@@ -786,17 +836,24 @@ export function EstimatorPage() {
                 ].map(([label, field]) => (
                   <label key={field} className="grid gap-2 text-sm font-medium text-[#111111]">
                     {label}
-                    <input type="number" min="0" value={state[field as keyof EstimatorState]} onChange={(event) => setState((current) => ({ ...current, [field]: event.target.value }))} className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none" />
+                    <input type="number" min="0" value={form[field as keyof EstimatorState]} onChange={(event) => setForm((current) => ({ ...current, [field]: event.target.value }))} className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none" />
                   </label>
                 ))}
+                <label className="grid gap-2 text-sm font-medium text-[#111111]">
+                  Cargo type / description
+                  <input type="text" className="rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none" placeholder="e.g. Electronics, Hair, General goods" />
+                </label>
               </div>
+              <p className="mt-3 text-xs leading-6 text-[#7C746C]">
+                Destination set to <strong>{destination}</strong> based on selected state.
+              </p>
             </div>
           </div>
           <div className={`rounded-[30px] border bg-[#FAFAF8] p-6 shadow-[0_18px_48px_rgba(17,17,17,0.08)] ${cardBorder}`}>
             <div className="rounded-2xl border border-[#E5E2DA] bg-white p-5"><div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Volumetric weight</div><div style={{ fontFamily: "'Sora', sans-serif" }} className="mt-2 text-3xl font-bold tracking-[-0.04em] text-[#111111]">{volumetricWeight.toFixed(2)}kg</div></div>
             <div className="mt-4 rounded-2xl border border-[#E5E2DA] bg-white p-5"><div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Chargeable weight</div><div style={{ fontFamily: "'Sora', sans-serif" }} className="mt-2 text-3xl font-bold tracking-[-0.04em] text-[#111111]">{chargeableWeight.toFixed(2)}kg</div><p className="mt-3 text-sm leading-6 text-[#4A4A4A]">This uses the higher of actual weight and volumetric weight.</p></div>
             <div className="mt-4 rounded-2xl border border-[#E5E2DA] bg-white p-5"><div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Estimated cost range</div><div style={{ fontFamily: "'Sora', sans-serif" }} className="mt-2 text-[clamp(1.8rem,5vw,2.7rem)] font-bold tracking-[-0.04em] text-[#111111]">₦{lowEstimate.toLocaleString()} to ₦{highEstimate.toLocaleString()}</div></div>
-            <a href={createWhatsAppUrl(["Hello BuySmart, I need an exact shipping quote.", `Mode: ${state.mode === "air" ? "Air" : "Sea"}`, `Destination: ${state.destination}`, `Actual weight: ${state.actualWeight || "Not provided"}kg`, `Dimensions: ${state.length || "-"}cm × ${state.width || "-"}cm × ${state.height || "-"}cm`, `Estimated chargeable weight: ${chargeableWeight}kg`].join("\n"))} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white" style={{ backgroundColor: gold }}>
+            <a href={createWhatsAppUrl(["Hello BuySmart, I need an exact shipping quote.", `Mode: ${form.mode === "air" ? "Air" : "Sea"}`, `Destination state: ${form.state}`, `Actual weight: ${form.actualWeight || "Not provided"}kg`, `Dimensions: ${form.length || "-"}cm × ${form.width || "-"}cm × ${form.height || "-"}cm`, `Estimated chargeable weight: ${chargeableWeight}kg`].join("\n"))} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white" style={{ backgroundColor: gold }}>
               Request Exact Quote <ArrowRight className="h-4 w-4" />
             </a>
           </div>
