@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bot, MessageCircle, Send, X } from "lucide-react";
+import { ArrowUp, Bot, MessageCircle, Send, X } from "lucide-react";
 import { faqItems, services, volumetricFormula } from "./content";
 import { WhatsAppBrandIcon, createWhatsAppUrl, gold } from "./layout";
 
@@ -156,6 +156,31 @@ export function FloatingWhatsAppButton() {
       <span className="absolute inset-[-8px] animate-pulse rounded-full border border-[#25D366]/35" aria-hidden="true" />
       <WhatsAppBrandIcon className="relative h-16 w-16" />
     </a>
+  );
+}
+
+export function BackToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setVisible(window.scrollY > 400);
+    window.addEventListener("scroll", handler, { passive: true });
+    handler();
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      aria-label="Back to top"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className={`fixed bottom-28 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(201,162,39,0.3)] transition-all duration-300 ${
+        visible ? "scale-100 opacity-100" : "scale-75 opacity-0 pointer-events-none"
+      }`}
+      style={{ backgroundColor: gold }}
+    >
+      <ArrowUp className="h-5 w-5" />
+    </button>
   );
 }
 

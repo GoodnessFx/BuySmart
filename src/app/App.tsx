@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { analyticsConfig, faqItems, galleryItems, SITE_URL, socialLinks } from "./content";
-import { AssistantWidget, FloatingWhatsAppButton } from "./assistant";
+import { AssistantWidget, BackToTopButton, FloatingWhatsAppButton } from "./assistant";
 import { Footer, Header, normalizePath, routeMeta, setMetaTag, upsertLink } from "./layout";
 import {
   BlogPage,
@@ -299,6 +299,7 @@ export default function App() {
       <Footer onNavigate={navigate} />
       <AssistantWidget />
       <FloatingWhatsAppButton />
+      <BackToTopButton />
       <CookieConsent />
     </div>
   );

@@ -1032,20 +1032,22 @@ export function BlogPage({ onNavigate }: { onNavigate?: (path: string) => void }
                   <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{post.category}</div>
                   <div className="mt-3 text-xl font-semibold text-[#111111] line-clamp-2" title={post.title}>{post.title}</div>
                   <p className="mt-3 text-sm leading-7 text-[#4A4A4A] line-clamp-3">{post.excerpt}</p>
-                  <div className="mt-4 text-xs font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
-                  <a 
-                    href={`/blog/${post.slug}`} 
-                    onClick={(e) => {
-                      if (onNavigate) {
-                        e.preventDefault();
-                        onNavigate(`/blog/${post.slug}`);
-                      }
-                    }}
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 mt-auto"
-                    style={{ backgroundColor: gold }}
-                  >
-                    Read article <ArrowRight className="h-4 w-4" />
-                  </a>
+                  <div className="mt-auto pt-4">
+                    <div className="text-xs font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
+                    <a 
+                      href={`/blog/${post.slug}`} 
+                      onClick={(e) => {
+                        if (onNavigate) {
+                          e.preventDefault();
+                          onNavigate(`/blog/${post.slug}`);
+                        }
+                      }}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: gold }}
+                    >
+                      Read article <ArrowRight className="h-4 w-4" />
+                    </a>
+                  </div>
                 </div>
               </div>
             )})}
