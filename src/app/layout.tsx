@@ -263,13 +263,13 @@ export function SectionHeading({
     <div className={classNames("mb-12", center && "text-center")}>
       <SectionTag>{eyebrow}</SectionTag>
       <h2
-        className="max-w-3xl text-[clamp(2rem,4vw,3.5rem)] font-extrabold leading-[1.02] tracking-[-0.03em]"
+        className="max-w-3xl text-[clamp(2rem,4vw,3.5rem)] font-extrabold leading-[1.02] tracking-[-0.04em]"
         style={{ color: dark, fontFamily: "'Sora', sans-serif", marginInline: center ? "auto" : undefined }}
       >
         {title}
       </h2>
       {body ? (
-        <p className="mt-4 max-w-2xl text-base leading-7" style={{ color: bodyText, marginInline: center ? "auto" : undefined }}>
+        <p className="mt-4 max-w-2xl text-[17px] leading-relaxed" style={{ color: bodyText, marginInline: center ? "auto" : undefined }}>
           {body}
         </p>
       ) : null}

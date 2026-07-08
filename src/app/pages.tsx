@@ -667,8 +667,8 @@ export function ShippingPage() {
             {shippingModes.map((mode) => (
               <div key={mode.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white" style={{ color: gold }}>{mode.title.toLowerCase().includes("air") ? <Plane className="h-5 w-5" /> : <Ship className="h-5 w-5" />}</div>
-                <h3 className="mt-5 text-2xl font-bold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>{mode.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{mode.description}</p>
+                <h2 className="mt-4 text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>{mode.title}</h2>
+                <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">{mode.description}</p>
                 <div className="mt-4 rounded-2xl border border-[#E5E2DA] bg-white p-4">
                   <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Estimated delivery timeline</div>
                   <div className="mt-2 text-sm font-semibold text-[#111111]">{mode.timeline}</div>
