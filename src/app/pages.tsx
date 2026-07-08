@@ -394,7 +394,7 @@ export function WhyChoosePage() {
 
       <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
         <Container>
-          <SectionHeading eyebrow="Who it's for" title="Built for buyers who mean business." body="From personal shopping to repeat wholesale procurement, the site is designed to be clear, fast, and professional on every device." center />
+          <SectionHeading eyebrow="Who it's for" title="Built for buyers who mean business." body="Whether you buy once a month or restock inventory weekly, BuySmart works the same on every device — phone, tablet, or laptop." center />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
               const Icon = audienceIcons[index] ?? ShoppingBag;
@@ -525,7 +525,7 @@ export function HowItWorksPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Order process" title="Five clear steps from request to delivery." body="Customers should know exactly what happens after they send a product link or description, so the process is shown clearly on both desktop and mobile." center />
+          <SectionHeading eyebrow="Order process" title="Five clear steps from request to delivery." body="Send a product link or description and within 24 hours you will receive a quotation. Here is exactly what happens next." center />
           <div className="hidden lg:block">
             <div className="relative grid grid-cols-5 gap-6">
               <div className="absolute left-[10%] right-[10%] top-7 h-px" style={{ backgroundColor: "rgba(201,162,39,0.45)" }} />
@@ -590,7 +590,7 @@ export function ServicesPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Services" title="A complete procurement and shipping stack, presented clearly." body="Every core service is explained in plain language so customers can understand exactly what BuySmart covers before they request a quote." />
+          <SectionHeading eyebrow="Services" title="A complete procurement and shipping stack, presented clearly." body="Every service below — from supplier verification to last-mile delivery — is available whether you are a first-time buyer or a returning wholesaler." />
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {services.map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
@@ -630,7 +630,7 @@ export function InstallmentPage() {
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-start">
           <div>
-            <SectionHeading eyebrow="Installment purchase page" title="Clear installment terms for hair products and approved general goods." body="The installment page is written to reduce ambiguity before payment: eligibility, deposit level, timeline, default policy, refund policy, and FAQs are all stated plainly." />
+            <SectionHeading eyebrow="Installment purchase page" title="Clear installment terms for hair products and approved general goods." body="Eligibility, minimum deposit (50%), payment schedule, late payment policy, and refund terms are all spelled out below." />
             <div className="grid gap-5 md:grid-cols-2">
               {installmentPlans.map((plan) => (
                 <div key={plan.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
@@ -698,7 +698,7 @@ export function InstallmentPage() {
       </section>
       <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
         <Container>
-          <SectionHeading eyebrow="FAQs" title="Installment-specific questions" body="These answers are pulled from the broader FAQ set so terms stay consistent across the site." />
+          <SectionHeading eyebrow="FAQs" title="Installment-specific questions" body="Qualified buyers can pay in installments for selected products. Below are the most common questions about how it works." />
           <FaqList items={installmentFaqs} />
         </Container>
       </section>
@@ -712,7 +712,7 @@ export function ShippingPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Shipping information" title="Published freight guidance that answers the questions customers ask most." body="The shipping page explains timing, item suitability, chargeable weight, customs, and restricted goods before a customer reaches the quote form." />
+          <SectionHeading eyebrow="Shipping information" title="Published freight guidance that answers the questions customers ask most." body="Delivery timelines, item suitability, chargeable weight, customs duties, and restricted items — all explained here before you request a quote." />
           <div className="grid gap-5 lg:grid-cols-2">
             {shippingModes.map((mode) => (
               <div key={mode.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
@@ -809,7 +809,7 @@ export function EstimatorPage() {
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr]">
           <div>
-            <SectionHeading eyebrow="Shipment cost estimator" title="A simple calculator customers can use before they ask for an exact quote." body="Rates are stored as code variables, so the client can update the estimate range later without adding a database." />
+            <SectionHeading eyebrow="Shipment cost estimator" title="A simple calculator customers can use before they ask for an exact quote." body="Enter your shipment details below for an instant estimate. Air and sea rates are updated regularly to reflect current pricing." />
             <div className={`rounded-[30px] border bg-[#FAFAF8] p-6 shadow-[0_18px_48px_rgba(17,17,17,0.04)] ${cardBorder}`}>
               <div className="flex flex-wrap gap-3">
                 {(["air", "sea"] as const).map((mode) => (
@@ -872,7 +872,7 @@ export function ProjectsPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Recent projects" title="See what we’ve actually brought in recently." body="Filter by category, then open any item to see extra context about the goods, shipping route, and what the proof media is showing." />
+          <SectionHeading eyebrow="Recent projects" title="See what we’ve actually brought in recently." body="Select a category or browse all. Open any project to see shipping route, delivery timeline, and proof media from the actual shipment." />
           <div className="mb-8 flex flex-wrap gap-3">
             <button type="button" onClick={() => setCategory("All")} className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: category === "All" ? gold : dark }}>All</button>
             {galleryCategories.map((item) => <button key={item} type="button" onClick={() => setCategory(item)} className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: category === item ? gold : dark }}>{item}</button>)}
@@ -880,7 +880,8 @@ export function ProjectsPage() {
           {filteredItems.length === 0 ? (
             <div className={`rounded-[28px] border bg-[#FAFAF8] p-8 text-center shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white" style={{ color: gold }}><LayoutGrid className="h-5 w-5" /></div>
-              <p className="mt-4 text-sm leading-7 text-[#4A4A4A]">More verified projects can be added to this category as new client-approved media becomes available.</p>
+              <p className="mt-4 text-sm leading-7 text-[#4A4A4A]">No projects in this category yet. Send us a message on WhatsApp and we can share examples relevant to what you are looking for.</p>
+              <a href={createWhatsAppUrl("Hello BuySmart, I would like to see examples of recent projects.")} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white" style={{ backgroundColor: gold }}>Ask on WhatsApp <ArrowRight className="h-4 w-4" /></a>
             </div>
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -940,7 +941,7 @@ export function TestimonialsPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Testimonials" title="Written reviews, proof media, customer visuals, and success stories in one trust section." body="The Google 5.0 rating is pulled directly into this area so the strongest proof signals reinforce each other." />
+          <SectionHeading eyebrow="Testimonials" title="Written reviews, proof media, customer visuals, and success stories in one trust section." body="BuySmart has a 5.0 rating on Google from verified customers. Read what buyers are saying about their experience." />
           <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
             <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_18px_48px_rgba(17,17,17,0.08)] ${cardBorder}`}>
               <div className="text-xs uppercase tracking-[0.18em]" style={{ color: gold }}>Google rating</div>
@@ -1003,7 +1004,7 @@ export function FaqPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="FAQ page" title="Answers to the most common customer questions, marked up for search." body="The FAQ page is designed for readability, structured data, and quick answers before the user reaches WhatsApp." />
+          <SectionHeading eyebrow="FAQ page" title="Answers to the most common customer questions, marked up for search." body="Get answers to the most common questions about shipping, payments, customs, and ordering directly. No need to wait for a reply." />
           <FaqList items={faqItems} />
         </Container>
       </section>
@@ -1063,7 +1064,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
       <main className="bg-[#FAFAF8]">
         <section className="py-24">
           <Container>
-            <SectionHeading eyebrow="Blog" title="Post not found." body="The requested article does not exist in the current content library." />
+            <SectionHeading eyebrow="Blog" title="Post not found." body="This article could not be found. It may have been removed or the link may be incorrect." />
           </Container>
         </section>
       </main>
@@ -1133,7 +1134,7 @@ export function PrivacyPage() {
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container className="max-w-4xl">
-          <SectionHeading eyebrow="Privacy policy" title="A clear privacy page for quote forms, newsletter collection, and ad pixels." body="This page is written to support NDPR-aligned transparency around the customer data collected on the site." />
+          <SectionHeading eyebrow="Privacy policy" title="A clear privacy page for quote forms, newsletter collection, and ad pixels." body="BuySmart collects only the information you choose to share through quote requests or newsletter signup. Here is how it is used and protected." />
           <div className="grid gap-5">
             {[
               ["What we collect", "BuySmart may collect your name, phone number, WhatsApp number, email address, product links, uploaded reference images, and any other details you choose to share through the quote form or newsletter signup."],

@@ -1150,7 +1150,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
             </div>
           </div>
           <p className="mt-4 max-w-md text-sm leading-7 text-[#4A4A4A]">
-            Built as a premium, responsive procurement site with published service detail, clear FAQs, proof-backed projects, and direct lead capture.
+            BuySmart handles sourcing, inspection, and shipping from China and Vietnam into Nigeria — with transparent pricing, clear FAQs, and real proof from past projects.
           </p>
           <div className="mt-6">
             <SocialLinks />
