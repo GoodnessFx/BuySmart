@@ -143,6 +143,15 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
 
       <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
+          <div className="mb-14 text-center">
+            <div className="mb-3 inline-flex items-center rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#7C746C]">What we do</div>
+            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Direct from factory.<br />Straight to your <span style={{ color: gold }}>door.</span>
+            </h2>
+            <p className="mt-5 mx-auto max-w-2xl text-base leading-8 text-[#4A4A4A]">
+              We handle the entire procurement lifecycle—from verified supplier sourcing in China and Vietnam to final delivery in Nigeria. No hidden fees, no middleman markups.
+            </p>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {services.slice(0, 6).map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
@@ -989,9 +998,10 @@ export function BlogPage({ onNavigate }: { onNavigate?: (path: string) => void }
                             onNavigate(`/blog/${post.slug}`);
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: gold }}
                       >
-                        Continue reading <ArrowRight className="h-4 w-4" style={{ color: gold }} />
+                        Continue reading <ArrowRight className="h-4 w-4" />
                       </a>
                     </div>
                   ) : null}
