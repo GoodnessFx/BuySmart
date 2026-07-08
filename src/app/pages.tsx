@@ -144,13 +144,9 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
       <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
           <div className="mb-14 text-center">
-            <div className="mb-3 inline-flex items-center rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#7C746C]">What we do</div>
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Direct from factory.<br />Straight to your <span style={{ color: gold }}>door.</span>
+              What we <span style={{ color: gold }}>do.</span>
             </h2>
-            <p className="mt-5 mx-auto max-w-2xl text-base leading-8 text-[#4A4A4A]">
-              We handle the entire procurement lifecycle—from verified supplier sourcing in China and Vietnam to final delivery in Nigeria. No hidden fees, no middleman markups.
-            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {services.slice(0, 6).map((service) => {
@@ -956,55 +952,38 @@ export function FaqPage() {
 }
 
 export function BlogPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
-  const [expandedPost, setExpandedPost] = useState<string | null>(blogPosts[0]?.slug ?? null);
-
   return (
     <main className="bg-[#FAFAF8]">
       <section className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <SectionHeading eyebrow="Blog / updates" title="Tips, updates, and honest buying guides from people who actually do this." body="Open any post for a longer preview here, then continue to the full article if you want the complete read." />
+          <SectionHeading eyebrow="Blog / updates" title="Tips, updates, and honest buying guides from people who actually do this." body="Explore our latest thoughts on shipping, sourcing, and buying safely." />
           <div className="grid gap-5 lg:grid-cols-3">
             {blogPosts.map((post) => {
-              const isExpanded = expandedPost === post.slug;
               return (
-              <div key={post.slug} className={`group rounded-[28px] border bg-[#FAFAF8] shadow-[0_10px_24px_rgba(17,17,17,0.03)] overflow-hidden flex flex-col ${cardBorder}`}>
+              <div key={post.slug} className={`group rounded-[28px] border bg-[#FAFAF8] shadow-[0_10px_24px_rgba(17,17,17,0.03)] overflow-hidden flex flex-col transition-shadow hover:shadow-[0_14px_34px_rgba(17,17,17,0.06)] ${cardBorder}`}>
                 <div className="relative overflow-hidden bg-[#111111]">
                   <div className="aspect-[16/10] w-full">
-                    <img src={post.image} alt={post.title} className="h-full w-full object-cover opacity-80 transition-transform duration-[800ms] ease-out group-hover:scale-110" loading="lazy" />
+                    <img src={post.image} alt={post.title} className="h-full w-full object-cover opacity-80 transition-transform duration-[800ms] ease-out group-hover:scale-105" loading="lazy" />
                   </div>
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{post.category}</div>
-                  <div className="mt-3 text-xl font-semibold text-[#111111]">{post.title}</div>
-                  <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{post.excerpt}</p>
+                  <div className="mt-3 text-xl font-semibold text-[#111111] line-clamp-2" title={post.title}>{post.title}</div>
+                  <p className="mt-3 text-sm leading-7 text-[#4A4A4A] line-clamp-3">{post.excerpt}</p>
                   <div className="mt-4 text-xs font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedPost((current) => (current === post.slug ? null : post.slug))}
-                    className="mt-auto pt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
+                  <a 
+                    href={`/blog/${post.slug}`} 
+                    onClick={(e) => {
+                      if (onNavigate) {
+                        e.preventDefault();
+                        onNavigate(`/blog/${post.slug}`);
+                      }
+                    }}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 mt-auto"
+                    style={{ backgroundColor: gold }}
                   >
-                    {isExpanded ? "Hide preview" : "Open preview"} <ArrowRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} style={{ color: gold }} />
-                  </button>
-                  {isExpanded ? (
-                    <div className="mt-5 grid gap-4 rounded-[22px] border border-[#E5E2DA] bg-white p-4">
-                      {post.body.slice(0, 5).map((paragraph) => (
-                        <p key={paragraph} className="text-sm leading-7 text-[#4A4A4A]">{paragraph}</p>
-                      ))}
-                      <a 
-                        href={`/blog/${post.slug}`} 
-                        onClick={(e) => {
-                          if (onNavigate) {
-                            e.preventDefault();
-                            onNavigate(`/blog/${post.slug}`);
-                          }
-                        }}
-                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                        style={{ backgroundColor: gold }}
-                      >
-                        Continue reading <ArrowRight className="h-4 w-4" />
-                      </a>
-                    </div>
-                  ) : null}
+                    Read article <ArrowRight className="h-4 w-4" />
+                  </a>
                 </div>
               </div>
             )})}
