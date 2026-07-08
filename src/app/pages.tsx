@@ -152,12 +152,14 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
             {services.slice(0, 6).map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
               return (
-                <div key={service.title} className={`rounded-xl border bg-[#FAFAF8] p-4.5 shadow-[0_8px_20px_rgba(17,17,17,0.02)] transition hover:shadow-[0_12px_28px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm" style={{ color: gold }}>
-                    <Icon className="h-4.5 w-4.5" />
+                <div key={service.title} className={`rounded-xl border bg-[#FAFAF8] p-5 shadow-[0_8px_20px_rgba(17,17,17,0.02)] transition hover:shadow-[0_12px_28px_rgba(17,17,17,0.04)] ${cardBorder}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm" style={{ color: gold }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="text-base font-bold text-[#111111] leading-tight">{service.title}</div>
                   </div>
-                  <div className="mt-3 text-base font-bold text-[#111111]">{service.title}</div>
-                  <p className="mt-1.5 text-xs leading-relaxed text-[#4A4A4A]">{service.description}</p>
+                  <p className="mt-3 text-[13px] leading-relaxed text-[#4A4A4A]">{service.description}</p>
                 </div>
               );
             })}
