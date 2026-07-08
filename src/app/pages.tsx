@@ -547,13 +547,15 @@ export function ServicesPage() {
             {services.map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
               return (
-                <div key={service.title} className={`rounded-[28px] border bg-white p-6 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
-                    <Icon className="h-5 w-5" />
+                <div key={service.title} className={`rounded-[28px] border bg-white p-5 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="text-lg font-bold leading-tight tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                      <span style={{ color: gold }}>{service.title}</span>
+                    </h3>
                   </div>
-                  <h3 className="mt-5 text-xl font-bold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-                    <span style={{ color: gold }}>{service.title}</span>
-                  </h3>
                   <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{service.description}</p>
                   {service.note ? <p className="mt-4 text-xs font-medium leading-6 text-[#7C746C]">{service.note}</p> : null}
                 </div>
