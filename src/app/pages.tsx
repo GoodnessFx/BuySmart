@@ -164,7 +164,6 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
 
         <Container className="relative z-10 py-14 lg:py-20">
           <div className="max-w-2xl text-white">
-            <SectionTag>BuySmart Procurement Limited</SectionTag>
             <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
               Source with <span style={{ color: gold }}>clarity</span>. Ship with <span style={{ color: gold }}>confidence</span>.
             </h1>
