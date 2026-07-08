@@ -114,7 +114,7 @@ function buildProjectInsight(item: (typeof galleryItems)[number]) {
   return `${proofLabel} from a real ${item.category.toLowerCase()} order handled by BuySmart. It helps a new customer understand what was sourced, the shipping route used, and the kind of update they can expect before goods arrive in Nigeria.`;
 }
 
-export function HomePage() {
+export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   return (
     <>
       <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
@@ -141,11 +141,8 @@ export function HomePage() {
         </Container>
       </section>
 
-      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-16">
+      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-20">
         <Container>
-          <div className="mb-10">
-            <SectionHeading eyebrow="What we do" title="Direct from factory. Straight to your door." body="BuySmart sources genuine products from verified manufacturers and trusted suppliers in China and Vietnam, then handles procurement, inspection, shipping, customs support, and final delivery." />
-          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {services.slice(0, 6).map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
@@ -211,7 +208,17 @@ export function HomePage() {
              ))}
           </div>
           <div className="mt-10 text-center">
-            <a href="/recent-projects" className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: gold }}>
+            <a 
+              href="/recent-projects" 
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate("/recent-projects");
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" 
+              style={{ backgroundColor: gold }}
+            >
               View all projects <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -939,7 +946,7 @@ export function FaqPage() {
   );
 }
 
-export function BlogPage() {
+export function BlogPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   const [expandedPost, setExpandedPost] = useState<string | null>(blogPosts[0]?.slug ?? null);
 
   return (
@@ -974,7 +981,16 @@ export function BlogPage() {
                       {post.body.slice(0, 5).map((paragraph) => (
                         <p key={paragraph} className="text-sm leading-7 text-[#4A4A4A]">{paragraph}</p>
                       ))}
-                      <a href={`/blog/${post.slug}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#111111]">
+                      <a 
+                        href={`/blog/${post.slug}`} 
+                        onClick={(e) => {
+                          if (onNavigate) {
+                            e.preventDefault();
+                            onNavigate(`/blog/${post.slug}`);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
+                      >
                         Continue reading <ArrowRight className="h-4 w-4" style={{ color: gold }} />
                       </a>
                     </div>
@@ -1016,7 +1032,41 @@ export function BlogPostPage({ slug }: { slug: string }) {
           <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="mt-4 text-[clamp(2.3rem,5vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#111111]">{post.title}</h1>
           <div className="mt-4 text-sm font-medium text-[#7C746C]">{post.date} · {post.readTime}</div>
           <div className="mt-8 grid gap-6">
-            {post.body.map((paragraph) => <p key={paragraph} className="text-base leading-8 text-[#4A4A4A]">{paragraph}</p>)}
+            {post.body.map((paragraph, idx) => {
+              // Parse simple markdown
+              if (paragraph.startsWith("## ")) {
+                return <h2 key={idx} style={{ fontFamily: "'Sora', sans-serif" }} className="mt-6 text-2xl font-bold text-[#111111]">{paragraph.replace("## ", "")}</h2>;
+              }
+              if (paragraph.startsWith("### ")) {
+                return <h3 key={idx} style={{ fontFamily: "'Sora', sans-serif" }} className="mt-4 text-xl font-bold text-[#111111]">{paragraph.replace("### ", "")}</h3>;
+              }
+              if (paragraph.startsWith("- ")) {
+                return (
+                  <div key={idx} className="flex gap-3 text-base leading-8 text-[#4A4A4A]">
+                    <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#C9A227]" />
+                    <span>
+                      {paragraph.replace("- ", "").split(/(\*\*.*?\*\*)/g).map((part, i) => 
+                        part.startsWith("**") && part.endsWith("**") ? <strong key={i} className="font-semibold text-[#111111]">{part.slice(2, -2)}</strong> : part
+                      )}
+                    </span>
+                  </div>
+                );
+              }
+              if (paragraph.startsWith("> ")) {
+                return (
+                  <blockquote key={idx} className="border-l-4 border-[#C9A227] bg-[#FAFAF8] p-5 italic text-lg text-[#111111]">
+                    {paragraph.replace("> ", "")}
+                  </blockquote>
+                );
+              }
+              return (
+                <p key={idx} className="text-base leading-8 text-[#4A4A4A]">
+                  {paragraph.split(/(\*\*.*?\*\*)/g).map((part, i) => 
+                    part.startsWith("**") && part.endsWith("**") ? <strong key={i} className="font-semibold text-[#111111]">{part.slice(2, -2)}</strong> : part
+                  )}
+                </p>
+              );
+            })}
           </div>
           <div className="mt-16">
             <NewsletterSignup inline title="Stay updated" body="Get new buying guides, importation tips, shipping updates, and market trends in your inbox." />

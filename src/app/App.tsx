@@ -258,7 +258,7 @@ export default function App() {
       case "/faq":
         return <FaqPage />;
       case "/blog":
-        return <BlogPage />;
+        return <BlogPage onNavigate={navigate} />;
       case "/privacy-policy":
         return <PrivacyPage />;
       case "/why-choose-us":
@@ -270,7 +270,7 @@ export default function App() {
       case "/contact":
         return <ContactPage />;
       default:
-        return <HomePage />;
+        return <HomePage onNavigate={navigate} />;
     }
   };
 
