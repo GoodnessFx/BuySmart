@@ -1198,7 +1198,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
                   event.preventDefault();
                   onNavigate(item.href);
                 }}
-                className="text-sm font-medium text-white transition hover:text-[#C9A227]"
+                className="text-sm font-medium !text-white transition hover:text-[#C9A227]"
               >
                 {item.label}
               </a>
@@ -1242,6 +1242,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
 
 export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => void }) {
   const message = "Please read and go through the company policy";
+  const duplicatedMessage = `${message}  \u2022  ${message}  \u2022  ${message}  \u2022  ${message}  \u2022  ${message}  \u2022  `;
 
   return (
     <a
@@ -1250,20 +1251,27 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
         event.preventDefault();
         onNavigate("/company-policy");
       }}
-      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-3 transition-opacity duration-700 cursor-pointer hover:bg-gradient-to-r hover:from-transparent hover:via-white/10 hover:to-transparent"
-      style={{ animation: "marquee-once 20s ease-in-out forwards" }}
+      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-3"
       role="region"
       aria-label="Announcement"
     >
-      <span className="whitespace-nowrap text-sm font-extrabold tracking-wide" style={{ fontFamily: "'Sora', sans-serif", color: "#C9A227", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-        {message}
+      <span
+        className="whitespace-nowrap"
+        style={{
+          fontFamily: "'Sora', sans-serif",
+          color: "#C9A227",
+          fontWeight: "800",
+          fontSize: "0.875rem",
+          letterSpacing: "0.05em",
+          animation: "marquee 30s linear infinite",
+        }}
+      >
+        {duplicatedMessage}
       </span>
       <style jsx>{`
-        @keyframes marquee-once {
-          0% { transform: translateX(-100%); opacity: 0; }
-          3% { opacity: 1; }
-          97% { opacity: 1; }
-          100% { transform: translateX(100%); opacity: 0; }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
       `}</style>
     </a>
