@@ -257,7 +257,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-16">
+      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -282,7 +282,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -296,7 +296,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -306,15 +306,35 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
               Built for buyers who mean business.
             </p>
           </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
+           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+             {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
               const Icon = audienceIcons[index] ?? ShoppingBag;
+              const imgMap: Record<string, string> = {
+                "Small Business Owners": "/images/who-its-for/small-business-owner.webp",
+                "Bulk Buyers": "/images/who-its-for/bulk-buyers.webp",
+                "Personal Shoppers": "/images/who-its-for/personal-shoppers.webp",
+                "Personal Use": "/images/who-its-for/personal-use.webp",
+                "Companies, Schools & Offices": "/images/who-its-for/companies-offices.webp",
+              };
+              const altMap: Record<string, string> = {
+                "Small Business Owners": "Small local shop with products on display, representing small business owners",
+                "Bulk Buyers": "Warehouse with stacked pallets and bulk goods for wholesale buyers",
+                "Personal Shoppers": "Person browsing products on a smartphone while shopping",
+                "Personal Use": "Person shopping online from home in a comfortable living room setting",
+                "Companies, Schools & Offices": "Professionals in a conference room meeting, representing companies and offices",
+              };
               return (
-                <div key={audience} className={`rounded-2xl border bg-[#FBF6E8] p-5 text-center shadow-[0_8px_20px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white" style={{ color: gold }}>
-                    <Icon className="h-4 w-4" />
+                <div key={audience} className={`rounded-2xl border relative overflow-hidden p-5 text-center shadow-[0_8px_20px_rgba(17,17,17,0.03)] min-h-[280px] flex flex-col items-center justify-center ${cardBorder}`}>
+                  <div className="absolute inset-0 z-0">
+                    <img src={imgMap[audience]} alt={altMap[audience]} className="h-full w-full object-cover" loading="lazy" />
                   </div>
-                  <div className="mt-3 text-sm font-semibold leading-5 text-[#111111]">{audience}</div>
+                  <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/30 to-black/10" />
+                  <div className="relative z-10">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm" style={{ color: gold }}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="mt-3 text-sm font-semibold leading-5 text-white">{audience}</div>
+                  </div>
                 </div>
               );
             })}
@@ -322,7 +342,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -366,7 +386,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section className="bg-[#FBF6E8] py-16">
+      <section className="bg-[#FBF6E8] py-12 lg:py-16">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
             <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
@@ -477,7 +497,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
 export function WhyChoosePage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -494,7 +514,7 @@ export function WhyChoosePage() {
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -510,12 +530,32 @@ export function WhyChoosePage() {
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
               const Icon = audienceIcons[index] ?? ShoppingBag;
+              const imgMap: Record<string, string> = {
+                "Small Business Owners": "/images/who-its-for/small-business-owner.webp",
+                "Bulk Buyers": "/images/who-its-for/bulk-buyers.webp",
+                "Personal Shoppers": "/images/who-its-for/personal-shoppers.webp",
+                "Personal Use": "/images/who-its-for/personal-use.webp",
+                "Companies, Schools & Offices": "/images/who-its-for/companies-offices.webp",
+              };
+              const altMap: Record<string, string> = {
+                "Small Business Owners": "Small local shop with products on display, representing small business owners",
+                "Bulk Buyers": "Warehouse with stacked pallets and bulk goods for wholesale buyers",
+                "Personal Shoppers": "Person browsing products on a smartphone while shopping",
+                "Personal Use": "Person shopping online from home in a comfortable living room setting",
+                "Companies, Schools & Offices": "Professionals in a conference room meeting, representing companies and offices",
+              };
               return (
-                <div key={audience} className={`rounded-2xl border bg-[#FBF6E8] p-5 text-center shadow-[0_8px_20px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white" style={{ color: gold }}>
-                    <Icon className="h-4 w-4" />
+                <div key={audience} className={`rounded-2xl border relative overflow-hidden p-5 text-center shadow-[0_8px_20px_rgba(17,17,17,0.03)] min-h-[280px] flex flex-col items-center justify-center ${cardBorder}`}>
+                  <div className="absolute inset-0 z-0">
+                    <img src={imgMap[audience]} alt={altMap[audience]} className="h-full w-full object-cover" loading="lazy" />
                   </div>
-                  <div className="mt-3 text-sm font-semibold leading-5 text-[#111111]">{audience}</div>
+                  <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/30 to-black/10" />
+                  <div className="relative z-10">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm" style={{ color: gold }}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="mt-3 text-sm font-semibold leading-5 text-white">{audience}</div>
+                  </div>
                 </div>
               );
             })}
@@ -530,7 +570,7 @@ export function WhyChoosePage() {
 export function VerifiedLagosPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="py-16">
+      <section className="py-12 lg:py-16">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
             <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
@@ -641,7 +681,7 @@ export function VerifiedLagosPage() {
 export function HowItWorksPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -691,7 +731,7 @@ export function ContactPage() {
   return (
     <main className="bg-[#FAFAF8]">
       <ContactSection />
-      <section className="border-b border-[#EFEAE1] bg-white py-14">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="max-w-4xl">
           <SectionHeading eyebrow="Location map" title="Visit our office in Lagos" center />
           <div className="overflow-hidden rounded-[24px] border border-[#E5E2DA] shadow-sm">
@@ -712,7 +752,7 @@ export function ContactPage() {
 export function ServicesPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -743,7 +783,7 @@ export function ServicesPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -762,7 +802,7 @@ export function InstallmentPage() {
   const installmentFaqs = faqItems.filter((item) => item.category === "installment");
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-start">
           <div>
             <div className="mb-10">
@@ -801,7 +841,7 @@ export function InstallmentPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -832,7 +872,7 @@ export function InstallmentPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="grid gap-5 lg:grid-cols-2">
           {installmentPolicies.map((policy) => (
             <div key={policy.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
@@ -842,7 +882,7 @@ export function InstallmentPage() {
           ))}
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -863,7 +903,7 @@ export function InstallmentPage() {
 export function ShippingPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -899,7 +939,7 @@ export function ShippingPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -919,7 +959,7 @@ export function ShippingPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="grid gap-8 lg:grid-cols-3">
           {[shippingNotes, customsGuide, shippingPreparation].map((group, groupIndex) => (
             <div key={groupIndex} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
@@ -935,7 +975,7 @@ export function ShippingPage() {
           ))}
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -974,7 +1014,7 @@ export function EstimatorPage() {
 
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr]">
           <div>
             <div className="mb-10">
@@ -1045,7 +1085,7 @@ export function ProjectsPage() {
   const filteredItems = category === "All" ? galleryItems : galleryItems.filter((item) => item.category === category);
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1121,7 +1161,7 @@ export function ProjectsPage() {
 export function TestimonialsPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1151,7 +1191,7 @@ export function TestimonialsPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1173,7 +1213,7 @@ export function TestimonialsPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1199,7 +1239,7 @@ export function TestimonialsPage() {
 export function FaqPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1220,7 +1260,7 @@ export function FaqPage() {
 export function BlogPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1285,7 +1325,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
   }
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="max-w-4xl">
           <div className="group relative mb-10 overflow-hidden rounded-[28px] bg-[#111111] shadow-[0_18px_48px_rgba(17,17,17,0.08)]">
             <div className="aspect-[16/9] w-full">
@@ -1345,7 +1385,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
 export function CookiePolicyPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="max-w-4xl">
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1420,7 +1460,7 @@ export function CookiePolicyPage() {
 export function PrivacyPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
         <Container className="max-w-4xl">
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>

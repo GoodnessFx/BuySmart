@@ -1005,7 +1005,7 @@ export function FaqList({
 
 export function TestimonialsPreview() {
   return (
-    <section className="border-b border-[#EFEAE1] bg-white py-16">
+    <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
       <Container>
         <div className="mb-10">
           <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1058,7 +1058,7 @@ export function TestimonialsPreview() {
 
 export function ContactSection({ compact = false }: { compact?: boolean }) {
   return (
-    <section id="contact" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
+    <section id="contact" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
       <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
         <div>
           <div className="mb-6">
@@ -1115,7 +1115,7 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
 
 export function CtaBanner() {
   return (
-    <section className="py-16" style={{ backgroundColor: "rgba(201,162,39,0.12)" }}>
+    <section className="py-12 lg:py-16" style={{ backgroundColor: "rgba(201,162,39,0.12)" }}>
       <Container>
         <div className={`flex flex-col gap-6 rounded-[32px] border bg-white p-8 shadow-[0_18px_48px_rgba(17,17,17,0.05)] lg:flex-row lg:items-center lg:justify-between ${cardBorder}`}>
           <div>
@@ -1145,7 +1145,7 @@ export function CtaBanner() {
 
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
-    <footer className="border-t border-white/10 bg-[#111111] py-14">
+    <footer className="border-t border-white/10 bg-[#111111] py-12 lg:py-16">
       <Container className="grid gap-10 lg:grid-cols-[1fr_0.8fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
