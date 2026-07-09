@@ -1005,13 +1005,16 @@ export function FaqList({
 
 export function TestimonialsPreview() {
   return (
-    <section className="border-b border-[#EFEAE1] bg-white py-20">
+    <section className="border-b border-[#EFEAE1] bg-white py-16">
       <Container>
-        <SectionHeading
-          eyebrow="Testimonials"
-          title="Proof, reviews, and trust signals sit together instead of living in separate corners."
-          body="The Google rating is integrated into the testimonial area so every review reinforces the rest of the social proof."
-        />
+        <div className="mb-10">
+          <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+            Proof, reviews, and trust signals sit together instead of living in separate <span style={{ color: gold }}>corners.</span>
+          </h2>
+          <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">
+            The Google rating is integrated into the testimonial area so every review reinforces the rest of the social proof.
+          </p>
+        </div>
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <div className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
             <div className="text-xs uppercase tracking-[0.18em]" style={{ color: gold }}>
@@ -1055,14 +1058,17 @@ export function TestimonialsPreview() {
 
 export function ContactSection({ compact = false }: { compact?: boolean }) {
   return (
-    <section id="contact" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-20">
+    <section id="contact" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-16">
       <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
         <div>
-          <SectionHeading
-            eyebrow="Request a quote"
-            title="Ready to order? Let BuySmart handle the sourcing, inspection, and shipping."
-            body="Share your product link or description and BuySmart will review it, verify the sourcing path, and respond through your preferred contact channel."
-          />
+          <div className="mb-6">
+            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Ready to order? Let BuySmart handle the sourcing, inspection, and <span style={{ color: gold }}>shipping.</span>
+            </h2>
+            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">
+              Share your product link or description and BuySmart will review it, verify the sourcing path, and respond through your preferred contact channel.
+            </p>
+          </div>
           <div className="grid gap-4">
             <div className={`rounded-2xl border bg-white p-5 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
               <div className="flex items-start gap-3">
@@ -1139,7 +1145,7 @@ export function CtaBanner() {
 
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
-    <footer className="border-t border-[#ECE8DF] bg-white py-14">
+    <footer className="border-t border-[#ECE8DF] bg-[#FAFAF8] py-14">
       <Container className="grid gap-10 lg:grid-cols-[1fr_0.8fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
