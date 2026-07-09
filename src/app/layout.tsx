@@ -1242,7 +1242,6 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
 
 export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => void }) {
   const message = "Please read and go through the company policy";
-  const duplicatedMessage = `${message}  \u2022  ${message}  \u2022  ${message}  \u2022  ${message}  \u2022  ${message}  \u2022  `;
 
   return (
     <a
@@ -1251,27 +1250,27 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
         event.preventDefault();
         onNavigate("/company-policy");
       }}
-      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-3"
+      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-2"
       role="region"
       aria-label="Announcement"
     >
       <span
-        className="whitespace-nowrap"
+        className="inline-block whitespace-nowrap"
         style={{
           fontFamily: "'Sora', sans-serif",
           color: "#C9A227",
-          fontWeight: "800",
+          fontWeight: "500",
           fontSize: "0.875rem",
-          letterSpacing: "0.05em",
-          animation: "marquee 30s linear infinite",
+          letterSpacing: "0.02em",
+          animation: "marquee 25s linear infinite",
         }}
       >
-        {duplicatedMessage}
+        {message}
       </span>
       <style jsx>{`
         @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
         }
       `}</style>
     </a>
