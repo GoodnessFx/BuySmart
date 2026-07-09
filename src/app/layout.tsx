@@ -1250,19 +1250,19 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
         event.preventDefault();
         onNavigate("/company-policy");
       }}
-      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-2 transition-opacity duration-700 cursor-pointer hover:bg-gradient-to-r hover:from-transparent hover:via-white/10 hover:to-transparent"
-      style={{ animation: "marquee-once 12s ease-out forwards" }}
+      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-3 transition-opacity duration-700 cursor-pointer hover:bg-gradient-to-r hover:from-transparent hover:via-white/10 hover:to-transparent"
+      style={{ animation: "marquee-once 20s ease-in-out forwards" }}
       role="region"
       aria-label="Announcement"
     >
-      <span className="whitespace-nowrap text-xs font-bold" style={{ fontFamily: "'Sora', sans-serif", letterSpacing: "0.02em", color: "#C9A227" }}>
+      <span className="whitespace-nowrap text-sm font-extrabold tracking-wide" style={{ fontFamily: "'Sora', sans-serif", color: "#C9A227", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
         {message}
       </span>
       <style jsx>{`
         @keyframes marquee-once {
           0% { transform: translateX(-100%); opacity: 0; }
-          5% { opacity: 1; }
-          95% { opacity: 1; }
+          3% { opacity: 1; }
+          97% { opacity: 1; }
           100% { transform: translateX(100%); opacity: 0; }
         }
       `}</style>
