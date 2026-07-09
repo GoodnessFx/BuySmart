@@ -238,7 +238,7 @@ export function classNames(...values: Array<string | false | undefined>) {
 }
 
 export function Logo() {
-  return <img src="/brand/logo.png" alt="BuySmart logo" className="h-11 w-11 rounded-2xl object-cover" />;
+  return <img src="/brand/logo.png" alt="BuySmart logo" className="h-11 w-11 object-contain" />;
 }
 
 export function Container({ className, children }: { className?: string; children: ReactNode }) {
@@ -1145,13 +1145,13 @@ export function CtaBanner() {
 
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
-    <footer className="border-t border-[#ECE8DF] bg-[#FAFAF8] py-14">
+    <footer className="border-t border-white/10 bg-[#111111] py-14">
       <Container className="grid gap-10 lg:grid-cols-[1fr_0.8fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
             <Logo />
             <div>
-              <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-lg font-bold tracking-[-0.02em] text-[#111111]">
+              <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-lg font-bold tracking-[-0.02em] text-white">
                 {BUSINESS_NAME}
               </div>
               <div className="text-[10px] uppercase tracking-[0.22em]" style={{ color: gold }}>
@@ -1159,7 +1159,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
               </div>
             </div>
           </div>
-          <p className="mt-4 max-w-md text-sm leading-7 text-[#4A4A4A]">
+          <p className="mt-4 max-w-md text-sm leading-7 text-white/70">
             BuySmart handles sourcing, inspection, and shipping from China and Vietnam into Nigeria — with transparent pricing, clear FAQs, and real proof from past projects.
           </p>
           <div className="mt-6">
@@ -1168,7 +1168,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         </div>
 
         <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Pages</div>
+          <div className="text-xs uppercase tracking-[0.18em] text-white/50">Pages</div>
           <div className="mt-4 grid gap-3">
             {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }].map((item) => (
               <a
@@ -1178,7 +1178,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
                   event.preventDefault();
                   onNavigate(item.href);
                 }}
-                className="text-sm font-medium text-[#4A4A4A] transition hover:text-[#C9A227]"
+                className="text-sm font-medium text-white/70 transition hover:text-[#C9A227]"
               >
                 {item.label}
               </a>
@@ -1188,23 +1188,23 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
 
         <div className="grid gap-8">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Contact</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-white/50">Contact</div>
             <div className="mt-4 grid gap-4">
-              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-[#4A4A4A]">
+              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-white/70">
                 <Phone className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>{PHONE_DISPLAY}</span>
               </a>
-              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-[#4A4A4A]">
+              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-white/70">
                 <Mail className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>{EMAIL}</span>
               </a>
-              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-[#4A4A4A]">
+              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-white/70">
                 <MapPin className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>
                   {ADDRESS_LINE_1}, {ADDRESS_LINE_2}
                 </span>
               </a>
-              <div className="flex items-start gap-3 text-sm text-[#4A4A4A]">
+              <div className="flex items-start gap-3 text-sm text-white/70">
                 <CircleHelp className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>{footerConsent}</span>
               </div>
@@ -1213,7 +1213,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
           <NewsletterSignup title="Newsletter signup" body="Subscribe for importation tips, shipping updates, market trends, and selected product updates." />
         </div>
       </Container>
-      <Container className="mt-10 border-t border-[#ECE8DF] pt-6 text-xs text-[#7C746C]">
+      <Container className="mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
         © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.
       </Container>
     </footer>
