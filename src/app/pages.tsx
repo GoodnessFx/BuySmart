@@ -1513,6 +1513,7 @@ export function CompanyPolicyPage() {
       });
 
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 20;
       const contentWidth = pageWidth - margin * 2;
       let y = margin;
@@ -1543,9 +1544,18 @@ export function CompanyPolicyPage() {
         addText(`• ${text}`, { fontSize: 11, maxWidth: contentWidth - 8 });
       };
 
+      // Logo placeholder - attempt to load the logo image
+      try {
+        // Add logo from public/brand/logo.png
+        doc.addImage("/brand/logo.png", "PNG", margin, y, 30, 30);
+        y += 35;
+      } catch (e) {
+        // If logo fails, add text logo
+        addText("BuySmart Procurement Limited", { fontSize: 22, fontStyle: "bold", color: [201, 162, 39] });
+        y += 4;
+      }
+
       // Title
-      addText("BuySmart Procurement Limited", { fontSize: 22, fontStyle: "bold", color: [201, 162, 39] });
-      y += 4;
       addText("Company Policy", { fontSize: 16, fontStyle: "bold", color: [17, 17, 17] });
       y += 8;
 
@@ -1647,6 +1657,26 @@ export function CompanyPolicyPage() {
       addText("Address: 6 Bassey Street, Egbeda, Lagos 100276, Nigeria");
       addText("We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.");
 
+      // Signed closing
+      y += 10;
+      doc.setDrawColor(201, 162, 39);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 6;
+      addText("Signed,", { fontSize: 11, fontStyle: "italic", color: [74, 74, 74] });
+      y += 6;
+      addText("Management, BuySmart Procurement Limited", { fontSize: 11, fontStyle: "bold", color: [17, 17, 17] });
+
+      // Footer with contact info
+      y += 15;
+      doc.setDrawColor(201, 162, 39);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+      addText("BuySmart Procurement Limited", { fontSize: 9, fontStyle: "bold", color: [74, 74, 74] });
+      addText("6 Bassey Street, Egbeda, Lagos 100276, Nigeria", { fontSize: 8, color: [124, 116, 108] });
+      addText("Phone: 0810 013 0714 (call or WhatsApp) | Email: kingsleyglory272@gmail.com", { fontSize: 8, color: [124, 116, 108] });
+
       doc.save("BuySmart-Company-Policy.pdf");
     } catch (error) {
       console.error("PDF generation failed:", error);
@@ -1686,9 +1716,23 @@ export function CompanyPolicyPage() {
 
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
-        <Container>
-          <div className="mb-10 text-center">
+      {/* Hero Section with Image and Title Overlay */}
+      <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
+        <img
+          src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1920&q=80"
+          alt="Business handshake representing agreement and partnership"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="eager"
+        />
+        <div className="absolute inset-0" style={{
+          background: `
+            linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%),
+            linear-gradient(to right, rgba(0,0,0,0.35) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.35) 100%)
+          `
+        }} />
+        
+        <Container className="relative z-10 py-14 lg:py-20">
+          <div className="max-w-2xl text-white">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
@@ -1696,14 +1740,18 @@ export function CompanyPolicyPage() {
               </span>
               Company Policy
             </div>
-            <h1 className="mt-4 text-[clamp(2.5rem,5vw,4rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+            <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
               Company <span style={{ color: gold }}>Policy</span>
             </h1>
-            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#F0F0F0]">
               Our policies are built on professional sourcing standards. Please read each section carefully before placing an order.
             </p>
           </div>
+        </Container>
+      </section>
 
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+        <Container>
           <div className="mb-10 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={handleDownloadPdf}
@@ -1724,19 +1772,6 @@ export function CompanyPolicyPage() {
             </button>
           </div>
 
-          <div className="relative mb-12">
-            <img
-              src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200&q=80"
-              alt="Business handshake representing agreement and partnership"
-              className="w-full h-auto max-h-[400px] object-cover rounded-[24px]"
-              loading="eager"
-            />
-          </div>
-        </Container>
-      </section>
-
-      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
-        <Container>
           <div className="max-w-4xl mx-auto space-y-12">
             <div>
               <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1854,6 +1889,24 @@ export function CompanyPolicyPage() {
                 <p>Email: kingsleyglory272@gmail.com</p>
                 <p>Address: 6 Bassey Street, Egbeda, Lagos 100276, Nigeria</p>
                 <p>We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.</p>
+              </div>
+            </div>
+
+            {/* Signed closing line */}
+            <div className="pt-12 border-t border-[#ECE8DF]">
+              <div className="max-w-xl mx-auto text-center">
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#ECE8DF]" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-white px-4" style={{ color: "#7C746C" }}>SIGNED</span>
+                  </div>
+                </div>
+                <p className="text-base italic text-[#111111]" style={{ fontFamily: "'Sora', sans-serif", letterSpacing: "0.02em" }}>
+                  Management,<br />
+                  <span className="font-medium">BuySmart Procurement Limited</span>
+                </p>
               </div>
             </div>
           </div>

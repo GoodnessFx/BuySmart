@@ -1188,7 +1188,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         </div>
 
         <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-white/70">Pages</div>
+          <div className="text-xs uppercase tracking-[0.18em] text-white">Pages</div>
           <div className="mt-4 grid gap-3">
             {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }, { label: "Company Policy", href: "/company-policy" }].map((item) => (
               <a
@@ -1198,7 +1198,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
                   event.preventDefault();
                   onNavigate(item.href);
                 }}
-                className="text-sm font-medium text-white/90 transition hover:text-[#C9A227]"
+                className="text-sm font-medium text-white transition hover:text-[#C9A227]"
               >
                 {item.label}
               </a>
@@ -1242,25 +1242,30 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
 
 export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => void }) {
   const message = "Please read and go through the company policy";
-  const duplicatedMessage = `${message}  •  ${message}  •  ${message}  •  ${message}  •  ${message}  •  `;
 
   return (
-    <div
-      className="overflow-hidden bg-[#111111] border-b border-white/10 py-2"
+    <a
+      href="/company-policy"
+      onClick={(event) => {
+        event.preventDefault();
+        onNavigate("/company-policy");
+      }}
+      className="relative w-full overflow-hidden bg-gradient-to-r from-transparent via-white/5 to-transparent border-b border-white/5 py-2 transition-opacity duration-700 cursor-pointer hover:bg-gradient-to-r hover:from-transparent hover:via-white/10 hover:to-transparent"
+      style={{ animation: "marquee-once 12s ease-out forwards" }}
       role="region"
       aria-label="Announcement"
     >
-      <div className="flex items-center gap-4" style={{ animation: "marquee 30s linear infinite" }}>
-        <span className="whitespace-nowrap text-xs font-medium" style={{ color: gold }}>
-          {duplicatedMessage}
-        </span>
-      </div>
+      <span className="whitespace-nowrap text-xs font-bold text-white/90" style={{ fontFamily: "'Sora', sans-serif", letterSpacing: "0.02em" }}>
+        {message}
+      </span>
       <style jsx>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+        @keyframes marquee-once {
+          0% { transform: translateX(-100%); opacity: 0; }
+          5% { opacity: 1; }
+          95% { opacity: 1; }
+          100% { transform: translateX(100%); opacity: 0; }
         }
       `}</style>
-    </div>
+    </a>
   );
 }
