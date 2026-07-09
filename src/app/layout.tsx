@@ -109,6 +109,7 @@ export const menuGroups: MenuGroup[] = [
       { label: "FAQs", href: "/faq" },
       { label: "Blog & Updates", href: "/blog" },
       { label: "Contact Us", href: "/contact" },
+      { label: "Company Policy", href: "/company-policy" },
     ],
   },
 ];
@@ -192,6 +193,10 @@ export const routeMeta: Record<string, RouteMeta> = {
   "/cookie-policy": {
     title: "Cookie Policy | BuySmart Procurement Limited",
     description: "Learn how BuySmart uses cookies, pixels, and similar technologies — including GA4, Meta Pixel, and TikTok Pixel.",
+  },
+  "/company-policy": {
+    title: "Company Policy | BuySmart Procurement Limited",
+    description: "Read BuySmart's company policy covering procurement process, order specifications, shipping charges, payment terms, cancellations, and dispute resolution.",
   },
 };
 
@@ -1185,7 +1190,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-white/70">Pages</div>
           <div className="mt-4 grid gap-3">
-            {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }].map((item) => (
+            {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }, { label: "Company Policy", href: "/company-policy" }].map((item) => (
               <a
                 key={item.href}
                 href={item.href}
@@ -1205,23 +1210,23 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
           <div>
             <div className="text-xs uppercase tracking-[0.18em] text-white/70">Contact</div>
             <div className="mt-4 grid gap-4">
-              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-white/90">
+              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-white">
                 <Phone className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span>{PHONE_DISPLAY}</span>
+                <span className="text-white">{PHONE_DISPLAY}</span>
               </a>
-              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-white/90">
+              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-white">
                 <Mail className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span>{EMAIL}</span>
+                <span className="text-white">{EMAIL}</span>
               </a>
-              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-white/90">
+              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-white">
                 <MapPin className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span>
+                <span className="text-white">
                   {ADDRESS_LINE_1}, {ADDRESS_LINE_2}
                 </span>
               </a>
-              <div className="flex items-start gap-3 text-sm text-white/90">
+              <div className="flex items-start gap-3 text-sm text-white">
                 <CircleHelp className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span>{footerConsent}</span>
+                <span className="text-white">{footerConsent}</span>
               </div>
             </div>
           </div>
@@ -1232,5 +1237,30 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.
       </Container>
     </footer>
+  );
+}
+
+export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const message = "Please read and go through the company policy";
+  const duplicatedMessage = `${message}  •  ${message}  •  ${message}  •  ${message}  •  ${message}  •  `;
+
+  return (
+    <div
+      className="overflow-hidden bg-[#111111] border-b border-white/10 py-2"
+      role="region"
+      aria-label="Announcement"
+    >
+      <div className="flex items-center gap-4" style={{ animation: "marquee 30s linear infinite" }}>
+        <span className="whitespace-nowrap text-xs font-medium" style={{ color: gold }}>
+          {duplicatedMessage}
+        </span>
+      </div>
+      <style jsx>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
   );
 }

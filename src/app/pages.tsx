@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Factory,
   FileCheck2,
+  FileText,
   Image as ImageIcon,
   Landmark,
   LayoutGrid,
@@ -29,6 +30,10 @@ import {
   RefreshCcw,
   UserRound,
   Warehouse,
+  Download,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   ADDRESS_LINE_1,
@@ -1485,6 +1490,372 @@ export function PrivacyPage() {
                 <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{body}</p>
               </div>
             ))}
+          </div>
+        </Container>
+      </section>
+      <ContactSection compact />
+    </main>
+  );
+}
+
+export function CompanyPolicyPage() {
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "shared" | "error">("idle");
+
+  const handleDownloadPdf = async () => {
+    setPdfGenerating(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      const addText = (text: string, options: { fontSize?: number; fontStyle?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
+        const { fontSize = 11, fontStyle = "normal", color = [0, 0, 0], maxWidth = contentWidth } = options;
+        doc.setFontSize(fontSize);
+        doc.setFont("helvetica", fontStyle);
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        doc.text(lines, margin, y);
+        y += lines.length * (fontSize * 0.5) + 2;
+      };
+
+      const addHeading = (text: string, level: 1 | 2 = 1) => {
+        const isH1 = level === 1;
+        addText(text, { fontSize: isH1 ? 18 : 14, fontStyle: "bold", color: [17, 17, 17] });
+        y += 4;
+        if (isH1) {
+          doc.setDrawColor(201, 162, 39);
+          doc.setLineWidth(0.5);
+          doc.line(margin, y, pageWidth - margin, y);
+          y += 8;
+        }
+      };
+
+      const addBullet = (text: string) => {
+        addText(`• ${text}`, { fontSize: 11, maxWidth: contentWidth - 8 });
+      };
+
+      // Title
+      addText("BuySmart Procurement Limited", { fontSize: 22, fontStyle: "bold", color: [201, 162, 39] });
+      y += 4;
+      addText("Company Policy", { fontSize: 16, fontStyle: "bold", color: [17, 17, 17] });
+      y += 8;
+
+      // Section 1: About Our Procurement Process
+      addHeading("About Our Procurement Process");
+      [
+        "BuySmart Procurement Limited sources directly from verified Chinese factories and local wholesale markets.",
+        "Our procurement process is different from retail shopping platforms.",
+        "Every order is handled individually, with supplier verification, quality checks, and accountability throughout the procurement process.",
+        "Our pricing, shipping, and policies are based on professional sourcing standards, not the practices of third-party shopping platforms.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 2: Before You Place Your Order
+      addHeading("Before You Place Your Order");
+      [
+        "Please avoid making assumptions based on previous experiences with other agents or online shopping platforms.",
+        "Every procurement company has its own sourcing process, pricing structure, shipping method, and business policies.",
+        "Kindly allow us to explain how our process works before comparing it with another service.",
+        "This helps us provide accurate information and serve you better.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 3: Order Specifications Requirement
+      addHeading("Order Specifications Requirement");
+      addText(
+        "To avoid mismatched or incorrect orders, customers must provide exact specifications of the item they want (size, color, model, quantity, brand, etc.) and must send clear reference pictures of the exact item before the order is confirmed. BuySmart is not liable for orders that do not match the original request if the customer failed to provide complete specifications and images at the time of ordering. Changes after sourcing has begun may incur additional cost or delay.",
+        { fontSize: 11 }
+      );
+      y += 4;
+
+      // Section 4: Shipping Charges
+      addHeading("Shipping Charges");
+      [
+        "Every item is charged shipping based on its actual final weight or volume after export packing.",
+        "Combining orders into one shipment does not mean items are packed inside one another or shipped free of charge.",
+        "Final shipping charges are calculated after the cargo reaches the freight warehouse and is weighed.",
+        "Estimates provided before shipment are subject to increase or decrease.",
+        "Customers will receive a proper receipt or invoice from BuySmart Procurement Limited for every payment made.",
+        "Any documents received from Chinese suppliers are for manual or instructions purposes only and are not payment receipts.",
+        "By placing an order with BuySmart Procurement Limited, the customer acknowledges and accepts this shipping policy.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 5: Payment Terms
+      addHeading("Payment Terms");
+      [
+        "A deposit is required before sourcing begins. The minimum deposit starts from 50 percent and may be higher depending on product risk.",
+        "The final balance must be paid in full before dispatch, warehouse release, or final delivery unless BuySmart approves a written exception.",
+        "Payment options are confirmed at quotation stage and may include bank transfer and other agreed channels.",
+        "Late or missed payments can pause procurement, release, and shipping. Repeated default may lead to cancellation and deduction of non-recoverable costs.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 6: Order Cancellation & Refunds
+      addHeading("Order Cancellation & Refunds");
+      [
+        "Cancellations before procurement starts are accepted with a full refund of the deposit.",
+        "Once sourcing has begun, the deposit covers supplier commitments, inspection costs, and administrative work, and is non-refundable.",
+        "If goods have been purchased or shipped, cancellation is not possible. Refunds after dispatch are only considered where BuySmart fails to deliver the agreed specification due to our error.",
+        "Refund amounts are reviewed after deducting supplier fees, exchange impact, logistics costs, and any other non-recoverable commitments already made on the order.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 7: Delivery Timelines & Delays
+      addHeading("Delivery Timelines & Delays");
+      [
+        "Air freight timelines are approximately 10 to 15 working days after shipment. Sea freight is approximately 8 to 12 weeks depending on the shipping schedule.",
+        "Timelines begin after shipment, not after payment. Customs clearance, port congestion, public holidays, and carrier delays are outside BuySmart's control.",
+        "BuySmart provides updates through the agreed communication channel once goods are dispatched. We are not liable for delays caused by customs, logistics carriers, or force majeure events.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 8: Damaged or Lost Goods
+      addHeading("Damaged or Lost Goods");
+      [
+        "Customers must report damage or loss within 48 hours of delivery with clear photos and delivery documentation.",
+        "If damage is due to BuySmart's error (incorrect specification, missing inspection), we handle the resolution directly with the customer.",
+        "Damage occurring during carrier transit or customs handling is subject to the carrier's liability terms. BuySmart will assist with claims but is not the liable party.",
+        "Items shipped without prior inspection at the customer's request are accepted at the customer's own risk.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 9: Dispute Resolution
+      addHeading("Dispute Resolution");
+      [
+        "Any dispute arising from an order will first be addressed through direct negotiation between the customer and BuySmart Procurement Limited.",
+        "If unresolved, the matter shall be referred to mediation under the rules of the Lagos Court of Arbitration or a mutually agreed mediator in Lagos, Nigeria.",
+        "Failing mediation, the dispute shall be submitted to the exclusive jurisdiction of the courts of Lagos State, Nigeria.",
+      ].forEach(addBullet);
+      y += 4;
+
+      // Section 10: Contact for Complaints
+      addHeading("Contact for Complaints");
+      addText("For complaints or policy inquiries, contact us at:");
+      y += 2;
+      addText("Phone: 0810 013 0714 (call or WhatsApp)");
+      addText("Email: kingsleyglory272@gmail.com");
+      addText("Address: 6 Bassey Street, Egbeda, Lagos 100276, Nigeria");
+      addText("We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.");
+
+      doc.save("BuySmart-Company-Policy.pdf");
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = "BuySmart Company Policy";
+    const text = "Read BuySmart Procurement Limited's company policy";
+
+    if (navigator.share && navigator.canShare({ title, text, url })) {
+      try {
+        await navigator.share({ title, text, url });
+        setShareStatus("shared");
+        setTimeout(() => setShareStatus("idle"), 3000);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setShareStatus("error");
+          setTimeout(() => setShareStatus("idle"), 3000);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setTimeout(() => setShareStatus("idle"), 3000);
+      } catch (error) {
+        setShareStatus("error");
+        setTimeout(() => setShareStatus("idle"), 3000);
+      }
+    }
+  };
+
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+        <Container>
+          <div className="mb-10 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+              </span>
+              Company Policy
+            </div>
+            <h1 className="mt-4 text-[clamp(2.5rem,5vw,4rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Company <span style={{ color: gold }}>Policy</span>
+            </h1>
+            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
+              Our policies are built on professional sourcing standards. Please read each section carefully before placing an order.
+            </p>
+          </div>
+
+          <div className="mb-10 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={pdfGenerating}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              style={{ backgroundColor: gold }}
+            >
+              <Download className="h-4 w-4" />
+              {pdfGenerating ? "Generating..." : "Download Policy (PDF)"}
+            </button>
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#C9A227] bg-transparent px-6 py-3 text-sm font-semibold transition hover:bg-[#C9A227]/10 hover:text-[#C9A227]"
+              style={{ color: gold }}
+            >
+              <Share2 className="h-4 w-4" />
+              {shareStatus === "copied" ? "Link Copied" : shareStatus === "shared" ? "Shared" : "Share Policy"}
+            </button>
+          </div>
+
+          <div className="relative mb-12">
+            <img
+              src="https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200&q=80"
+              alt="Business handshake representing agreement and partnership"
+              className="w-full h-auto max-h-[400px] object-cover rounded-[24px]"
+              loading="eager"
+            />
+          </div>
+        </Container>
+      </section>
+
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+        <Container>
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div>
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                About Our Procurement Process
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>BuySmart Procurement Limited sources directly from verified Chinese factories and local wholesale markets.</p>
+                <p>Our procurement process is different from retail shopping platforms.</p>
+                <p>Every order is handled individually, with supplier verification, quality checks, and accountability throughout the procurement process.</p>
+                <p>Our pricing, shipping, and policies are based on professional sourcing standards, not the practices of third-party shopping platforms.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Before You Place Your Order
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>Please avoid making assumptions based on previous experiences with other agents or online shopping platforms.</p>
+                <p>Every procurement company has its own sourcing process, pricing structure, shipping method, and business policies.</p>
+                <p>Kindly allow us to explain how our process works before comparing it with another service.</p>
+                <p>This helps us provide accurate information and serve you better.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Order Specifications Requirement
+              </h2>
+              <div className="mt-6 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>To avoid mismatched or incorrect orders, customers must provide exact specifications of the item they want (size, color, model, quantity, brand, etc.) and must send clear reference pictures of the exact item before the order is confirmed. BuySmart is not liable for orders that do not match the original request if the customer failed to provide complete specifications and images at the time of ordering. Changes after sourcing has begun may incur additional cost or delay.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Shipping Charges
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>Every item is charged shipping based on its actual final weight or volume after export packing.</p>
+                <p>Combining orders into one shipment does not mean items are packed inside one another or shipped free of charge.</p>
+                <p>Final shipping charges are calculated after the cargo reaches the freight warehouse and is weighed.</p>
+                <p>Estimates provided before shipment are subject to increase or decrease.</p>
+                <p>Customers will receive a proper receipt or invoice from BuySmart Procurement Limited for every payment made.</p>
+                <p>Any documents received from Chinese suppliers are for manual or instructions purposes only and are not payment receipts.</p>
+                <p>By placing an order with BuySmart Procurement Limited, the customer acknowledges and accepts this shipping policy.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Payment Terms
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>A deposit is required before sourcing begins. The minimum deposit starts from 50 percent and may be higher depending on product risk.</p>
+                <p>The final balance must be paid in full before dispatch, warehouse release, or final delivery unless BuySmart approves a written exception.</p>
+                <p>Payment options are confirmed at quotation stage and may include bank transfer and other agreed channels.</p>
+                <p>Late or missed payments can pause procurement, release, and shipping. Repeated default may lead to cancellation and deduction of non-recoverable costs.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Order Cancellation & Refunds
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>Cancellations before procurement starts are accepted with a full refund of the deposit.</p>
+                <p>Once sourcing has begun, the deposit covers supplier commitments, inspection costs, and administrative work, and is non-refundable.</p>
+                <p>If goods have been purchased or shipped, cancellation is not possible. Refunds after dispatch are only considered where BuySmart fails to deliver the agreed specification due to our error.</p>
+                <p>Refund amounts are reviewed after deducting supplier fees, exchange impact, logistics costs, and any other non-recoverable commitments already made on the order.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Delivery Timelines & Delays
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>Air freight timelines are approximately 10 to 15 working days after shipment. Sea freight is approximately 8 to 12 weeks depending on the shipping schedule.</p>
+                <p>Timelines begin after shipment, not after payment. Customs clearance, port congestion, public holidays, and carrier delays are outside BuySmart's control.</p>
+                <p>BuySmart provides updates through the agreed communication channel once goods are dispatched. We are not liable for delays caused by customs, logistics carriers, or force majeure events.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Damaged or Lost Goods
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>Customers must report damage or loss within 48 hours of delivery with clear photos and delivery documentation.</p>
+                <p>If damage is due to BuySmart's error (incorrect specification, missing inspection), we handle the resolution directly with the customer.</p>
+                <p>Damage occurring during carrier transit or customs handling is subject to the carrier's liability terms. BuySmart will assist with claims but is not the liable party.</p>
+                <p>Items shipped without prior inspection at the customer's request are accepted at the customer's own risk.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Dispute Resolution
+              </h2>
+              <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>Any dispute arising from an order will first be addressed through direct negotiation between the customer and BuySmart Procurement Limited.</p>
+                <p>If unresolved, the matter shall be referred to mediation under the rules of the Lagos Court of Arbitration or a mutually agreed mediator in Lagos, Nigeria.</p>
+                <p>Failing mediation, the dispute shall be submitted to the exclusive jurisdiction of the courts of Lagos State, Nigeria.</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[#ECE8DF]">
+              <h2 className="text-[clamp(1.8rem,3vw,2.5rem)] font-extrabold tracking-[-0.03em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Contact for Complaints
+              </h2>
+              <div className="mt-6 space-y-3 text-[16px] leading-relaxed text-[#4A4A4A]">
+                <p>For complaints or policy inquiries, contact us at:</p>
+                <p>Phone: 0810 013 0714 (call or WhatsApp)</p>
+                <p>Email: kingsleyglory272@gmail.com</p>
+                <p>Address: 6 Bassey Street, Egbeda, Lagos 100276, Nigeria</p>
+                <p>We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.</p>
+              </div>
+            </div>
           </div>
         </Container>
       </section>

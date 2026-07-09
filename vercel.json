@@ -9,8 +9,14 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/brand/favicon.png",
+      "destination": "/brand/favicon.png"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ]
+}
   ]
 }

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { analyticsConfig, faqItems, galleryItems, SITE_URL, socialLinks } from "./content";
 import { AssistantWidget, BackToTopButton, FloatingWhatsAppButton } from "./assistant";
-import { Footer, Header, normalizePath, routeMeta, setMetaTag, upsertLink } from "./layout";
+import { Footer, Header, AnnouncementBar, normalizePath, routeMeta, setMetaTag, upsertLink } from "./layout";
 import {
   BlogPage,
   BlogPostPage,
+  CompanyPolicyPage,
   ContactPage,
   CookiePolicyPage,
   EstimatorPage,
@@ -287,6 +288,8 @@ export default function App() {
         return <CookiePolicyPage />;
       case "/contact":
         return <ContactPage />;
+      case "/company-policy":
+        return <CompanyPolicyPage />;
       default:
         return <HomePage onNavigate={navigate} />;
     }
@@ -294,6 +297,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FAFAF8]" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <AnnouncementBar onNavigate={navigate} />
       <Header currentPath={currentPath} onNavigate={navigate} />
       {renderPage()}
       <Footer onNavigate={navigate} />
