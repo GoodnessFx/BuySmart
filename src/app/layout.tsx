@@ -1255,7 +1255,7 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
       role="region"
       aria-label="Announcement"
     >
-      <span className="whitespace-nowrap text-xs font-bold text-white/90" style={{ fontFamily: "'Sora', sans-serif", letterSpacing: "0.02em" }}>
+      <span className="whitespace-nowrap text-xs font-bold" style={{ fontFamily: "'Sora', sans-serif", letterSpacing: "0.02em", color: "#C9A227" }}>
         {message}
       </span>
       <style jsx>{`

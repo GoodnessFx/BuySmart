@@ -1518,18 +1518,28 @@ export function CompanyPolicyPage() {
       const contentWidth = pageWidth - margin * 2;
       let y = margin;
 
+      // Helper to check if we need a new page
+      const checkPageBreak = (neededHeight: number) => {
+        if (y + neededHeight > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+      };
+
       const addText = (text: string, options: { fontSize?: number; fontStyle?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
         const { fontSize = 11, fontStyle = "normal", color = [0, 0, 0], maxWidth = contentWidth } = options;
         doc.setFontSize(fontSize);
         doc.setFont("helvetica", fontStyle);
         doc.setTextColor(...color);
         const lines = doc.splitTextToSize(text, maxWidth);
+        checkPageBreak(lines.length * (fontSize * 0.5) + 2);
         doc.text(lines, margin, y);
         y += lines.length * (fontSize * 0.5) + 2;
       };
 
       const addHeading = (text: string, level: 1 | 2 = 1) => {
         const isH1 = level === 1;
+        checkPageBreak(isH1 ? 25 : 20);
         addText(text, { fontSize: isH1 ? 18 : 14, fontStyle: "bold", color: [17, 17, 17] });
         y += 4;
         if (isH1) {
@@ -1544,15 +1554,30 @@ export function CompanyPolicyPage() {
         addText(`• ${text}`, { fontSize: 11, maxWidth: contentWidth - 8 });
       };
 
-      // Logo placeholder - attempt to load the logo image
+      // Logo - try to load from public folder, fallback to text
+      let logoLoaded = false;
       try {
-        // Add logo from public/brand/logo.png
-        doc.addImage("/brand/logo.png", "PNG", margin, y, 30, 30);
-        y += 35;
+        // Fetch the logo as base64 to embed in PDF
+        const logoResponse = await fetch("/brand/logo.png");
+        if (logoResponse.ok) {
+          const blob = await logoResponse.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
+            reader.readAsDataURL(blob);
+          });
+          doc.addImage(base64, "PNG", margin, y, 30, 30);
+          logoLoaded = true;
+        }
       } catch (e) {
-        // If logo fails, add text logo
+        // Ignore, will use text fallback
+      }
+      
+      if (!logoLoaded) {
         addText("BuySmart Procurement Limited", { fontSize: 22, fontStyle: "bold", color: [201, 162, 39] });
         y += 4;
+      } else {
+        y += 35;
       }
 
       // Title
@@ -1658,6 +1683,7 @@ export function CompanyPolicyPage() {
       addText("We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.");
 
       // Signed closing
+      checkPageBreak(30);
       y += 10;
       doc.setDrawColor(201, 162, 39);
       doc.setLineWidth(0.3);
@@ -1668,6 +1694,7 @@ export function CompanyPolicyPage() {
       addText("Management, BuySmart Procurement Limited", { fontSize: 11, fontStyle: "bold", color: [17, 17, 17] });
 
       // Footer with contact info
+      checkPageBreak(25);
       y += 15;
       doc.setDrawColor(201, 162, 39);
       doc.setLineWidth(0.3);
@@ -1733,13 +1760,6 @@ export function CompanyPolicyPage() {
         
         <Container className="relative z-10 py-14 lg:py-20">
           <div className="max-w-2xl text-white">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
-              </span>
-              Company Policy
-            </div>
             <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
               Company <span style={{ color: gold }}>Policy</span>
             </h1>
