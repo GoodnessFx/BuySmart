@@ -423,7 +423,7 @@ export function Header({
             onNavigate("/");
             setMenuOpen(false);
           }}
-          className="flex min-w-0 items-center gap-3"
+          className="flex min-w-0 items-center gap-1"
         >
           <Logo />
           <div className="min-w-0">
@@ -594,10 +594,12 @@ export function Header({
 
 export function NewsletterSignup({
   inline = false,
+  dark = false,
   title = "Newsletter",
   body = "Get importation tips, shipping updates, and selected product updates in your inbox.",
 }: {
   inline?: boolean;
+  dark?: boolean;
   title?: string;
   body?: string;
 }) {
@@ -709,8 +711,8 @@ export function NewsletterSignup({
 
   const content = (
     <>
-      <div className={classNames("text-xs uppercase tracking-[0.18em] text-[#7C746C]", inline && "text-[#8A8379]")}>{title}</div>
-      <p className="mt-3 max-w-xl text-sm leading-7 text-[#4A4A4A]">{body}</p>
+      <div className={classNames("text-xs uppercase tracking-[0.18em]", dark ? "text-white/70" : "text-[#7C746C]", inline && !dark && "text-[#8A8379]")}>{title}</div>
+      <p className={classNames("mt-3 max-w-xl text-sm leading-7", dark ? "text-white/80" : "text-[#4A4A4A]")}>{body}</p>
       <form onSubmit={handleSubmit} className="mt-4 grid gap-3">
         <input
           type="text"
@@ -729,7 +731,12 @@ export function NewsletterSignup({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="Enter your email address"
-            className="min-w-0 flex-1 rounded-full border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none transition focus:border-[#C9A227]"
+            className={classNames(
+              "min-w-0 flex-1 rounded-full px-4 py-3 text-sm outline-none transition focus:border-[#C9A227]",
+              dark
+                ? "border-white/20 bg-white/5 text-white placeholder-white/40 focus:border-[#C9A227]"
+                : "border-[#DED9CF] bg-white text-[#111111] focus:border-[#C9A227]"
+            )}
             aria-label="Email address"
           />
           <button
@@ -741,12 +748,20 @@ export function NewsletterSignup({
             {status === "loading" ? "Subscribing..." : "Subscribe"} <ArrowRight className="h-4 w-4" />
           </button>
         </div>
-        <label className="flex items-start gap-3 rounded-2xl border border-[#E5E2DA] bg-white px-4 py-3 text-sm leading-6 text-[#4A4A4A]">
+        <label className={classNames(
+          "flex items-start gap-3 rounded-2xl px-4 py-3 text-sm leading-6",
+          dark
+            ? "border-white/10 bg-white/5 text-white/80"
+            : "border-[#E5E2DA] bg-white text-[#4A4A4A]"
+        )}>
           <input
             type="checkbox"
             checked={consent}
             onChange={(event) => setConsent(event.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-[#CFC8BB] accent-[#C9A227]"
+            className={classNames(
+              "mt-1 h-4 w-4 rounded accent-[#C9A227]",
+              dark ? "border-white/30 bg-white/5" : "border-[#CFC8BB] bg-white"
+            )}
           />
           <span>Yes, I want occasional BuySmart emails about import tips, shipping updates, and selected product updates.</span>
         </label>
@@ -754,7 +769,7 @@ export function NewsletterSignup({
           <p
             className={classNames(
               "text-sm leading-6",
-              status === "success" ? "text-[#1F7A34]" : "text-[#B42318]",
+              status === "success" ? (dark ? "text-green-400" : "text-[#1F7A34]") : (dark ? "text-red-400" : "text-[#B42318]"),
             )}
             role={status === "error" ? "alert" : "status"}
           >
@@ -762,7 +777,7 @@ export function NewsletterSignup({
           </p>
         ) : null}
       </form>
-      <p className="mt-3 text-xs leading-6 text-[#7C746C]">{footerConsent}</p>
+      <p className={classNames("mt-3 text-xs leading-6", dark ? "text-white/50" : "text-[#7C746C]")}>{footerConsent}</p>
     </>
   );
 
@@ -1005,7 +1020,7 @@ export function FaqList({
 
 export function TestimonialsPreview() {
   return (
-    <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+    <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
       <Container>
         <div className="mb-10">
           <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1058,7 +1073,7 @@ export function TestimonialsPreview() {
 
 export function ContactSection({ compact = false }: { compact?: boolean }) {
   return (
-    <section id="contact" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+    <section id="contact" className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
       <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
         <div>
           <div className="mb-6">
@@ -1115,7 +1130,7 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
 
 export function CtaBanner() {
   return (
-    <section className="py-12 lg:py-16" style={{ backgroundColor: "rgba(201,162,39,0.12)" }}>
+    <section className="py-8 lg:py-12" style={{ backgroundColor: "rgba(201,162,39,0.12)" }}>
       <Container>
         <div className={`flex flex-col gap-6 rounded-[32px] border bg-white p-8 shadow-[0_18px_48px_rgba(17,17,17,0.05)] lg:flex-row lg:items-center lg:justify-between ${cardBorder}`}>
           <div>
@@ -1145,7 +1160,7 @@ export function CtaBanner() {
 
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
-    <footer className="border-t border-white/10 bg-[#111111] py-12 lg:py-16">
+    <footer className="border-t border-white/10 bg-[#111111] py-8 lg:py-12">
       <Container className="grid gap-10 lg:grid-cols-[1fr_0.8fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
@@ -1159,7 +1174,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
               </div>
             </div>
           </div>
-          <p className="mt-4 max-w-md text-sm leading-7 text-white/70">
+          <p className="mt-4 max-w-md text-sm leading-7 text-white/90">
             BuySmart handles sourcing, inspection, and shipping from China and Vietnam into Nigeria — with transparent pricing, clear FAQs, and real proof from past projects.
           </p>
           <div className="mt-6">
@@ -1168,7 +1183,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         </div>
 
         <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-white/50">Pages</div>
+          <div className="text-xs uppercase tracking-[0.18em] text-white/70">Pages</div>
           <div className="mt-4 grid gap-3">
             {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }].map((item) => (
               <a
@@ -1178,7 +1193,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
                   event.preventDefault();
                   onNavigate(item.href);
                 }}
-                className="text-sm font-medium text-white/70 transition hover:text-[#C9A227]"
+                className="text-sm font-medium text-white/90 transition hover:text-[#C9A227]"
               >
                 {item.label}
               </a>
@@ -1188,32 +1203,32 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
 
         <div className="grid gap-8">
           <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-white/50">Contact</div>
+            <div className="text-xs uppercase tracking-[0.18em] text-white/70">Contact</div>
             <div className="mt-4 grid gap-4">
-              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-white/70">
+              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-white/90">
                 <Phone className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>{PHONE_DISPLAY}</span>
               </a>
-              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-white/70">
+              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-white/90">
                 <Mail className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>{EMAIL}</span>
               </a>
-              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-white/70">
+              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-white/90">
                 <MapPin className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>
                   {ADDRESS_LINE_1}, {ADDRESS_LINE_2}
                 </span>
               </a>
-              <div className="flex items-start gap-3 text-sm text-white/70">
+              <div className="flex items-start gap-3 text-sm text-white/90">
                 <CircleHelp className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <span>{footerConsent}</span>
               </div>
             </div>
           </div>
-          <NewsletterSignup title="Newsletter signup" body="Subscribe for importation tips, shipping updates, market trends, and selected product updates." />
+          <NewsletterSignup dark title="Newsletter signup" body="Subscribe for importation tips, shipping updates, market trends, and selected product updates." />
         </div>
       </Container>
-      <Container className="mt-10 border-t border-white/10 pt-6 text-xs text-white/50">
+      <Container className="mt-10 border-t border-white/10 pt-6 text-xs text-white/70">
         © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.
       </Container>
     </footer>

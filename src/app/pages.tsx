@@ -117,7 +117,7 @@ function buildProjectInsight(item: (typeof galleryItems)[number]) {
   return `${proofLabel} from a real ${item.category.toLowerCase()} order handled by BuySmart. It helps a new customer understand what was sourced, the shipping route used, and the kind of update they can expect before goods arrive in Nigeria.`;
 }
 
-type TransitionType = "fade" | "slide-left" | "slide-right" | "zoom-out";
+type TransitionType = "fade" | "slide-left" | "slide-right" | "zoom-out" | "zoom-in";
 
 type HeroSlide = {
   type: "video" | "image";
@@ -133,6 +133,12 @@ const HERO_SLIDES: HeroSlide[] = [
   { type: "image", src: "/media/hero/hero-background-2.jpg", transition: "zoom-out" },
   { type: "video", src: "https://videos.pexels.com/video-files/5605776/5605776-uhd_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-3.jpg", transition: "slide-left" },
   { type: "image", src: "/media/hero/hero-background-3.jpg", transition: "zoom-out" },
+  { type: "video", src: "https://videos.pexels.com/video-files/857641/857641-uhd_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
+  { type: "image", src: "/media/hero/hero-background-2.jpg", transition: "zoom-in" },
+  { type: "video", src: "https://assets.mixkit.co/videos/7175/7175-720.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "slide-right" },
+  { type: "image", src: "/media/hero/hero-background-3.jpg", transition: "zoom-in" },
+  { type: "video", src: "https://videos.pexels.com/video-files/6549264/6549264-uhd_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-left" },
+  { type: "image", src: "/media/hero/hero-background-1.jpg", transition: "zoom-in" },
 ];
 
 function getSlideStyle(transition: TransitionType, isActive: boolean): React.CSSProperties {
@@ -142,6 +148,7 @@ function getSlideStyle(transition: TransitionType, isActive: boolean): React.CSS
   if (isActive) {
     switch (transition) {
       case "zoom-out":
+      case "zoom-in":
         return { ...base, opacity: 1, transform: "scale(1)" };
       default:
         return { ...base, opacity: 1, transform: "scale(1.1)" };
@@ -154,6 +161,8 @@ function getSlideStyle(transition: TransitionType, isActive: boolean): React.CSS
       return { ...base, opacity: 0, transform: "translateX(5%) scale(1.08)" };
     case "zoom-out":
       return { ...base, opacity: 0, transform: "scale(1.25)" };
+    case "zoom-in":
+      return { ...base, opacity: 0, transform: "scale(1.25)" };
     default:
       return { ...base, opacity: 0, transform: "scale(1.08)" };
   }
@@ -164,6 +173,8 @@ function getSlideTransition(transition: TransitionType): string {
     case "slide-left":
     case "slide-right":
       return "opacity 1200ms ease-in-out, transform 800ms ease-out";
+    case "zoom-in":
+      return "opacity 1000ms ease-in-out, transform 4000ms ease-out";
     default:
       return "opacity 1500ms ease-in-out, transform 7000ms ease-out";
   }
@@ -177,7 +188,7 @@ function HeroBackground() {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 7000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -257,7 +268,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -282,21 +293,18 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
               Why choose <span style={{ color: gold }}>BuySmart?</span>
             </h2>
-            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
-              Built for buyers who want less risk, clearer updates, and dependable delivery.
-            </p>
           </div>
           <WhyChooseGrid />
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -342,7 +350,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -386,7 +394,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section className="bg-[#FBF6E8] py-12 lg:py-16">
+      <section className="bg-[#FBF6E8] py-8 lg:py-12">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
             <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
@@ -497,24 +505,18 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
 export function WhyChoosePage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
               Why choose <span style={{ color: gold }}>BuySmart?</span>
             </h2>
-            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
-              Built for buyers who want less risk, clearer updates, and dependable delivery.
-            </p>
-            <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-[#4A4A4A] mx-auto">
-              The core promise is simple: verified suppliers, transparent pricing, inspection before shipment, and support all the way to delivery.
-            </p>
           </div>
           <WhyChooseGrid />
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -570,7 +572,7 @@ export function WhyChoosePage() {
 export function VerifiedLagosPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="py-12 lg:py-16">
+      <section className="py-8 lg:py-12">
         <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
             <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
@@ -681,7 +683,7 @@ export function VerifiedLagosPage() {
 export function HowItWorksPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -731,7 +733,7 @@ export function ContactPage() {
   return (
     <main className="bg-[#FAFAF8]">
       <ContactSection />
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="max-w-4xl">
           <SectionHeading eyebrow="Location map" title="Visit our office in Lagos" center />
           <div className="overflow-hidden rounded-[24px] border border-[#E5E2DA] shadow-sm">
@@ -752,7 +754,7 @@ export function ContactPage() {
 export function ServicesPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -783,7 +785,7 @@ export function ServicesPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -802,7 +804,7 @@ export function InstallmentPage() {
   const installmentFaqs = faqItems.filter((item) => item.category === "installment");
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-start">
           <div>
             <div className="mb-10">
@@ -841,7 +843,7 @@ export function InstallmentPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <h2 className="text-[clamp(1.8rem,3.5vw,2.8rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -872,7 +874,7 @@ export function InstallmentPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="grid gap-5 lg:grid-cols-2">
           {installmentPolicies.map((policy) => (
             <div key={policy.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
@@ -882,7 +884,7 @@ export function InstallmentPage() {
           ))}
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -903,7 +905,7 @@ export function InstallmentPage() {
 export function ShippingPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -939,7 +941,7 @@ export function ShippingPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -959,7 +961,7 @@ export function ShippingPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="grid gap-8 lg:grid-cols-3">
           {[shippingNotes, customsGuide, shippingPreparation].map((group, groupIndex) => (
             <div key={groupIndex} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
@@ -975,7 +977,7 @@ export function ShippingPage() {
           ))}
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1014,7 +1016,7 @@ export function EstimatorPage() {
 
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr]">
           <div>
             <div className="mb-10">
@@ -1085,7 +1087,7 @@ export function ProjectsPage() {
   const filteredItems = category === "All" ? galleryItems : galleryItems.filter((item) => item.category === category);
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1161,7 +1163,7 @@ export function ProjectsPage() {
 export function TestimonialsPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1191,7 +1193,7 @@ export function TestimonialsPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1213,7 +1215,7 @@ export function TestimonialsPage() {
           </div>
         </Container>
       </section>
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2rem,4vw,3rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1239,7 +1241,7 @@ export function TestimonialsPage() {
 export function FaqPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1260,7 +1262,7 @@ export function FaqPage() {
 export function BlogPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1325,7 +1327,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
   }
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="max-w-4xl">
           <div className="group relative mb-10 overflow-hidden rounded-[28px] bg-[#111111] shadow-[0_18px_48px_rgba(17,17,17,0.08)]">
             <div className="aspect-[16/9] w-full">
@@ -1385,7 +1387,7 @@ export function BlogPostPage({ slug }: { slug: string }) {
 export function CookiePolicyPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="max-w-4xl">
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1460,7 +1462,7 @@ export function CookiePolicyPage() {
 export function PrivacyPage() {
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-12 lg:py-16">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container className="max-w-4xl">
           <div className="mb-10">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
