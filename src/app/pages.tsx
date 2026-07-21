@@ -67,6 +67,7 @@ import {
 } from "./content";
 import { blogPosts, getPostBySlug } from "./blog";
 import {
+  CompanyProfileDialog,
   CtaBanner,
   ContactSection,
   Container,
@@ -257,6 +258,8 @@ function HeroBackground() {
 }
 
 export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }) {
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+
   return (
     <>
       <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
@@ -274,12 +277,10 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
               </p>
             </div>
 
-            <div
-              onClick={(e) => {
-                e.preventDefault();
-                if (onNavigate) onNavigate("/company-profile");
-              }}
-              className="group shrink-0 cursor-pointer rounded-[24px] border border-white/20 bg-white/10 p-5 backdrop-blur-md transition hover:bg-white/20 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
+            <button
+              type="button"
+              onClick={() => setProfileDialogOpen(true)}
+              className="group shrink-0 cursor-pointer rounded-[24px] border border-white/20 bg-white/10 p-5 backdrop-blur-md text-left transition hover:bg-white/20 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition group-hover:bg-white/30" style={{ color: gold }}>
@@ -290,10 +291,11 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
                   <p className="text-xs leading-5 text-[#E0DDD5]">Learn more about BuySmart</p>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
         </Container>
       </section>
+      <CompanyProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
 
       <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
         <Container>

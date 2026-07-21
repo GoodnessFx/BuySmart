@@ -5,6 +5,9 @@ import {
   CalendarDays,
   ChevronDown,
   CircleHelp,
+  Download,
+  ExternalLink,
+  FileText,
   Mail,
   MapPin,
   Menu,
@@ -422,6 +425,80 @@ export function NavAnchor({
     >
       {label}
     </a>
+  );
+}
+
+export function CompanyProfileDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const pdfHref = "/media/buysmart-company-profile.pdf";
+
+  if (!open) return null;
+
+  return (
+    <div className="pointer-events-auto fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => onOpenChange(false)}
+        className="absolute inset-0 bg-black/40"
+      />
+
+      <div className="relative w-full max-w-sm overflow-hidden rounded-[28px] border border-[#E5E2DA] bg-white shadow-[0_30px_80px_rgba(17,17,17,0.28)]">
+        <div className="flex items-center justify-between border-b border-[#EFEAE1] bg-[#FAFAF8] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm" style={{ color: gold }}>
+              <FileText className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-extrabold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Company Profile
+              </div>
+              <div className="text-xs text-[#7C746C]">BuySmart Procurement Limited</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E5E2DA] bg-white text-[#111111] transition hover:border-[#C9A227]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-5">
+          <p className="text-sm leading-7 text-[#4A4A4A]">
+            Choose how you'd like to access the company profile document.
+          </p>
+
+          <a
+            href={pdfHref}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => onOpenChange(false)}
+            className="inline-flex items-center justify-center gap-3 rounded-2xl border border-[#E5E2DA] bg-[#FAFAF8] px-5 py-4 text-sm font-semibold text-[#111111] transition hover:border-[#C9A227]"
+          >
+            <ExternalLink className="h-4 w-4" style={{ color: gold }} />
+            View in browser
+          </a>
+
+          <a
+            href={pdfHref}
+            download
+            onClick={() => onOpenChange(false)}
+            className="inline-flex items-center justify-center gap-3 rounded-full px-5 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+            style={{ backgroundColor: gold }}
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
 
