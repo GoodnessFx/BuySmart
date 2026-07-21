@@ -816,8 +816,14 @@ export function BuySmartAiFloatingButton({ onClick }: { onClick: () => void }) {
       className="group fixed bottom-5 right-5 z-50 inline-flex items-center gap-3 rounded-full border border-[#E5E2DA] bg-white px-4 py-3 text-sm font-semibold text-[#111111] shadow-[0_18px_40px_rgba(17,17,17,0.12)] transition hover:border-[#C9A227]"
       aria-label="Open BuySmartAi"
     >
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#FAFAF8]" style={{ color: gold }}>
-        <MessageCircle className="h-5 w-5" />
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: "#1A2332" }}>
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="none">
+          <rect x="2" y="4" width="20" height="14" rx="10" ry="10" fill="#C9A227" />
+          <path d="M6 11h12M6 15h8" stroke="#1A2332" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="18" cy="8" r="1.5" fill="#1A2332" />
+          <circle cx="20.5" cy="6" r="1" fill="#C9A227" />
+          <circle cx="19" cy="10" r="0.8" fill="#C9A227" />
+        </svg>
       </span>
       <span className="hidden sm:inline">Chat with BuySmart AI</span>
       <ArrowRight className="h-4 w-4" style={{ color: gold }} />
