@@ -831,7 +831,7 @@ export function BuySmartAiFloatingButton({ onClick }: { onClick: () => void }) {
       <span className="inline-flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: "#1A2332" }}>
         <AiChatIcon className="h-5 w-5" />
       </span>
-      <span className="hidden sm:inline">Chat with BuySmart AI</span>
+      <span className="hidden sm:inline">BuySmart AI</span>
       <ArrowRight className="h-4 w-4" style={{ color: gold }} />
     </button>
   );
