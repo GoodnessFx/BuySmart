@@ -149,7 +149,7 @@ export function FloatingWhatsAppButton() {
       href={createWhatsAppUrl("Hello BuySmart, I would like to continue this conversation on WhatsApp.")}
       target="_blank"
       rel="noreferrer"
-      className="group fixed bottom-5 right-5 z-50 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white p-1 shadow-[0_22px_50px_rgba(37,211,102,0.35)] transition hover:scale-[1.04]"
+      className="group fixed bottom-28 right-5 z-50 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white p-1 shadow-[0_22px_50px_rgba(37,211,102,0.35)] transition hover:scale-[1.04]"
       aria-label="Open WhatsApp"
     >
       <span className="absolute inset-0 rounded-full bg-[#25D366] opacity-20 blur-xl transition group-hover:opacity-30" aria-hidden="true" />
