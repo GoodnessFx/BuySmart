@@ -1145,26 +1145,39 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
           <div className="mb-5 text-xl font-bold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
             Request a Quote
           </div>
-          {/* BuySmartAi quote flow is mounted globally; this area now points users to start it. */}
-          <div className="grid gap-4">
-            <p className="text-sm leading-7 text-[#4A4A4A]">
-              Click below to start a guided quote request. You’ll answer four short questions so the team can respond fast and accurately.
-            </p>
-            <a
-              href="#"
-              onClick={(event) => {
-                event.preventDefault();
-                window.dispatchEvent(new CustomEvent("buysmartai:open"));
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
-              style={{ backgroundColor: gold }}
-            >
-              Start Quote Request <ArrowRight className="h-4 w-4" />
-            </a>
-            <p className="text-xs leading-6 text-[#7C746C]">
-              Prefer email? You can still contact us at <span className="font-semibold text-[#111111]">{EMAIL}</span>.
-            </p>
+          <div className="mb-6 rounded-2xl border border-[#C9A227]/20 bg-[#FBF6E8] p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white" style={{ color: gold }}>
+                <MessageCircle className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-[#111111]">Quick guided quote via BuySmartAi</div>
+                <p className="mt-1 text-xs leading-6 text-[#4A4A4A]">Answer four short questions and we&rsquo;ll respond fast.</p>
+                <a
+                  href="/request-quote"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent("buysmartai:open"));
+                  }}
+                  className="mt-2 inline-flex items-center gap-1 text-sm font-semibold"
+                  style={{ color: gold }}
+                >
+                  Start BuySmartAi <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            </div>
           </div>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#E5E2DA]" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase tracking-[0.18em] text-[#7C746C]">
+              <span className="bg-white px-3">or use the full form</span>
+            </div>
+          </div>
+
+          <QuoteForm compact />
         </div>
       </Container>
     </section>
