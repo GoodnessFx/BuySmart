@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   Calculator,
   CalendarClock,
+  Globe,
   Clock3,
   Camera,
   ClipboardCheck,
@@ -111,6 +112,7 @@ const serviceIconMap: Record<string, React.ComponentType<{ className?: string }>
   banknote: Banknote,
   camera: Camera,
   refresh: RefreshCcw,
+  package: PackageCheck,
 };
 
 function inferFreightMode(timeline: string) {
@@ -262,13 +264,33 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
 
 
         <Container className="relative z-10 py-14 lg:py-20">
-          <div className="max-w-2xl text-white">
-            <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
-              Source with <span style={{ color: gold }}>clarity</span>. Ship with <span style={{ color: gold }}>confidence</span>.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#F0F0F0]">
-              BuySmart helps Nigerian business owners and everyday buyers source from trusted suppliers in China and Vietnam, verify what they are paying for, and move goods into Nigeria without unnecessary back and forth.
-            </p>
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl text-white">
+              <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
+                Global procurement solutions, <span style={{ color: gold }}>sourced with precision.</span>
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#F0F0F0]">
+                BuySmart helps businesses and individuals source, verify, and receive quality products from anywhere in the world, with deep expertise in China and Vietnam sourcing.
+              </p>
+            </div>
+
+            <div
+              onClick={(e) => {
+                e.preventDefault();
+                if (onNavigate) onNavigate("/company-profile");
+              }}
+              className="group shrink-0 cursor-pointer rounded-[24px] border border-white/20 bg-white/10 p-5 backdrop-blur-md transition hover:bg-white/20 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition group-hover:bg-white/30" style={{ color: gold }}>
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white" style={{ fontFamily: "'Sora', sans-serif" }}>Company Profile</div>
+                  <p className="text-xs leading-5 text-[#E0DDD5]">Learn more about BuySmart</p>
+                </div>
+              </div>
+            </div>
           </div>
         </Container>
       </section>
@@ -277,11 +299,14 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              What we <span style={{ color: gold }}>do.</span>
+              What we <span style={{ color: gold }}>handle.</span>
             </h2>
+            <p className="mt-4 max-w-3xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
+              Strategic sourcing, supplier verification, inspections, logistics coordination, and complete end-to-end procurement. China and Vietnam remain our strongest sourcing region, but the capability is global.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {services.slice(0, 6).map((service) => {
+            {services.map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
               return (
                 <div key={service.title} className={`rounded-xl border bg-[#FAFAF8] p-4 shadow-[0_4px_12px_rgba(17,17,17,0.02)] transition hover:shadow-[0_8px_20px_rgba(17,17,17,0.04)] ${cardBorder}`}>
@@ -295,6 +320,21 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
                 </div>
               );
             })}
+          </div>
+          <div className="mt-10 text-center">
+            <a
+              href="/services"
+              onClick={(e) => {
+                if (onNavigate) {
+                  e.preventDefault();
+                  onNavigate("/services");
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+              style={{ backgroundColor: gold }}
+            >
+              View all services <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
         </Container>
       </section>
@@ -756,6 +796,163 @@ export function ContactPage() {
   );
 }
 
+export function AboutUsPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
+  const profileHref = "/media/buysmart-company-profile.pdf";
+
+  const highlights = [
+    {
+      title: "Global sourcing coverage",
+      description:
+        "We source across multiple markets based on availability, pricing, and lead time — not just one country.",
+      icon: Globe,
+    },
+    {
+      title: "China & Vietnam strength",
+      description:
+        "These markets remain our most established region, with proven supplier paths and repeat order experience.",
+      icon: Factory,
+    },
+    {
+      title: "Logistics and compliance",
+      description:
+        "We coordinate shipping, documentation, and delivery — so procurement doesn’t stop at “we found it”.",
+      icon: Truck,
+    },
+    {
+      title: "Built for long-term work",
+      description:
+        "We’re structured for ongoing procurement support, not one-off transactions and guesswork.",
+      icon: ShieldCheck,
+    },
+  ];
+
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+        <Container className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+          <div>
+            <div className="mb-10">
+              <h2
+                className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]"
+                style={{ fontFamily: "'Sora', sans-serif" }}
+              >
+                A procurement partner built to scale <span style={{ color: gold }}>globally.</span>
+              </h2>
+              <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">
+                BuySmart Procurement Limited helps clients source products, verify suppliers, inspect goods, and coordinate delivery across international supply chains. We’re built for repeat orders and long-term relationships where reliability matters.
+              </p>
+              <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">
+                China and Vietnam remain our strongest sourcing region — and we still serve that market actively — but the company scope extends beyond two countries. The goal is simple: help you buy right, reduce risk, and receive what you paid for.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {highlights.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.title} className={`rounded-[28px] border bg-[#FAFAF8] p-6 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white" style={{ color: gold }}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="text-base font-bold leading-tight tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                        {item.title}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{item.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={`rounded-[30px] border bg-white p-6 shadow-[0_18px_48px_rgba(17,17,17,0.06)] ${cardBorder}`}>
+            <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">Company profile</div>
+            <h3 className="mt-3 text-2xl font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Download Our Company Profile
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
+              Learn more about BuySmart&rsquo;s services, process, and global capability.
+            </p>
+            <div className="mt-6 grid gap-3">
+              <a
+                href={profileHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: gold }}
+              >
+                Download Company Profile PDF <Download className="h-4 w-4" />
+              </a>
+              <a
+                href="/company-profile"
+                onClick={(event) => {
+                  if (!onNavigate) return;
+                  event.preventDefault();
+                  onNavigate("/company-profile");
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-6 py-4 text-sm font-semibold text-[#111111] transition hover:border-[#C9A227]"
+              >
+                View Company Profile page <ArrowRight className="h-4 w-4" style={{ color: gold }} />
+              </a>
+            </div>
+          </div>
+        </Container>
+      </section>
+      <ContactSection compact />
+    </main>
+  );
+}
+
+export function CompanyProfilePage() {
+  const profileHref = "/media/buysmart-company-profile.pdf";
+
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+        <Container className="max-w-4xl">
+          <SectionHeading
+            eyebrow="Company profile"
+            title="Download Our Company Profile"
+            body="Learn more about BuySmart's services, process, and global capability."
+            center
+          />
+
+          <div className="mb-8 overflow-hidden rounded-[28px] border border-[#E5E2DA] bg-white shadow-[0_14px_34px_rgba(17,17,17,0.04)]">
+            <iframe
+              src={profileHref}
+              className="h-[600px] w-full"
+              style={{ border: "none" }}
+              title="BuySmart Company Profile"
+            />
+          </div>
+
+          <div className={`rounded-[28px] border bg-[#FAFAF8] p-8 shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white" style={{ color: gold }}>
+                <FileText className="h-5 w-5" />
+              </div>
+              <div className="max-w-xl text-sm leading-7 text-[#4A4A4A]">
+                The PDF opens in a new tab on most devices. If your browser downloads instead, that's normal.
+              </div>
+              <a
+                href={profileHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: gold }}
+              >
+                Download Company Profile PDF <Download className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </Container>
+      </section>
+      <ContactSection compact />
+    </main>
+  );
+}
+
 export function ServicesPage() {
   return (
     <main className="bg-[#FAFAF8]">
@@ -763,10 +960,10 @@ export function ServicesPage() {
         <Container>
           <div className="mb-10 text-center">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              A complete procurement and shipping <span style={{ color: gold }}>stack.</span>
+              Global procurement services, delivered with <span style={{ color: gold }}>structure.</span>
             </h2>
             <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
-              Every service below — from supplier verification to last-mile delivery — is available whether you are a first-time buyer or a returning wholesaler.
+              Each service below is defined clearly so you know what BuySmart handles. China and Vietnam remain a core strength, alongside wider global sourcing and supply support.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

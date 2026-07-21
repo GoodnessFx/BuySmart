@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { analyticsConfig, faqItems, galleryItems, SITE_URL, socialLinks } from "./content";
-import { AssistantWidget, BackToTopButton, FloatingWhatsAppButton } from "./assistant";
+import { BackToTopButton } from "./assistant";
+import { BuySmartAiFloatingButton, BuySmartAiPage } from "./buysmart-ai";
 import { Footer, Header, AnnouncementBar, normalizePath, routeMeta, setMetaTag, upsertLink } from "./layout";
 import {
   BlogPage,
@@ -143,7 +144,6 @@ function injectAllowedScripts() {
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => normalizePath(window.location.pathname));
   const [menuOpen, setMenuOpen] = useState(false);
-  const [form, setForm] = useState<FormState>({ name: "", phone: "", itemLink: "", quantity: "", message: "" });
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "success" | "error">("idle");
   const [newsletterError, setNewsletterError] = useState("");
@@ -253,6 +253,12 @@ export default function App() {
     setCurrentPath(normalized);
   };
 
+  useEffect(() => {
+    const handler = () => navigate("/request-quote");
+    window.addEventListener("buysmartai:open", handler as EventListener);
+    return () => window.removeEventListener("buysmartai:open", handler as EventListener);
+  }, []);
+
   const renderPage = () => {
     if (currentPath.startsWith("/blog/")) {
       return <BlogPostPage slug={currentPath.replace("/blog/", "")} />;
@@ -288,6 +294,8 @@ export default function App() {
         return <CookiePolicyPage />;
       case "/contact":
         return <ContactPage />;
+      case "/request-quote":
+        return <BuySmartAiPage />;
       case "/company-policy":
         return <CompanyPolicyPage />;
       default:
@@ -298,11 +306,10 @@ export default function App() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FAFAF8]" style={{ fontFamily: "'Inter', sans-serif" }}>
       <AnnouncementBar onNavigate={navigate} />
-      <Header currentPath={currentPath} onNavigate={navigate} />
+      <Header currentPath={currentPath} onNavigate={navigate} onRequestQuote={() => navigate("/request-quote")} />
       {renderPage()}
       <Footer onNavigate={navigate} />
-      <AssistantWidget />
-      <FloatingWhatsAppButton />
+      <BuySmartAiFloatingButton onClick={() => navigate("/request-quote")} />
       <BackToTopButton />
       <CookieConsent />
     </div>

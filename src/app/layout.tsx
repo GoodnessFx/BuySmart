@@ -55,6 +55,8 @@ export const cardBorder = "border-[#E5E2DA]";
 export const pageLinks = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
+  { label: "About Us", href: "/about-us" },
+  { label: "Company Profile", href: "/company-profile" },
   { label: "Installment", href: "/installment-plan" },
   { label: "Shipping", href: "/shipping-information" },
   { label: "Estimator", href: "/shipment-cost-estimator" },
@@ -98,6 +100,8 @@ export const menuGroups: MenuGroup[] = [
   {
     label: "About Us",
     links: [
+      { label: "About BuySmart", href: "/about-us" },
+      { label: "Company Profile", href: "/company-profile" },
       { label: "Why Choose Us", href: "/why-choose-us" },
       { label: "Verified in Lagos", href: "/verified-lagos" },
       { label: "Testimonials", href: "/testimonials" },
@@ -120,14 +124,24 @@ export const homeSectionLinks = [
 
 export const routeMeta: Record<string, RouteMeta> = {
   "/": {
-    title: "BuySmart Procurement Limited | Procurement Services Lagos",
+    title: "BuySmart Procurement Limited | Global Procurement Services",
     description:
-      "Premium procurement services in Lagos for sourcing, inspection, and shipping from China and Vietnam to Nigeria.",
+      "BuySmart provides global procurement solutions — sourcing, supplier verification, inspection, logistics coordination, and import/export support, with deep expertise in China and Vietnam sourcing.",
   },
   "/services": {
-    title: "Services | China Importation in Nigeria",
+    title: "Services | BuySmart Procurement Limited",
     description:
-      "Explore BuySmart services for China importation in Nigeria, supplier verification, inspections, customs clearance, and delivery.",
+      "Explore BuySmart procurement services — strategic sourcing, supplier verification and audits, quality inspection, logistics coordination, import/export support, and complete procurement solutions. China and Vietnam remain a core strength.",
+  },
+  "/about-us": {
+    title: "About Us | BuySmart Procurement Limited",
+    description:
+      "Learn how BuySmart supports long-term procurement and supply needs with global capability and deep China and Vietnam sourcing expertise.",
+  },
+  "/company-profile": {
+    title: "Company Profile | BuySmart Procurement Limited",
+    description:
+      "View or download BuySmart’s company profile PDF — services, process, and global procurement capability.",
   },
   "/installment-plan": {
     title: "Installment Purchase Plan | BuySmart",
@@ -188,7 +202,7 @@ export const routeMeta: Record<string, RouteMeta> = {
   },
   "/contact": {
     title: "Contact Us | BuySmart Procurement Limited",
-    description: "Get in touch with BuySmart for quick sourcing and shipping quotes. Call, email, or chat with us on WhatsApp.",
+    description: "Request a quote through BuySmartAi or contact BuySmart by phone or email for procurement support.",
   },
   "/cookie-policy": {
     title: "Cookie Policy | BuySmart Procurement Limited",
@@ -197,6 +211,10 @@ export const routeMeta: Record<string, RouteMeta> = {
   "/company-policy": {
     title: "Company Policy | BuySmart Procurement Limited",
     description: "Read BuySmart's company policy covering procurement process, order specifications, shipping charges, payment terms, cancellations, and dispute resolution.",
+  },
+  "/request-quote": {
+    title: "Request a Quote | BuySmart Procurement Limited",
+    description: "Submit a structured quote request through BuySmartAi. Tell us what you need, your quantity, destination, and timeline — we'll respond fast.",
   },
 };
 
@@ -410,9 +428,11 @@ export function NavAnchor({
 export function Header({
   currentPath,
   onNavigate,
+  onRequestQuote,
 }: {
   currentPath: string;
   onNavigate: (path: string) => void;
+  onRequestQuote: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMobileGroup, setActiveMobileGroup] = useState<string | null>(null);
@@ -508,15 +528,14 @@ export function Header({
           <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="text-sm font-medium text-[#4A4A4A] transition hover:text-[#C9A227]">
             {PHONE_DISPLAY}
           </a>
-          <a
-            href={createWhatsAppUrl(WA_GREETING)}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={onRequestQuote}
             className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
             style={{ backgroundColor: gold }}
           >
-            WhatsApp <ArrowRight className="h-4 w-4" />
-          </a>
+            Request a Quote <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
 
         <button
@@ -1083,10 +1102,10 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
         <div>
           <div className="mb-6">
             <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Ready to order? Let BuySmart handle the sourcing, inspection, and <span style={{ color: gold }}>shipping.</span>
+              Ready to order? Let BuySmart handle the sourcing, verification, and <span style={{ color: gold }}>delivery.</span>
             </h2>
             <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">
-              Share your product link or description and BuySmart will review it, verify the sourcing path, and respond through your preferred contact channel.
+              Submit a structured quote request through BuySmartAi. You’ll get a response with next steps and pricing during business hours.
             </p>
           </div>
           <div className="grid gap-4">
@@ -1095,7 +1114,7 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
                 <Phone className="mt-1 h-4 w-4" style={{ color: gold }} />
                 <div>
                   <div className="text-sm font-semibold text-[#111111]">{PHONE_DISPLAY}</div>
-                  <div className="text-sm leading-6 text-[#4A4A4A]">Call or continue on WhatsApp for live support.</div>
+                  <div className="text-sm leading-6 text-[#4A4A4A]">Call for urgent clarifications or follow-up.</div>
                 </div>
               </div>
             </div>
@@ -1126,7 +1145,26 @@ export function ContactSection({ compact = false }: { compact?: boolean }) {
           <div className="mb-5 text-xl font-bold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
             Request a Quote
           </div>
-          <QuoteForm compact={compact} />
+          {/* BuySmartAi quote flow is mounted globally; this area now points users to start it. */}
+          <div className="grid gap-4">
+            <p className="text-sm leading-7 text-[#4A4A4A]">
+              Click below to start a guided quote request. You’ll answer four short questions so the team can respond fast and accurately.
+            </p>
+            <a
+              href="#"
+              onClick={(event) => {
+                event.preventDefault();
+                window.dispatchEvent(new CustomEvent("buysmartai:open"));
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
+              style={{ backgroundColor: gold }}
+            >
+              Start Quote Request <ArrowRight className="h-4 w-4" />
+            </a>
+            <p className="text-xs leading-6 text-[#7C746C]">
+              Prefer email? You can still contact us at <span className="font-semibold text-[#111111]">{EMAIL}</span>.
+            </p>
+          </div>
         </div>
       </Container>
     </section>
@@ -1144,10 +1182,10 @@ export function CtaBanner() {
               Ready to order
             </div>
             <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-[clamp(2rem,4vw,3.2rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#111111]">
-              Ready to Buy from China or Vietnam?
+              Ready to source globally?
             </h2>
             <p className="mt-3 max-w-2xl text-base leading-7 text-[#4A4A4A]">
-              Let BuySmart handle the sourcing, inspection, and shipping while you focus on your business.
+              Submit a quote request and we’ll handle sourcing, verification, inspection, and delivery. China and Vietnam remain our strongest sourcing region.
             </p>
           </div>
           <a
@@ -1180,7 +1218,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
             </div>
           </div>
           <p className="mt-4 max-w-md text-sm leading-7 text-white/90">
-            BuySmart handles sourcing, inspection, and shipping from China and Vietnam into Nigeria — with transparent pricing, clear FAQs, and real proof from past projects.
+            BuySmart provides global procurement support — sourcing, supplier verification, inspection, and logistics coordination — with deep expertise in China and Vietnam sourcing and delivery support coordinated from Lagos.
           </p>
           <div className="mt-6">
             <SocialLinks />
