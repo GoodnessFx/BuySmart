@@ -149,8 +149,9 @@ export function FloatingWhatsAppButton() {
       href={createWhatsAppUrl("Hello BuySmart, I would like to continue this conversation on WhatsApp.")}
       target="_blank"
       rel="noreferrer"
-      className="fixed bottom-28 right-5 z-50 transition hover:scale-110"
+      className="fixed bottom-28 right-5 z-50 inline-flex items-center justify-center transition hover:scale-110"
       aria-label="Open WhatsApp"
+      style={{ filter: "drop-shadow(0 0 12px rgba(37, 211, 102, 0.7)) drop-shadow(0 0 4px rgba(37, 211, 102, 0.5))" }}
     >
       <WhatsAppBrandIcon className="h-14 w-14" />
     </a>

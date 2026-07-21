@@ -72,6 +72,18 @@ async function fetchQuotes(identifier: string): Promise<{ quotes: QuoteRequest[]
   }
 }
 
+function AiChatIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="none">
+      <rect x="2" y="4" width="20" height="14" rx="10" ry="10" fill="#C9A227" />
+      <path d="M6 11h12M6 15h8" stroke="#1A2332" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="18" cy="8" r="1.5" fill="#1A2332" />
+      <circle cx="20.5" cy="6" r="1" fill="#C9A227" />
+      <circle cx="19" cy="10" r="0.8" fill="#C9A227" />
+    </svg>
+  );
+}
+
 function generateLocalId() {
   return `BS-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 }
@@ -271,8 +283,8 @@ export function BuySmartAiWidget({
       <div className="relative w-full max-w-[520px] overflow-hidden rounded-[28px] border border-[#E5E2DA] bg-white shadow-[0_30px_80px_rgba(17,17,17,0.28)]">
         <div className="flex items-center justify-between border-b border-[#EFEAE1] bg-[#FAFAF8] px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm" style={{ color: gold }}>
-              <MessageCircle className="h-4 w-4" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: "#1A2332" }}>
+              <AiChatIcon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
               <div className="text-sm font-extrabold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -790,8 +802,8 @@ export function BuySmartAiPage() {
         <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 lg:px-10">
           <div className="mb-8 text-center">
             <div className="flex items-center justify-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FAFAF8] shadow-sm" style={{ color: gold }}>
-                <MessageCircle className="h-5 w-5" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: "#1A2332" }}>
+                <AiChatIcon className="h-5 w-5" />
               </div>
               <div className="text-left">
                 <h1 className="text-xl font-extrabold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -817,13 +829,7 @@ export function BuySmartAiFloatingButton({ onClick }: { onClick: () => void }) {
       aria-label="Open BuySmartAi"
     >
       <span className="inline-flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: "#1A2332" }}>
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="none">
-          <rect x="2" y="4" width="20" height="14" rx="10" ry="10" fill="#C9A227" />
-          <path d="M6 11h12M6 15h8" stroke="#1A2332" strokeWidth="1.5" strokeLinecap="round" />
-          <circle cx="18" cy="8" r="1.5" fill="#1A2332" />
-          <circle cx="20.5" cy="6" r="1" fill="#C9A227" />
-          <circle cx="19" cy="10" r="0.8" fill="#C9A227" />
-        </svg>
+        <AiChatIcon className="h-5 w-5" />
       </span>
       <span className="hidden sm:inline">Chat with BuySmart AI</span>
       <ArrowRight className="h-4 w-4" style={{ color: gold }} />
