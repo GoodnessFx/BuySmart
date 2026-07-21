@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { analyticsConfig, faqItems, galleryItems, SITE_URL, socialLinks } from "./content";
-import { BackToTopButton } from "./assistant";
+import { BackToTopButton, FloatingWhatsAppButton } from "./assistant";
 import { BuySmartAiFloatingButton, BuySmartAiPage } from "./buysmart-ai";
 import { Footer, Header, AnnouncementBar, normalizePath, routeMeta, setMetaTag, upsertLink } from "./layout";
 import {
@@ -310,6 +310,7 @@ export default function App() {
       {renderPage()}
       <Footer onNavigate={navigate} />
       <BuySmartAiFloatingButton onClick={() => navigate("/request-quote")} />
+      <FloatingWhatsAppButton />
       <BackToTopButton />
       <CookieConsent />
     </div>
