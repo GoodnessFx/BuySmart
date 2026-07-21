@@ -70,101 +70,57 @@ export const analyticsConfig = {
 export const services: ServiceItem[] = [
   {
     icon: "search",
-    title: "Product Sourcing",
+    title: "Strategic Sourcing",
     description:
-      "We source genuine products directly from verified manufacturers and trusted suppliers in China and Vietnam at factory prices.",
+      "We find the right suppliers and products to match your specifications, budget, and delivery goals — locally and internationally.",
   },
   {
     icon: "shield",
-    title: "Supplier Verification",
+    title: "Supplier Verification and Audits",
     description:
-      "We verify suppliers before payment to reduce the risk of scams and ensure you're buying from legitimate businesses.",
-  },
-  {
-    icon: "factory",
-    title: "Factory Inspection",
-    description:
-      "We inspect factories and suppliers to confirm they meet production and quality standards before your order proceeds.",
+      "We vet suppliers for legitimacy, track record, and quality standards before you commit funds or place large orders.",
   },
   {
     icon: "inspection",
     title: "Quality Inspection",
     description:
-      "Every order can be inspected before shipping to ensure the correct quantity, specifications, and quality.",
-  },
-  {
-    icon: "cart",
-    title: "Procurement Service",
-    description:
-      "We handle the entire buying process from supplier negotiation to payment, inspection, and shipping.",
-  },
-  {
-    icon: "plane",
-    title: "Air Freight",
-    description:
-      "Fast shipping for urgent, valuable, or lightweight items. Delivery usually takes 10 to 15 working days after shipment.",
-  },
-  {
-    icon: "ship",
-    title: "Sea Freight",
-    description:
-      "Ideal for bulky and heavy goods. Lower shipping cost with longer delivery time, typically 8 to 12 weeks depending on the shipping schedule.",
-  },
-  {
-    icon: "file",
-    title: "Customs Clearance",
-    description:
-      "We assist with customs processing and documentation to ensure smooth delivery into Nigeria.",
-  },
-  {
-    icon: "truck",
-    title: "Door to Door Delivery",
-    description:
-      "Your goods are delivered from the supplier directly to your preferred delivery address or pickup location.",
+      "We check goods before shipment to confirm quantity, specs, packaging, and overall quality match what was agreed.",
   },
   {
     icon: "briefcase",
-    title: "Business Procurement",
+    title: "Procurement for Businesses, Hotels, and Companies",
     description:
-      "We help businesses source inventory, equipment, and wholesale goods at competitive factory prices.",
+      "Ongoing sourcing and supply support for organizations with recurring procurement needs — inventory, equipment, and operational supplies.",
   },
   {
-    icon: "bag",
-    title: "Personal Shopping",
+    icon: "truck",
+    title: "Logistics Coordination",
     description:
-      "Need just one item? We can help purchase and ship personal items from China or Vietnam.",
-  },
-  {
-    icon: "warehouse",
-    title: "Warehouse Consolidation",
-    description:
-      "We combine purchases from multiple suppliers into one shipment to reduce shipping costs.",
+      "We coordinate shipping, customs, and delivery from supplier to destination — including handoff updates and documentation support.",
   },
   {
     icon: "calendar",
-    title: "Pre-order Service",
+    title: "Procurement Consulting",
     description:
-      "Reserve products before shipment and pay according to our agreed payment schedule.",
+      "We advise businesses on how to build or improve their sourcing and supply process — pricing, supplier strategy, and risk control.",
   },
   {
-    icon: "banknote",
-    title: "RMB Exchange Assistance",
+    icon: "file",
+    title: "Import and Export Support",
     description:
-      "Need to pay Chinese suppliers? We assist with RMB payments using competitive exchange rates.",
-    note:
-      "Exchange rates are checked daily and are not fixed, so quotes reflect the rate at the time of your order.",
+      "We handle documentation and compliance requirements for cross-border movement so shipments clear properly and predictably.",
   },
   {
-    icon: "camera",
-    title: "Product Verification Reports",
+    icon: "factory",
+    title: "China and Vietnam Sourcing",
     description:
-      "We share photos and inspection notes before your order ships, so you know exactly what you're getting.",
+      "Our strongest and most established sourcing region — ideal for clients specifically buying from China or Vietnam with on-ground coordination.",
   },
   {
-    icon: "refresh",
-    title: "Rejected or Damaged Goods Handling",
+    icon: "package",
+    title: "Complete Procurement Solutions",
     description:
-      "If an item arrives wrong or damaged due to our error, we handle the resolution directly with you.",
+      "End-to-end sourcing, verification, inspection, and delivery handled for you — from first request to final handoff.",
   },
 ];
 
@@ -188,7 +144,7 @@ export const audiences = [
 ];
 
 export const homeStats = [
-  { label: "Source markets", value: "China and Vietnam" },
+  { label: "Source markets", value: "Worldwide (China & Vietnam strongest)" },
   { label: "Shipping modes", value: "Air and Sea" },
   { label: "Google rating", value: "5.0 stars" },
 ];
