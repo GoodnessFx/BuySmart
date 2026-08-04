@@ -799,7 +799,7 @@ export function ContactPage() {
 }
 
 export function AboutUsPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
-  const profileHref = "/media/buysmart-company-profile.pdf";
+  const profileHref = "/media/buysmart-company-profile.pdf?v=2";
 
   const highlights = [
     {
@@ -907,7 +907,7 @@ export function AboutUsPage({ onNavigate }: { onNavigate?: (path: string) => voi
 }
 
 export function CompanyProfilePage() {
-  const profileHref = "/media/buysmart-company-profile.pdf";
+  const profileHref = "/media/buysmart-company-profile.pdf?v=2";
 
   return (
     <main className="bg-[#FAFAF8]">
