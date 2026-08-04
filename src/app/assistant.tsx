@@ -1,140 +1,166 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, Bot, MessageCircle, Send, X } from "lucide-react";
-import { faqItems, services, volumetricFormula } from "./content";
+import {
+  ADDRESS_LINE_1,
+  ADDRESS_LINE_2,
+  BUSINESS_NAME,
+  EMAIL,
+  assistantFallback,
+  customsGuide,
+  faqItems,
+  installmentPolicies,
+  installmentSchedule,
+  orderSteps,
+  PHONE_DISPLAY,
+  prohibitedItems,
+  services,
+  shippingModes,
+  shippingNotes,
+  shippingPreparation,
+  volumetricFormula,
+  WA_PHONE,
+} from "./content";
 import { WhatsAppBrandIcon, createWhatsAppUrl, gold } from "./layout";
 
 type ChatMessage = {
   role: "assistant" | "user";
   text: string;
   pending?: boolean;
+  handoff?: boolean;
+};
+
+export type AssistantReply = {
+  text: string;
+  handoff?: boolean;
 };
 
 const greeting =
-  "Hello. I can answer questions about services, shipping, inspections, order steps, customs basics, and installment plans. Ask me anything and I’ll think it through before replying.";
+  "Hello! I'm the BuySmart AI assistant. Ask me about sourcing, shipping, inspections, installment plans, or how to place an order.";
 
-const fallback =
-  "I can answer from the information published on this site. For exact quotes, account-specific issues, complaints, or anything outside the published information, please continue on WhatsApp.";
-
-const handoffTerms = [
-  "quote",
-  "price for",
-  "my order",
-  "complaint",
-  "issue",
-  "problem",
-  "refund status",
-  "track my order",
-  "tracking number",
-  "account",
-  "invoice",
-  "specific cost",
-];
+const handoffMessage = `${assistantFallback} You can start a quote request on this page, or continue on WhatsApp.`;
 
 const knowledge = [
+  ...services.map((service) => ({
+    patterns: [service.title.toLowerCase()],
+    answer: `${service.title}: ${service.description}${service.note ? ` ${service.note}` : ""}`,
+  })),
+  ...faqItems.map((item) => ({
+    patterns: [item.question.toLowerCase()],
+    answer: item.answer,
+  })),
   {
-    patterns: ["shipping", "timeline", "air", "sea", "how long", "delivery"],
-    answer:
-      "Air shipping is approximately 10 to 15 working days after shipment. Sea shipping is approximately 8 to 12 weeks depending on the shipping schedule.",
+    patterns: ["shipping", "timeline", "how long", "delivery", "air", "sea"],
+    answer: `Air shipping takes approximately 10 to 15 working days after shipment. Sea shipping takes approximately 8 to 12 weeks depending on the shipping schedule.`,
   },
   {
     patterns: ["volumetric", "chargeable weight", "dimension", "actual weight"],
-    answer: `Volumetric weight is calculated as ${volumetricFormula}. BuySmart compares actual weight and volumetric weight, and whichever figure is higher is billed.`,
+    answer: `Volumetric weight is calculated as ${volumetricFormula}. BuySmart compares actual weight and volumetric weight, and whichever figure is higher is billed. ${shippingNotes.join(" ")}`,
   },
   {
-    patterns: ["customs", "duty", "duties", "clearance"],
-    answer:
-      "Customs duties depend on product category, declared value, documentation, and current import rules. When duties apply, the customer is responsible unless a written quote states otherwise.",
+    patterns: ["customs", "duty", "duties", "clearance", "import tax"],
+    answer: customsGuide.join(" "),
   },
   {
-    patterns: ["installment", "deposit", "late payment", "missed payment", "balance"],
-    answer:
-      "Selected products qualify for installment payments. The minimum deposit starts from 50 percent, and late or missed payments can pause procurement, release, or shipment until the outstanding balance is cleared.",
+    patterns: ["installment", "deposit", "pay in part", "part payment", "missed payment"],
+    answer: `${installmentSchedule.map((s) => `${s.title}: ${s.description}`).join(" ")} ${installmentPolicies.map((p) => `${p.title}: ${p.description}`).join(" ")}`,
   },
   {
     patterns: ["inspect", "inspection", "verify", "supplier verification", "factory inspection"],
     answer:
-      "BuySmart offers supplier verification, factory inspection, quality inspection, and product verification reports before shipment.",
+      "BuySmart offers supplier verification, factory inspection, quality inspection, and product verification reports before shipment. Request inspection for custom, fragile, or high value items.",
   },
   {
-    patterns: ["process", "how it works", "steps", "order process"],
-    answer:
-      "The process is simple: send your product link or description, BuySmart verifies the supplier and sends a quotation, you make payment, the goods are inspected and shipped, then you receive your order anywhere in Nigeria.",
+    patterns: ["process", "how it works", "steps", "how to order", "place an order"],
+    answer: `The order process is: ${orderSteps.map((s) => s.heading).join(" Then, ")}`,
   },
   {
-    patterns: ["restricted", "prohibited", "battery", "liquid", "counterfeit"],
-    answer:
-      "Some items are restricted or prohibited, including batteries and battery-powered devices without prior approval, flammable liquids, hazardous chemicals, counterfeit goods, weapons, and illegal or regulated products. It is best to confirm before ordering.",
+    patterns: ["restricted", "prohibited", "battery", "liquid", "counterfeit", "cannot ship", "can't ship"],
+    answer: `Some items are restricted or prohibited: ${prohibitedItems.join("; ")}. Contact us before ordering anything you are unsure about.`,
   },
   {
-    patterns: ["quote", "cost", "price", "fee", "pricing", "how much", "amount"],
+    patterns: ["payment", "pay", "transfer", "currency", "naira", "rMB", "how do i pay"],
     answer:
-      "A quote depends on your specific item, supplier pricing, shipping route, and weight. BuySmart compares actual and volumetric weight, shipping costs, and supplier charges before sending a total landed cost estimate.",
+      "Payment is handled based on the agreed quote. Most customer payments are arranged in Naira, and supplier settlement can be handled in RMB where required. Selected orders can use installment plans with a deposit.",
   },
   {
-    patterns: ["payment", "deposit", "installment", "pay", "transfer"],
+    patterns: ["documents", "paperwork", "invoice", "packing list"],
     answer:
-      "Payment is handled based on the agreed quote. Selected orders can use installment plans with a deposit, and the final balance is cleared before shipment or release.",
+      "Import paperwork depends on the goods category and delivery method. Typically you need an invoice, packing list, and any relevant customs documents. BuySmart helps coordinate paperwork once your order is ready.",
   },
   {
-    patterns: ["customs documents", "documents", "paperwork", "invoice", "packing list"],
+    patterns: ["minimum order", "minimum quantity", "one item", "single item", "buy one", "personal shopping", "personal use"],
     answer:
-      "Import paperwork depends on the goods category and delivery method. Typically, you need an invoice, packing list, and any relevant customs documents. BuySmart helps coordinate paperwork once your order is ready.",
+      "No minimum order quantity. Personal shopping allows single item orders, while business procurement supports larger wholesale quantities.",
   },
   {
-    patterns: ["who are you", "what do you do", "what is buysmart", "services offered", "how can you help"],
+    patterns: ["refund", "return", "damaged", "damage"],
     answer:
-      "I’m the BuySmart Assistant. I answer questions about procurement, supplier verification, shipping, inspections, customs, and installment plans using the published site information.",
+      "Refunds are available where BuySmart fails to deliver the agreed specification due to our error. If your item arrives damaged, tell us immediately with clear photos and delivery details. Refunds are reviewed after deducting supplier fees, exchange impact, logistics costs, and other non recoverable commitments.",
+  },
+  {
+    patterns: ["track", "tracking", "status", "where is my order", "update"],
+    answer:
+      "We share shipment updates through the agreed communication channel once your goods have been dispatched. For order-specific status, use the 'Get a quote' tab to view your request history.",
+  },
+  {
+    patterns: ["contact", "reach", "phone", "number", "whatsapp", "email", "address", "location", "where are you"],
+    answer: `You can reach BuySmart Procurement Limited on WhatsApp at ${PHONE_DISPLAY} (wa.me/${WA_PHONE}), by email at ${EMAIL}, or visit us at ${ADDRESS_LINE_1}, ${ADDRESS_LINE_2}.`,
+  },
+  {
+    patterns: ["who are you", "what do you do", "what is buysmart", "services offered", "how can you help", "company"],
+    answer: `${BUSINESS_NAME} is a global procurement company with our strongest sourcing in China and Vietnam. We handle sourcing, supplier verification, quality inspection, logistics, customs and import/export support, procurement consulting, and complete end-to-end procurement solutions.`,
   },
 ];
 
-function matchFaq(query: string) {
-  return faqItems.find((item) => {
-    const normalizedQuestion = item.question.toLowerCase();
-    return (
-      query.includes(normalizedQuestion) ||
-      normalizedQuestion
-        .split(" ")
-        .some((word) => word.length > 4 && query.includes(word))
-    );
-  });
+function scoreEntry(query: string, patterns: string[]) {
+  let score = 0;
+  for (const pattern of patterns) {
+    if (!pattern) continue;
+    if (query.includes(pattern)) {
+      score += 4;
+    } else {
+      const words = pattern.split(/\s+/).filter((word) => word.length > 4);
+      for (const word of words) {
+        if (query.includes(word)) score += 1;
+      }
+    }
+  }
+  return score;
 }
 
-function matchService(query: string) {
-  return services.find(
-    (service) =>
-      query.includes(service.title.toLowerCase()) ||
-      service.title
-        .toLowerCase()
-        .split(" ")
-        .some((word) => word.length > 4 && query.includes(word)),
-  );
-}
-
-function findReply(input: string) {
+export function findReply(input: string): AssistantReply {
   const query = input.toLowerCase().trim();
 
-  if (handoffTerms.some((term) => query.includes(term))) {
-    return fallback;
+  if (/^(hi|hello|hey|good (morning|afternoon|evening)|yo)\b/.test(query)) {
+    return { text: "Hello! I'm the BuySmart AI assistant. Ask me about sourcing, shipping, inspections, installment plans, or how to place an order." };
   }
 
-  const serviceMatch = matchService(query);
-  if (serviceMatch) {
-    return `${serviceMatch.title}: ${serviceMatch.description}${serviceMatch.note ? ` ${serviceMatch.note}` : ""}`;
+  if (/\b(thanks|thank you|thank you so much)\b/.test(query)) {
+    return { text: "You're welcome! Is there anything else I can help you with?" };
   }
 
-  const faqMatch = matchFaq(query);
-  if (faqMatch) {
-    return faqMatch.answer;
+  if (/\b(quote|price for|how much|cost for|pricing|estimate)\b/.test(query)) {
+    return {
+      text: "A quote depends on your specific item, supplier pricing, shipping route, and weight. Start a structured quote request using the 'Get a quote' tab on this page, or continue on WhatsApp for a quick estimate.",
+      handoff: true,
+    };
   }
 
-  const bestKnowledge = knowledge
-    .map((item) => ({
-      score: item.patterns.reduce((count, pattern) => count + (query.includes(pattern) ? 1 : 0), 0),
-      answer: item.answer,
-    }))
-    .sort((a, b) => b.score - a.score)[0];
+  let best: { score: number; answer: string } | null = null;
 
-  return bestKnowledge && bestKnowledge.score > 0 ? bestKnowledge.answer : fallback;
+  for (const entry of knowledge) {
+    const patterns = entry.patterns || [];
+    const score = scoreEntry(query, patterns);
+    if (score > 0 && (!best || score > best.score)) {
+      best = { score, answer: entry.answer };
+    }
+  }
+
+  if (best && best.score >= 2) {
+    return { text: best.answer };
+  }
+
+  return { text: handoffMessage, handoff: true };
 }
 
 const quickQuestions = [
@@ -232,9 +258,9 @@ export function AssistantWidget() {
         const updated = [...current];
         const pendingIndex = updated.map((message) => message.pending).lastIndexOf(true);
         if (pendingIndex >= 0) {
-          updated[pendingIndex] = { role: "assistant", text: reply };
+          updated[pendingIndex] = { role: "assistant", text: reply.text, handoff: reply.handoff };
         } else {
-          updated.push({ role: "assistant", text: reply });
+          updated.push({ role: "assistant", text: reply.text, handoff: reply.handoff });
         }
         return updated;
       });

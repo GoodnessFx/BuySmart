@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, Clock3, MessageCircle, Send, X } from "lucide-react";
-import { classNames, gold } from "./layout";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Check, Clock3, Send, X } from "lucide-react";
+import { findReply } from "./assistant";
+import { classNames, createWhatsAppUrl, gold, WhatsAppBrandIcon } from "./layout";
 
 export type QuoteStatus = "pending" | "responded" | "closed";
 
@@ -479,7 +480,210 @@ export function BuySmartAiWidget({
   );
 }
 
+type ChatMessage = {
+  role: "assistant" | "user";
+  text: string;
+  pending?: boolean;
+  handoff?: boolean;
+};
+
+const CHAT_STORAGE_KEY = "buysmartai:chat";
+
+const chatGreeting =
+  "Hello! I'm the BuySmart AI assistant. Ask me anything about sourcing, shipping, inspections, installment plans, or how to place an order.";
+
+const chatQuickQuestions = [
+  "How long does shipping take?",
+  "How is chargeable weight calculated?",
+  "Can I pay in installments?",
+  "What items can't be shipped?",
+  "What services do you offer?",
+];
+
+function BuySmartAiChat({ onStartQuote }: { onStartQuote: () => void }) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = window.sessionStorage.getItem(CHAT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as ChatMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((message) => !message.pending);
+        }
+      }
+    } catch {
+      /* ignore invalid saved chat */
+    }
+    return [{ role: "assistant", text: chatGreeting }];
+  });
+  const [input, setInput] = useState("");
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const pushQuestion = (question: string) => {
+    const trimmed = question.trim();
+    if (!trimmed) return;
+
+    setMessages((current) => {
+      const lastUser = [...current].reverse().find((message) => message.role === "user")?.text;
+      if (lastUser?.toLowerCase() === trimmed.toLowerCase()) return current;
+      return [...current, { role: "user", text: trimmed }, { role: "assistant", text: "Thinking...", pending: true }];
+    });
+    setInput("");
+
+    const delay = Math.min(1200, 500 + trimmed.length * 20);
+    window.setTimeout(() => {
+      const reply = findReply(trimmed);
+      setMessages((current) => {
+        const updated = [...current];
+        const pendingIndex = updated.map((message) => message.pending).lastIndexOf(true);
+        if (pendingIndex >= 0) {
+          updated[pendingIndex] = { role: "assistant", text: reply.text, handoff: reply.handoff };
+        } else {
+          updated.push({ role: "assistant", text: reply.text, handoff: reply.handoff });
+        }
+        return updated;
+      });
+    }, delay);
+  };
+
+  const handleSend = () => {
+    pushQuestion(input);
+  };
+
+  return (
+    <div className="grid gap-4">
+      <div className="rounded-[22px] border border-[#E5E2DA] bg-[#FAFAF8] p-5">
+        <div className="text-sm font-semibold text-[#111111]">Ask BuySmart AI anything</div>
+        <p className="mt-2 text-sm leading-7 text-[#4A4A4A]">
+          Answers come from our published business information. If I can't answer correctly, I'll point you to our team on WhatsApp.
+        </p>
+      </div>
+
+      <div className="max-h-[24rem] space-y-3 overflow-y-auto rounded-[22px] border border-[#E5E2DA] bg-white p-5">
+        {messages.map((message, index) => (
+          <div
+            key={`${message.role}-${index}`}
+            className={
+              message.role === "assistant"
+                ? "mr-6 rounded-2xl bg-[#FAFAF8] px-4 py-3 text-sm leading-6 text-[#4A4A4A]"
+                : "ml-6 rounded-2xl border border-[#E5E2DA] bg-white px-4 py-3 text-sm leading-6 text-[#111111]"
+            }
+          >
+            {message.pending ? (
+              <div className="flex items-center gap-2 text-[#4A4A4A]">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#C9A227] animate-pulse" />
+                Thinking...
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                <p className="whitespace-pre-line">{message.text}</p>
+                {message.handoff ? (
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={createWhatsAppUrl("Hello BuySmart, I need help beyond what the assistant could answer.")}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                    >
+                      <WhatsAppBrandIcon className="h-4 w-4" /> Chat on WhatsApp
+                    </a>
+                    <button
+                      type="button"
+                      onClick={onStartQuote}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#C9A227] px-4 py-2 text-xs font-semibold text-[#111111] transition hover:bg-[#FBF6E8]"
+                    >
+                      Get a quote instead <ArrowRight className="h-3.5 w-3.5" style={{ color: gold }} />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {chatQuickQuestions.map((question) => (
+          <button
+            key={question}
+            type="button"
+            onClick={() => pushQuestion(question)}
+            className="rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-3 py-2 text-xs font-semibold text-[#4A4A4A] transition hover:border-[#C9A227] hover:text-[#111111]"
+          >
+            {question}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-3">
+        <input
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder="Ask about shipping, services, or installments"
+          className="flex-1 rounded-full border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none transition focus:border-[#C9A227]"
+        />
+        <button
+          type="button"
+          onClick={handleSend}
+          className="inline-flex h-12 w-12 items-center justify-center rounded-full text-white transition hover:opacity-90"
+          style={{ backgroundColor: gold }}
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function BuySmartAiContent() {
+  const [tab, setTab] = useState<"chat" | "quote">("chat");
+
+  return (
+    <div className="grid gap-5">
+      <div className="grid grid-cols-2 gap-2 rounded-full border border-[#E5E2DA] bg-[#FAFAF8] p-1">
+        <button
+          type="button"
+          onClick={() => setTab("chat")}
+          className={classNames(
+            "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition",
+            tab === "chat" ? "bg-white text-[#111111] shadow-sm" : "text-[#7C746C] hover:text-[#111111]",
+          )}
+        >
+          Ask a question
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("quote")}
+          className={classNames(
+            "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition",
+            tab === "quote" ? "bg-white text-[#111111] shadow-sm" : "text-[#7C746C] hover:text-[#111111]",
+          )}
+        >
+          Get a quote
+        </button>
+      </div>
+      {tab === "chat" ? <BuySmartAiChat onStartQuote={() => setTab("quote")} /> : <BuySmartAiQuoteFlow />}
+    </div>
+  );
+}
+
+function BuySmartAiQuoteFlow() {
   const [identityDraft, setIdentityDraft] = useState({ name: "", identifier: "" });
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
