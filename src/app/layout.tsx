@@ -435,7 +435,7 @@ export function CompanyProfileDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const pdfHref = "/media/buysmart-company-profile.pdf?v=2";
+  const pdfHref = "/media/buysmart-company-profile.pdf?v=3";
 
   if (!open) return null;
 
