@@ -1,7 +1,7 @@
 const OWNER_EMAIL =
   process.env.QUOTE_OWNER_EMAIL ||
   process.env.NEWSLETTER_OWNER_EMAIL ||
-  "kingsleyglory272@gmail.com";
+  "buysmartprocurementlimited@gmail.com";
 const BREVO_BASE_URL = "https://api.brevo.com/v3";
 
 function sendJson(res, statusCode, payload) {

@@ -2,7 +2,7 @@ export const SITE_URL = "https://buy-smart-flax.vercel.app";
 export const BUSINESS_NAME = "BuySmart Procurement Limited";
 export const WA_PHONE = "2348100130714";
 export const PHONE_DISPLAY = "0810 013 0714";
-export const EMAIL = "kingsleyglory272@gmail.com";
+export const EMAIL = "buysmartprocurementlimited@gmail.com";
 export const ADDRESS_LINE_1 = "6 Bassey Street, Egbeda";
 export const ADDRESS_LINE_2 = "Lagos 100276, Nigeria";
 export const GOOGLE_MAPS_URL =
@@ -50,11 +50,10 @@ export type SocialLink = {
 };
 
 export const socialLinks: SocialLink[] = [
-  { name: "TikTok", url: "", enabled: false },
-  { name: "Instagram", url: "", enabled: false },
-  { name: "Facebook", url: "", enabled: false },
+  { name: "LinkedIn", url: "https://linkedin.com/company/buysmartprocurementlimited", enabled: true },
+  { name: "Facebook", url: "https://facebook.com/buysmartprocurementlimited", enabled: true },
+  { name: "Instagram", url: "https://instagram.com/buysmartprocurementltd", enabled: true },
   { name: "WhatsApp", url: `https://wa.me/${WA_PHONE}`, enabled: true },
-  { name: "Telegram", url: "", enabled: false },
   { name: "Google Business", url: GOOGLE_MAPS_URL, enabled: true },
 ];
 

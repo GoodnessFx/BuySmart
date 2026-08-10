@@ -33,7 +33,7 @@ function buildLocalBusinessSchema() {
     url: SITE_URL,
     image: `${SITE_URL}/brand/logo.png`,
     telephone: "+2348100130714",
-    email: "kingsleyglory272@gmail.com",
+    email: "buysmartprocurementlimited@gmail.com",
     address: {
       "@type": "PostalAddress",
       streetAddress: "6 Bassey Street, Egbeda",

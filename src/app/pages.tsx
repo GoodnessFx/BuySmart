@@ -799,7 +799,7 @@ export function ContactPage() {
 }
 
 export function AboutUsPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
-  const profileHref = "/media/buysmart-company-profile.pdf?v=3";
+  const profileHref = "/media/buysmart-company-profile-20260810-234900.pdf";
 
   const highlights = [
     {
@@ -907,7 +907,7 @@ export function AboutUsPage({ onNavigate }: { onNavigate?: (path: string) => voi
 }
 
 export function CompanyProfilePage() {
-  const profileHref = "/media/buysmart-company-profile.pdf?v=3";
+  const profileHref = "/media/buysmart-company-profile-20260810-234900.pdf";
 
   return (
     <main className="bg-[#FAFAF8]">
@@ -1877,7 +1877,7 @@ export function CompanyPolicyPage() {
       addText("For complaints or policy inquiries, contact us at:");
       y += 2;
       addText("Phone: 0810 013 0714 (call or WhatsApp)");
-      addText("Email: kingsleyglory272@gmail.com");
+      addText("Email: buysmartprocurementlimited@gmail.com");
       addText("Address: 6 Bassey Street, Egbeda, Lagos 100276, Nigeria");
       addText("We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.");
 
@@ -1901,7 +1901,7 @@ export function CompanyPolicyPage() {
       y += 5;
       addText("BuySmart Procurement Limited", { fontSize: 9, fontStyle: "bold", color: [74, 74, 74] });
       addText("6 Bassey Street, Egbeda, Lagos 100276, Nigeria", { fontSize: 8, color: [124, 116, 108] });
-      addText("Phone: 0810 013 0714 (call or WhatsApp) | Email: kingsleyglory272@gmail.com", { fontSize: 8, color: [124, 116, 108] });
+      addText("Phone: 0810 013 0714 (call or WhatsApp) | Email: buysmartprocurementlimited@gmail.com", { fontSize: 8, color: [124, 116, 108] });
 
       doc.save("BuySmart-Company-Policy.pdf");
     } catch (error) {
@@ -2105,7 +2105,7 @@ export function CompanyPolicyPage() {
               <div className="mt-6 space-y-3 text-[16px] leading-relaxed text-[#4A4A4A]">
                 <p>For complaints or policy inquiries, contact us at:</p>
                 <p>Phone: 0810 013 0714 (call or WhatsApp)</p>
-                <p>Email: kingsleyglory272@gmail.com</p>
+                <p>Email: buysmartprocurementlimited@gmail.com</p>
                 <p>Address: 6 Bassey Street, Egbeda, Lagos 100276, Nigeria</p>
                 <p>We aim to acknowledge complaints within 24 hours and provide a resolution timeline within 5 working days.</p>
               </div>

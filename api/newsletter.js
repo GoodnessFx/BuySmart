@@ -1,4 +1,4 @@
-const OWNER_EMAIL = process.env.NEWSLETTER_OWNER_EMAIL || "kingsleyglory272@gmail.com";
+const OWNER_EMAIL = process.env.NEWSLETTER_OWNER_EMAIL || "buysmartprocurementlimited@gmail.com";
 const BREVO_BASE_URL = "https://api.brevo.com/v3";
 const SUCCESS_MESSAGE =
   "You’re subscribed. Your email has been saved to the BuySmart newsletter list and the team has been notified.";
