@@ -54,7 +54,6 @@ export const socialLinks: SocialLink[] = [
   { name: "Facebook", url: "https://facebook.com/buysmartprocurementlimited", enabled: true },
   { name: "Instagram", url: "https://instagram.com/buysmartprocurementltd", enabled: true },
   { name: "WhatsApp", url: `https://wa.me/${WA_PHONE}`, enabled: true },
-  { name: "Google Business", url: GOOGLE_MAPS_URL, enabled: true },
 ];
 
 export const analyticsConfig = {
