@@ -200,13 +200,13 @@ export function ShipmentUpdateForm({ passphrase, shipmentId, onSaved, onCancel }
         <div className="rounded-xl border border-[#F6E7BC] bg-[#FCFBF4] p-4">
           <AlertCircle className="mr-2 h-5 w-5 text-[#C9A227]" />
           <span className="text-sm text-[#111111]">
-            {status} is an exception status — the note above will show the client a calm banner on their tracking page.
+            {status} is an exception status  the note above will show the client a calm banner on their tracking page.
           </span>
         </div>
       )}
 
       <div className="space-y-1.5">
-        <label className={lab + ' block mb-1'}>Internal note (private — client never sees this)</label>
+        <label className={lab + ' block mb-1'}>Internal note (private  client never sees this)</label>
         <textarea
           value={internalNote}
           onChange={(e) => setInternalNote(e.target.value)}

@@ -93,7 +93,7 @@ export function PublicTrackingPage() {
             {exception && (
               <div className="rounded-xl border border-[#F6E7BC] bg-[#FCFBF4] p-4 mb-4">
                 <span className="flex items-center gap-2 text-xs text-[#92400E]">
-                  ?? {shipment.status}{latest?.note ? ' � ' + latest.note : ''}
+                  ?? {shipment.status}{latest?.note ? '  ' + latest.note : ''}
                 </span>
               </div>
             )}

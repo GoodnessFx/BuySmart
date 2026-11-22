@@ -28,7 +28,11 @@ import { ShipmentList } from "./components/shipments/ShipmentList";
 import { PublicTrackingPage } from "./components/shipments/PublicTrackingPage";
 import { SettingsScreen } from "./components/settings/SettingsScreen";
 import { OfflineBanner } from "./components/offline/OfflineBanner";
-import { LoginPage } from "./components/auth/LoginPage";
+import LoginPage from "./components/auth/LoginPage";
+
+import { PublicInvoicePage } from "./components/invoice/PublicInvoicePage";
+import { ClientDashboard } from "./components/auth/ClientDashboard";
+
 
 function buildLocalBusinessSchema() {
   return {
@@ -159,6 +163,7 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
 
   useEffect(() => {
     injectAllowedScripts();
@@ -309,12 +314,31 @@ export default function App() {
         return <SettingsScreen />;
       case "/login":
         return <LoginPage />;
+      case "/admin":
+      case "/staff":
+        return <AdminDashboard />;
+      case "/client":
+      case "/client/dashboard":
+        return <ClientDashboard />;
+      case "/invoice":
+        return <PublicInvoicePage />;
       case "/company-policy":
         return <CompanyPolicyPage />;
       default:
         return <HomePage onNavigate={navigate} />;
     }
   };
+
+  // Portal routes: fullscreen, no site header/footer
+  const isPortalRoute = currentPath === "/login" || currentPath === "/admin" || currentPath === "/staff" || currentPath === "/client" || currentPath === "/client/dashboard" || currentPath === "/invoice";
+
+  if (isPortalRoute) {
+    return (
+      <div className="min-h-screen w-full" style={{ fontFamily: "'Inter', sans-serif" }}>
+        {renderPage()}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FAFAF8]" style={{ fontFamily: "'Inter', sans-serif" }}>

@@ -110,6 +110,27 @@ async function createQuoteRequest(input: Omit<QuoteRequest, "id" | "status" | "c
     status: "pending",
     createdAt: new Date().toISOString(),
   };
+
+  // Sync to BuySmart Admin Desk Quote Requests Inbox
+  try {
+    const raw = window.localStorage.getItem("buysmart_stored_quotes");
+    const existing = raw ? JSON.parse(raw) : [];
+    const adminQuote = {
+      id: localQuote.id,
+      clientName: localQuote.name || "Website Lead",
+      clientEmail: localQuote.identifierType === "email" ? localQuote.identifier : "client@buysmart.ng",
+      clientPhone: localQuote.identifierType === "phone" ? localQuote.identifier : "0810 013 0714",
+      itemDescription: localQuote.productOrService || "Procurement Request",
+      quantity: localQuote.quantity || "1",
+      shippingMethod: "Air Freight",
+      targetTimeline: localQuote.timeline || "Prompt",
+      notes: `Destination: ${localQuote.destination || "Lagos, Nigeria"}`,
+      status: "Pending",
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    window.localStorage.setItem("buysmart_stored_quotes", JSON.stringify([adminQuote, ...existing]));
+  } catch {}
+
   return localQuote;
 }
 

@@ -75,6 +75,10 @@ export const pageLinks = [
   { label: "Track a shipment", href: "/track" },
   { label: "Shipments (staff)", href: "/shipments" },
   { label: "Settings", href: "/settings" },
+  { label: "Login Portal", href: "/login" },
+  { label: "Client Portal", href: "/client" },
+  { label: "Staff Operations", href: "/staff" },
+  { label: "Admin Console", href: "/admin" },
 ];
 
 export type MenuItem = {
@@ -230,6 +234,22 @@ export const routeMeta: Record<string, RouteMeta> = {
   "/company-policy": {
     title: "Company Policy | BuySmart Procurement Limited",
     description: "Read BuySmart's company policy covering procurement process, order specifications, shipping charges, payment terms, cancellations, and dispute resolution.",
+  },
+  "/login": {
+    title: "Login Portal | BuySmart Procurement Limited",
+    description: "Sign in to BuySmart Client Portal, Staff Operations Desk, or Founder Admin Console.",
+  },
+  "/admin": {
+    title: "Admin and Founder Console | BuySmart Procurement Limited",
+    description: "BuySmart Founder and Executive Management Dashboard - Invoice and Official Receipt Generator.",
+  },
+  "/staff": {
+    title: "Staff Operations Desk | BuySmart Procurement Limited",
+    description: "BuySmart Staff and Logistics Worker Desk for package intake, tracking milestones, and client handling.",
+  },
+  "/client": {
+    title: "Client Portal | BuySmart Procurement Limited",
+    description: "BuySmart Client Portal - Track live air and sea shipments, view invoices, download official receipts, and request factory quotes.",
   },
   "/request-quote": {
     title: "Request a Quote | BuySmart Procurement Limited",
@@ -642,6 +662,14 @@ export function Header({
           </a>
           <button
             type="button"
+            onClick={() => onNavigate("/login")}
+            className="inline-flex items-center gap-2 rounded-full border border-[#DED9CF] bg-white px-5 py-3 text-sm font-semibold text-[#111111] shadow-sm transition hover:border-[#C9A227] hover:text-[#C9A227]"
+          >
+            <UserRound className="h-4 w-4 text-[#C9A227]" />
+            <span>Login</span>
+          </button>
+          <button
+            type="button"
             onClick={onRequestQuote}
             className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
             style={{ backgroundColor: gold }}
@@ -663,6 +691,30 @@ export function Header({
       {menuOpen ? (
         <div className="border-t border-[#ECE8DF] bg-white lg:hidden">
           <Container className="flex flex-col gap-4 py-6">
+            <div className="grid grid-cols-2 gap-2 pb-2 border-b border-[#ECE8DF]">
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate("/login");
+                  setMenuOpen(false);
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#DED9CF] bg-white px-4 py-3 text-sm font-semibold text-[#111111] transition hover:border-[#C9A227] cursor-pointer"
+              >
+                <UserRound className="h-4 w-4 text-[#C9A227]" />
+                <span>Login</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onRequestQuote();
+                  setMenuOpen(false);
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 cursor-pointer"
+                style={{ backgroundColor: gold }}
+              >
+                <span>Request Quote</span>
+              </button>
+            </div>
             <NavAnchor
               href="/"
               label="Home"
@@ -1439,4 +1491,5 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
     </a>
   );
 }
+
 

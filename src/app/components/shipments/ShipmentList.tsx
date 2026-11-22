@@ -144,7 +144,7 @@ export function ShipmentList() {
       <div className="max-w-xl mx-auto px-6 py-12">
         <div className="rounded-[28px] border border-[#E5E2DA] bg-white p-8 shadow-sm">
           <h2 className="text-[clamp(1.5rem,5vw,2rem)] font-extrabold text-[#111111] tracking-[-0.02em] mb-6" style={{ fontFamily: "'Sora', sans-serif" }}>
-            Staff portal — Shipments
+            Staff portal  Shipments
           </h2>
           <p className="mb-6 text-[#4A4A4A] leading-relaxed">
             Enter your staff passphrase to create shipments and add tracking updates.
@@ -230,7 +230,7 @@ export function ShipmentList() {
             </div>
           )}
         </div>
-        {loading && <div className="p-6 text-center text-[#4A4A4A]">Loading shipments…</div>}
+        {loading && <div className="p-6 text-center text-[#4A4A4A]">Loading shipments</div>}
         {!loading && shipments.length === 0 && (
           <div className="p-8 text-center text-[#4A4A4A]">No shipments yet. Create the first shipment.</div>
         )}
@@ -262,7 +262,7 @@ export function ShipmentList() {
                   </span>
                   <span className="text-xs text-[#4A4A4A]">
                     {modeIcon(shipment.mode)}
-                    {shipment.eta ? 'ETA ' + formatDate(shipment.eta) : '—'}
+                    {shipment.eta ? 'ETA ' + formatDate(shipment.eta) : ''}
                   </span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-[#66615B]" />
@@ -271,7 +271,7 @@ export function ShipmentList() {
           })}
       </div>
 
-      {bulkSubmitting && <div className="p-4 text-center text-[#4A4A4A]">Applying to {selectedIds.size} shipments…</div>}
+      {bulkSubmitting && <div className="p-4 text-center text-[#4A4A4A]">Applying to {selectedIds.size} shipments</div>}
 
       {selected && (
         <div className="rounded-2xl border border-[#DED9CF] bg-white p-6 space-y-6">
@@ -283,15 +283,15 @@ export function ShipmentList() {
                   {selected.status}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-[#4A4A4A]">Invoice {selected.invoice_number} · {selected.client_name}</p>
+              <p className="mt-1 text-sm text-[#4A4A4A]">Invoice {selected.invoice_number}  {selected.client_name}</p>
               <p className="mt-1 text-sm text-[#4A4A4A]">
-                {modeIcon(selected.mode)} {selected.mode} · {selected.carrier || '—'} ·
-                {selected.awb_bl || 'No AWB/BL'} ·
-                {selected.weight_kg} kg · {selected.cbm} CBM · {selected.packages} packages
+                {modeIcon(selected.mode)} {selected.mode}  {selected.carrier || ''} 
+                {selected.awb_bl || 'No AWB/BL'} 
+                {selected.weight_kg} kg  {selected.cbm} CBM  {selected.packages} packages
               </p>
               {selected.eta && (
                 <p className="mt-1 text-sm text-[#4A4A4A]">
-                  ETA {formatDate(selected.eta)}{selected.eta_reason ? ' — ' + selected.eta_reason : ''}
+                  ETA {formatDate(selected.eta)}{selected.eta_reason ? '  ' + selected.eta_reason : ''}
                 </p>
               )}
             </div>
@@ -383,7 +383,7 @@ export function ShipmentList() {
                     {update.note && <p className="mt-1 sm:mt-0 text-sm text-[#111111]">{update.note}</p>}
                     {update.eta_changed && (
                       <p className="mt-1 sm:mt-0 text-xs text-[#C9A227]">
-                        ETA changed to {formatDate(update.eta_new)}{update.eta_reason ? ' — ' + update.eta_reason : ''}
+                        ETA changed to {formatDate(update.eta_new)}{update.eta_reason ? '  ' + update.eta_reason : ''}
                       </p>
                     )}
                     {(update.photos?.length || 0) > 0 && (
