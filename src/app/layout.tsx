@@ -71,6 +71,9 @@ export const pageLinks = [
   { label: "Verified in Lagos", href: "/verified-lagos" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Track a shipment", href: "/track" },
+  { label: "Shipments (staff)", href: "/shipments" },
+  { label: "Settings", href: "/settings" },
 ];
 
 export type MenuItem = {
@@ -206,6 +209,18 @@ export const routeMeta: Record<string, RouteMeta> = {
   "/contact": {
     title: "Contact Us | BuySmart Procurement Limited",
     description: "Request a quote through BuySmartAi or contact BuySmart by phone or email for procurement support.",
+  },
+  "/track": {
+    title: "Track shipment | BuySmart Procurement Limited",
+    description: "Track your BuySmart shipment by tracking ID — no login required.",
+  },
+  "/shipments": {
+    title: "Staff portal — Shipments | BuySmart Procurement Limited",
+    description: "BuySmart staff shipment tracker. Staff passphrase required.",
+  },
+  "/settings": {
+    title: "Settings | BuySmart Procurement Limited",
+    description: "BuySmart app settings: backend URL, features, and default invoice terms.",
   },
   "/cookie-policy": {
     title: "Cookie Policy | BuySmart Procurement Limited",

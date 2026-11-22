@@ -24,6 +24,10 @@ import {
 } from "./pages";
 import { getPostBySlug } from "./blog";
 import { CookieConsent, getConsent } from "./cookie-consent";
+import { ShipmentList } from "./components/shipments/ShipmentList";
+import { PublicTrackingPage } from "./components/shipments/PublicTrackingPage";
+import { SettingsScreen } from "./components/settings/SettingsScreen";
+import { OfflineBanner } from "./components/offline/OfflineBanner";
 
 function buildLocalBusinessSchema() {
   return {
@@ -296,6 +300,12 @@ export default function App() {
         return <ContactPage />;
       case "/request-quote":
         return <BuySmartAiPage />;
+      case "/shipments":
+        return <ShipmentList />;
+      case "/track":
+        return <PublicTrackingPage />;
+      case "/settings":
+        return <SettingsScreen />;
       case "/company-policy":
         return <CompanyPolicyPage />;
       default:
@@ -308,6 +318,7 @@ export default function App() {
       <AnnouncementBar onNavigate={navigate} />
       <Header currentPath={currentPath} onNavigate={navigate} onRequestQuote={() => navigate("/request-quote")} />
       {renderPage()}
+      <OfflineBanner />
       <Footer onNavigate={navigate} />
       <BuySmartAiFloatingButton onClick={() => navigate("/request-quote")} />
       <FloatingWhatsAppButton />
