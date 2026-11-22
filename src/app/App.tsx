@@ -28,6 +28,7 @@ import { ShipmentList } from "./components/shipments/ShipmentList";
 import { PublicTrackingPage } from "./components/shipments/PublicTrackingPage";
 import { SettingsScreen } from "./components/settings/SettingsScreen";
 import { OfflineBanner } from "./components/offline/OfflineBanner";
+import { LoginPage } from "./components/auth/LoginPage";
 
 function buildLocalBusinessSchema() {
   return {
@@ -306,6 +307,8 @@ export default function App() {
         return <PublicTrackingPage />;
       case "/settings":
         return <SettingsScreen />;
+      case "/login":
+        return <LoginPage />;
       case "/company-policy":
         return <CompanyPolicyPage />;
       default:

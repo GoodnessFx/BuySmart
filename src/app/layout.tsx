@@ -15,6 +15,7 @@ import {
   Phone,
   Send,
   Star,
+  UserRound,
   X,
 } from "lucide-react";
 import {
@@ -1438,3 +1439,4 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
     </a>
   );
 }
+
