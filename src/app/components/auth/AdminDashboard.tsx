@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import {
   Shield,
   FileText,
@@ -44,7 +44,7 @@ import {
   BadgeCheck,
   Calculator,
   Bell,
-  Trash2,
+  HelpCircle,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { buildPublicInvoiceLink } from '../../lib/invoice-link';
@@ -103,6 +103,27 @@ const LINE_LABELS: Record<LineType, string> = {
 
 type AdminTab = 'invoices' | 'receipts' | 'shipments' | 'clients' | 'rates' | 'reports';
 
+const ADMIN_GUIDE_KEY = 'buysmart_admin_guide_hidden';
+
+/** Desk-by-desk map so management always knows which console handles what. */
+const adminTabGuide: { tab: AdminTab; icon: typeof FileText; title: string; body: string }[] = [
+  { tab: 'invoices', icon: FileText, title: 'Invoices Desk', body: 'Create numbered customer invoices, pick the client, add line items, then share the secure payment link or PDF.' },
+  { tab: 'receipts', icon: ReceiptIcon, title: 'Official Receipts', body: 'Record confirmed payments and generate stamped receipts clients can download from their portal.' },
+  { tab: 'shipments', icon: Truck, title: 'Shipments & Milestones', body: 'Register parcels and push milestone updates — clients see them live on their tracking cards.' },
+  { tab: 'clients', icon: Users, title: 'Clients & Folders', body: 'Every registered client gets a folder: their invoices, receipts, and contact ledger in one place.' },
+  { tab: 'rates', icon: Calculator, title: 'Rates & Calculator', body: 'Set the air/sea rates clients see in their estimator, and sanity-check chargeable weight before quoting.' },
+  { tab: 'reports', icon: TrendingUp, title: 'Financial Summary', body: 'Totals billed, settled, and outstanding across all clients — the desk’s quick health check.' },
+];
+
+function AdminTabHint({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-2xl border border-[#C9A227]/25 bg-[#FBF6E8] px-4 py-3 text-xs leading-5 text-[#6B5515]">
+      <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A227]" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 const currentYear = new Date().getFullYear();
 const invoiceNumberPrefix = `BSP-${currentYear}-`;
 const receiptNumberPrefix = `BSP-REC-${currentYear}-`;
@@ -156,6 +177,13 @@ function createBlankInvoice(existingNumbers: string[] = []): InvoiceRecord {
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
+    const [showAdminGuide, setShowAdminGuide] = useState(() => {
+      try {
+        return window.localStorage.getItem(ADMIN_GUIDE_KEY) !== '1';
+      } catch {
+        return true;
+      }
+    });
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [clients, setClients] = useState<ClientProfile[]>([]);
@@ -957,6 +985,14 @@ ${bankAccountLine()}
 
             <button
               type="button"
+              onClick={() => setShowAdminGuide((value) => !value)}
+              title={showAdminGuide ? 'Hide desk guide' : 'Show desk guide'}
+              className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
               onClick={refreshAllData}
               title="Refresh Data"
               className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
@@ -1036,14 +1072,64 @@ ${bankAccountLine()}
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* First-visit desk guide: what each console does, with one-tap jumps */}
+        {showAdminGuide && (
+          <div className="mb-8 rounded-3xl border border-[#C9A227]/30 bg-[#FBF6E8] p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B5515]">
+                  <HelpCircle className="h-4 w-4 text-[#C9A227]" /> How the management console works
+                </div>
+                <p className="mt-1.5 text-xs sm:text-sm text-[#6B5515]/90">
+                  Six desks, one console. Tap a card to jump to that desk — hide this guide anytime with the × or the ? button in the header.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Hide desk guide"
+                onClick={() => {
+                  setShowAdminGuide(false);
+                  try { window.localStorage.setItem(ADMIN_GUIDE_KEY, '1'); } catch { /* ignore */ }
+                }}
+                className="shrink-0 rounded-full border border-[#C9A227]/30 bg-white p-2 text-[#6B5515] hover:text-[#111111] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {adminTabGuide.map((item) => (
+                <button
+                  key={item.tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.tab);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="group rounded-2xl border border-[#E5E2DA] bg-white p-4 text-left transition hover:border-[#C9A227] cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#111111]">
+                    <item.icon className="h-4 w-4 text-[#C9A227]" />
+                    {item.title}
+                    <ArrowRight className="ml-auto h-3.5 w-3.5 text-[#C9A227] opacity-0 transition group-hover:opacity-100" />
+                  </div>
+                  <p className="mt-1.5 text-[11px] leading-4.5 text-[#66615B]">{item.body}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ========================================================= */}
         {/* TAB 1: INVOICES DESK & GENERATOR */}
         {/* ========================================================= */}
         {activeTab === 'invoices' && (
           <div className="space-y-8">
+            <AdminTabHint>
+              Pick the customer first, add goods/freight/customs lines, then create the invoice — it is filed in that client’s folder and the share link carries the verified OPay account.
+            </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 style={{ fontFamily: "'Sora', sans-serif'" }} className="text-2xl font-extrabold text-[#111111]">
+                <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
                   Invoices &amp; Billing Desk
                 </h1>
                 <p className="text-sm text-[#66615B]">
@@ -1500,6 +1586,9 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'receipts' && (
           <div className="space-y-8">
+            <AdminTabHint>
+              Record a payment only after it is confirmed in the bank account. The receipt number continues the BSP-REC sequence and appears in the client’s portal instantly.
+            </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
@@ -1661,6 +1750,9 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'shipments' && (
           <div className="space-y-8">
+            <AdminTabHint>
+              Each milestone you save here updates the client’s live tracking card and the public /track page — keep statuses current so clients never have to ask.
+            </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
@@ -1827,6 +1919,9 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'clients' && (
           <div className="space-y-8">
+            <AdminTabHint>
+              Open a client folder to see everything filed under them — invoices, receipts, and contact details. New portal signups also raise alerts in the bell inbox.
+            </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
@@ -1984,6 +2079,9 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'rates' && (
           <div className="space-y-8 max-w-4xl">
+            <AdminTabHint>
+              Rates saved here feed every client’s estimator and the public cost calculator. Update them whenever freight costs move, then verify with the calculator below.
+            </AdminTabHint>
             <div>
               <div className="flex items-center gap-2">
                 <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
@@ -2277,6 +2375,9 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'reports' && (
           <div className="space-y-8">
+            <AdminTabHint>
+              These totals are computed from the invoices and receipts you have created — billed vs settled vs outstanding, per client and overall.
+            </AdminTabHint>
             <div>
               <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
                 Stock, Clients &amp; Financial Summary

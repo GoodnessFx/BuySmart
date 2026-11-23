@@ -4,7 +4,6 @@ import {
   ArrowRight,
   CalendarDays,
   ChevronDown,
-  CircleHelp,
   Download,
   ExternalLink,
   FileText,
@@ -112,6 +111,7 @@ export const menuGroups: MenuGroup[] = [
     label: "About Us",
     links: [
       { label: "About BuySmart", href: "/about-us" },
+      { label: "Who It's For", href: "/who-its-for" },
       { label: "Company Profile", href: "/company-profile" },
       { label: "Why Choose Us", href: "/why-choose-us" },
       { label: "Verified in Lagos", href: "/verified-lagos" },
@@ -202,6 +202,11 @@ export const routeMeta: Record<string, RouteMeta> = {
   "/why-choose-us": {
     title: "Why Choose BuySmart | Sourcing & Shipping",
     description: "Learn why BuySmart is the trusted sourcing and shipping partner for Nigerian business owners and bulk buyers.",
+  },
+  "/who-its-for": {
+    title: "Who It's For | BuySmart Procurement Limited",
+    description:
+      "See how BuySmart supports small business owners, bulk buyers, personal shoppers, personal-use buyers, and companies, schools and offices.",
   },
   "/verified-lagos": {
     title: "Verified in Lagos | BuySmart Trust & Location",
@@ -1378,34 +1383,44 @@ export function CtaBanner() {
   );
 }
 
+/** Only the destinations a visitor actually needs — the full sitemap lives in the menu. */
+const footerLinks = [
+  { label: "Services", href: "/services" },
+  { label: "How it works", href: "/how-it-works" },
+  { label: "Recent projects", href: "/recent-projects" },
+  { label: "Who it's for", href: "/who-its-for" },
+  { label: "Shipping & rates", href: "/shipping-information" },
+  { label: "Contact us", href: "/contact" },
+];
+
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
-    <footer className="border-t border-white/10 bg-[#111111] py-8 lg:py-12">
-      <Container className="grid gap-10 lg:grid-cols-[1fr_0.8fr_1fr]">
+    <footer className="border-t border-white/10 bg-[#111111] py-10">
+      <Container className="grid gap-8 md:grid-cols-[1.2fr_0.8fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
             <Logo />
             <div>
-              <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-lg font-bold tracking-[-0.02em] text-white">
-                {BUSINESS_NAME}
+              <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-base font-bold tracking-[-0.02em] text-white">
+                BuySmart
               </div>
               <div className="text-[10px] uppercase tracking-[0.22em]" style={{ color: gold }}>
-                Procurement services
+                Procurement Limited
               </div>
             </div>
           </div>
-          <p className="mt-4 max-w-md text-sm leading-7 text-white/90">
-            BuySmart provides global procurement support — sourcing, supplier verification, inspection, and logistics coordination — with deep expertise in China and Vietnam sourcing and delivery support coordinated from Lagos.
+          <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">
+            Sourcing, verification, and delivery from China, Vietnam, and beyond — coordinated from Lagos.
           </p>
-          <div className="mt-6">
+          <div className="mt-4">
             <SocialLinks />
           </div>
         </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-[0.18em] text-white">Pages</div>
-          <div className="mt-4 grid gap-3">
-            {[...pageLinks, { label: "Privacy Policy", href: "/privacy-policy" }, { label: "Cookie Policy", href: "/cookie-policy" }, { label: "Company Policy", href: "/company-policy" }].map((item) => (
+        <nav aria-label="Footer">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Explore</div>
+          <div className="mt-3 grid gap-2">
+            {footerLinks.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
@@ -1413,43 +1428,61 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
                   event.preventDefault();
                   onNavigate(item.href);
                 }}
-                className="text-sm font-medium !text-white transition hover:text-[#C9A227]"
+                className="text-sm font-medium text-white/85 transition hover:text-[#C9A227]"
               >
                 {item.label}
               </a>
             ))}
           </div>
-        </div>
+        </nav>
 
-        <div className="grid gap-8">
-          <div>
-            <div className="text-xs uppercase tracking-[0.18em] text-white/70">Contact</div>
-            <div className="mt-4 grid gap-4">
-              <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-start gap-3 text-sm text-white">
-                <Phone className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span className="text-white">{PHONE_DISPLAY}</span>
-              </a>
-              <a href={`mailto:${EMAIL}`} className="flex items-start gap-3 text-sm text-white">
-                <Mail className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span className="text-white">{EMAIL}</span>
-              </a>
-              <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-3 text-sm text-white">
-                <MapPin className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span className="text-white">
-                  {ADDRESS_LINE_1}, {ADDRESS_LINE_2}
-                </span>
-              </a>
-              <div className="flex items-start gap-3 text-sm text-white">
-                <CircleHelp className="mt-1 h-4 w-4" style={{ color: gold }} />
-                <span className="text-white">{footerConsent}</span>
-              </div>
-            </div>
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Reach us</div>
+          <div className="mt-3 grid gap-2.5">
+            <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-center gap-2.5 text-sm text-white/85 transition hover:text-[#C9A227]">
+              <Phone className="h-4 w-4 shrink-0" style={{ color: gold }} />
+              {PHONE_DISPLAY}
+            </a>
+            <a href={`mailto:${EMAIL}`} className="flex items-center gap-2.5 break-all text-sm text-white/85 transition hover:text-[#C9A227]">
+              <Mail className="h-4 w-4 shrink-0" style={{ color: gold }} />
+              {EMAIL}
+            </a>
+            <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-2.5 text-sm text-white/85 transition hover:text-[#C9A227]">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" style={{ color: gold }} />
+              <span>{ADDRESS_LINE_1}, {ADDRESS_LINE_2}</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => onNavigate("/login")}
+              className="mt-1 inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:border-[#C9A227] hover:text-[#C9A227]"
+            >
+              <UserRound className="h-3.5 w-3.5" style={{ color: gold }} /> Client &amp; staff login
+            </button>
           </div>
-          <NewsletterSignup dark title="Newsletter signup" body="Subscribe for importation tips, shipping updates, market trends, and selected product updates." />
         </div>
       </Container>
-      <Container className="mt-10 border-t border-white/10 pt-6 text-xs text-white/70">
-        © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.
+
+      <Container className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
+        <span>© {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.</span>
+        <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {[
+            { label: "Privacy", href: "/privacy-policy" },
+            { label: "Cookies", href: "/cookie-policy" },
+            { label: "Company policy", href: "/company-policy" },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate(item.href);
+              }}
+              className="transition hover:text-[#C9A227]"
+            >
+              {item.label}
+            </a>
+          ))}
+        </span>
       </Container>
     </footer>
   );
@@ -1482,7 +1515,7 @@ export function AnnouncementBar({ onNavigate }: { onNavigate: (path: string) => 
       >
         {message}
       </span>
-      <style jsx>{`
+      <style>{`
         @keyframes marquee {
           0% { transform: translateX(100%); }
           100% { transform: translateX(-100%); }

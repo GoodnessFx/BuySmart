@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
   Package,
   FileText,
@@ -61,9 +61,37 @@ import {
 
 type ClientTab = 'shipments' | 'invoices' | 'profile' | 'quote' | 'estimator' | 'support';
 
+const CLIENT_GUIDE_KEY = 'buysmart_client_guide_hidden';
+
+/** Plain-language map of every tab so a first-time client always knows what to do next. */
+const clientTabGuide: { tab: ClientTab; icon: typeof Truck; title: string; body: string }[] = [
+  { tab: 'shipments', icon: Truck, title: 'My Shipments', body: 'Watch every parcel move — factory pickup, freight, customs, and Lagos handoff, updated by our operations desk.' },
+  { tab: 'invoices', icon: FileText, title: 'Invoices & Receipts', body: 'Open itemized invoices, download official PDF receipts, and pay only to the verified BuySmart account shown.' },
+  { tab: 'quote', icon: MessageCircle, title: 'Request a Quote', body: 'Tell us the product, quantity, and shipping method. The admin desk replies with factory pricing and an invoice.' },
+  { tab: 'estimator', icon: Calculator, title: 'Cost Estimator', body: 'Enter carton size and weight to see chargeable weight and a live air/sea freight range before you order.' },
+  { tab: 'profile', icon: User, title: 'Profile & Settings', body: 'Keep your delivery address, WhatsApp number, and business details current so cargo reaches you without delays.' },
+  { tab: 'support', icon: Phone, title: 'Account Officer', body: 'Reach your assigned officer directly on WhatsApp or live chat for anything the portal does not cover.' },
+];
+
+function TabHint({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-2xl border border-[#C9A227]/25 bg-[#FBF6E8] px-4 py-3 text-xs leading-5 text-[#6B5515]">
+      <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A227]" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 export function ClientDashboard() {
   const [user, setUser] = useState(getAuthUser());
   const [activeTab, setActiveTab] = useState<ClientTab>('shipments');
+  const [showGuide, setShowGuide] = useState(() => {
+    try {
+      return window.localStorage.getItem(CLIENT_GUIDE_KEY) !== '1';
+    } catch {
+      return true;
+    }
+  });
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [shipments, setShipments] = useState<ShipmentItem[]>([]);
@@ -379,7 +407,15 @@ export function ClientDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowGuide((value) => !value)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#DED9CF] bg-white px-5 py-3 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+            >
+              <HelpCircle className="h-4 w-4 text-[#C9A227]" />
+              <span>{showGuide ? 'Hide guide' : 'Portal guide'}</span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('quote')}
@@ -390,6 +426,53 @@ export function ClientDashboard() {
             </button>
           </div>
         </div>
+
+        {/* First-visit guide: what every tab does, with one-tap jumps */}
+        {showGuide && (
+          <div className="rounded-3xl border border-[#C9A227]/30 bg-[#FBF6E8] p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B5515]">
+                  <HelpCircle className="h-4 w-4 text-[#C9A227]" /> New here? How this portal works
+                </div>
+                <p className="mt-1.5 text-xs sm:text-sm text-[#6B5515]/90">
+                  Six tabs, one workspace. Tap any card to jump straight to that feature — you can hide this guide anytime.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Hide portal guide"
+                onClick={() => {
+                  setShowGuide(false);
+                  try { window.localStorage.setItem(CLIENT_GUIDE_KEY, '1'); } catch { /* ignore */ }
+                }}
+                className="shrink-0 rounded-full border border-[#C9A227]/30 bg-white p-2 text-[#6B5515] hover:text-[#111111] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {clientTabGuide.map((item) => (
+                <button
+                  key={item.tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.tab);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="group rounded-2xl border border-[#E5E2DA] bg-white p-4 text-left transition hover:border-[#C9A227] cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#111111]">
+                    <item.icon className="h-4 w-4 text-[#C9A227]" />
+                    {item.title}
+                    <ArrowRight className="ml-auto h-3.5 w-3.5 text-[#C9A227] opacity-0 transition group-hover:opacity-100" />
+                  </div>
+                  <p className="mt-1.5 text-[11px] leading-4.5 text-[#66615B]">{item.body}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: SHIPMENTS WITH CLEAN TRACKING PROGRESS */}
         {activeTab === 'shipments' && (
@@ -403,6 +486,10 @@ export function ClientDashboard() {
               </div>
             </div>
 
+            <TabHint>
+              Each card below is one parcel. The progress bar shows its latest milestone; tap a card for the full timeline and tracking ID you can share.
+            </TabHint>
+
             <div className="grid grid-cols-1 gap-6">
               {displayShipments.map((s) => (
                 <ModernTrackingCard key={s.id} shipment={s} isAdmin={false} />
@@ -414,6 +501,9 @@ export function ClientDashboard() {
         {/* TAB 2: INVOICES & OFFICIAL RECEIPTS */}
         {activeTab === 'invoices' && (
           <div className="space-y-8">
+            <TabHint>
+              Invoices are what you owe; receipts prove what you paid. Use “View” to open either, then download the official PDF or pay to the verified account shown inside.
+            </TabHint>
             <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm">
               <div className="flex items-center justify-between pb-6 border-b border-[#ECE8DF]">
                 <div>
@@ -532,6 +622,10 @@ export function ClientDashboard() {
               </p>
             </div>
 
+            <TabHint>
+              Fill the four fields below and submit — no payment now. The desk reviews your request and sends an invoice to your Invoices tab and WhatsApp.
+            </TabHint>
+
             {quoteSubmitted ? (
               <div className="p-6 rounded-2xl bg-green-50 border border-green-200 text-center space-y-3">
                 <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto" />
@@ -625,6 +719,9 @@ export function ClientDashboard() {
         {/* TAB 2.5: PROFILE & ACCOUNT SETTINGS */}
         {activeTab === 'profile' && (
           <div className="max-w-4xl mx-auto space-y-6">
+            <TabHint>
+              These details drive your deliveries and invoices. Update your address or WhatsApp number here, then press Save — changes apply to future orders immediately.
+            </TabHint>
             {/* Profile Header Card */}
             <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#ECE8DF]">
@@ -893,6 +990,10 @@ export function ClientDashboard() {
               </p>
             </div>
 
+            <TabHint>
+              Measure your carton in centimetres and weigh it in kilograms. The calculator charges the greater of actual weight and volumetric weight — bulky, light boxes cost more.
+            </TabHint>
+
             {/* Mode Switcher */}
             <div className="flex rounded-2xl bg-[#FAFAF8] p-1 border border-[#ECE8DF]">
               <button
@@ -987,6 +1088,9 @@ export function ClientDashboard() {
         {/* TAB 5: LIVE SUPPORT DESK & ASSIGNED OFFICER */}
         {activeTab === 'support' && (
           <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-xl mx-auto text-center space-y-6">
+            <TabHint>
+              Stuck on anything? Your assigned account officer answers on WhatsApp during business hours — use the buttons below to start the conversation.
+            </TabHint>
             <div className="h-16 w-16 rounded-full bg-[#111111] text-[#C9A227] flex items-center justify-center mx-auto shadow-md">
               <MessageCircle className="h-8 w-8" />
             </div>

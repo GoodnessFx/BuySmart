@@ -4,9 +4,11 @@ import { BackToTopButton, FloatingWhatsAppButton } from "./assistant";
 import { BuySmartAiFloatingButton, BuySmartAiPage } from "./buysmart-ai";
 import { Footer, Header, AnnouncementBar, normalizePath, routeMeta, setMetaTag, upsertLink } from "./layout";
 import {
+  AboutUsPage,
   BlogPage,
   BlogPostPage,
   CompanyPolicyPage,
+  CompanyProfilePage,
   ContactPage,
   CookiePolicyPage,
   EstimatorPage,
@@ -20,6 +22,7 @@ import {
   ShippingPage,
   TestimonialsPage,
   VerifiedLagosPage,
+  WhoItsForPage,
   WhyChoosePage,
 } from "./pages";
 import { getPostBySlug } from "./blog";
@@ -348,6 +351,12 @@ export default function App() {
         return <PrivacyPage />;
       case "/why-choose-us":
         return <WhyChoosePage />;
+      case "/who-its-for":
+        return <WhoItsForPage onNavigate={navigate} />;
+      case "/about-us":
+        return <AboutUsPage onNavigate={navigate} />;
+      case "/company-profile":
+        return <CompanyProfilePage />;
       case "/verified-lagos":
         return <VerifiedLagosPage />;
       case "/how-it-works":

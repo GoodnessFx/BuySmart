@@ -35,12 +35,15 @@ import {
   Share2,
   Copy,
   Check,
+  Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import {
   ADDRESS_LINE_1,
   ADDRESS_LINE_2,
   GOOGLE_MAPS_URL,
   PHONE_DISPLAY,
+  audienceProfiles,
   customsGuide,
   estimatorConfig,
   faqItems,
@@ -80,6 +83,7 @@ import {
   WhyChooseGrid,
   bodyText,
   cardBorder,
+  classNames,
   createWhatsAppUrl,
   dark,
   gold,
@@ -135,17 +139,17 @@ type HeroSlide = {
 };
 
 const HERO_SLIDES: HeroSlide[] = [
-  { type: "video", src: "https://assets.mixkit.co/videos/4011/4011-720.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
+  { type: "video", src: "/media/Electronic%20Video%201.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
   { type: "image", src: "/media/hero/hero-background-1.jpg", transition: "slide-left" },
-  { type: "video", src: "https://videos.pexels.com/video-files/36268137/15380256_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-right" },
+  { type: "video", src: "/media/Electronic%20Video%202.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-right" },
   { type: "image", src: "/media/hero/hero-background-2.jpg", transition: "zoom-out" },
-  { type: "video", src: "https://videos.pexels.com/video-files/5605776/5605776-uhd_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-3.jpg", transition: "slide-left" },
+  { type: "video", src: "/media/Good%202.mp4", poster: "/media/hero/hero-background-3.jpg", transition: "slide-left" },
   { type: "image", src: "/media/hero/hero-background-3.jpg", transition: "zoom-out" },
-  { type: "video", src: "https://videos.pexels.com/video-files/857641/857641-uhd_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
+  { type: "video", src: "/media/Goods%203.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
   { type: "image", src: "/media/hero/hero-background-2.jpg", transition: "zoom-in" },
-  { type: "video", src: "https://assets.mixkit.co/videos/7175/7175-720.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "slide-right" },
+  { type: "video", src: "/media/Goods%204.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "slide-right" },
   { type: "image", src: "/media/hero/hero-background-3.jpg", transition: "zoom-in" },
-  { type: "video", src: "https://videos.pexels.com/video-files/6549264/6549264-uhd_3840_2160_30fps.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-left" },
+  { type: "video", src: "/media/Goods%20Video%201.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-left" },
   { type: "image", src: "/media/hero/hero-background-1.jpg", transition: "zoom-in" },
 ];
 
@@ -257,138 +261,227 @@ function HeroBackground() {
   );
 }
 
+/** Compact teaser link used across the home page so every section leads somewhere. */
+function ReadMoreLink({
+  href,
+  label,
+  onNavigate,
+  tone = "gold",
+}: {
+  href: string;
+  label: string;
+  onNavigate?: (path: string) => void;
+  tone?: "gold" | "light";
+}) {
+  return (
+    <a
+      href={href}
+      onClick={(event) => {
+        if (!onNavigate) return;
+        event.preventDefault();
+        onNavigate(href);
+      }}
+      className={classNames(
+        "group/link inline-flex items-center gap-1.5 text-sm font-bold transition",
+        tone === "gold" ? "text-[#8A6D14] hover:text-[#C9A227]" : "text-white/85 hover:text-white",
+      )}
+    >
+      {label}
+      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1" />
+    </a>
+  );
+}
+
+const buyerKnowledge = [
+  {
+    icon: Plane,
+    title: "Air or sea?",
+    fact: "Air lands in 10 to 15 working days. Sea takes 8 to 12 weeks but costs far less per kilogram.",
+    href: "/shipping-information",
+    label: "Read more",
+  },
+  {
+    icon: Scale,
+    title: "Volumetric weight",
+    fact: "Light but bulky boxes are charged by size, not weight. Measure your carton before you accept a quote.",
+    href: "/shipment-cost-estimator",
+    label: "Try the estimator",
+  },
+  {
+    icon: Landmark,
+    title: "Customs & duties",
+    fact: "Duty depends on product category, declared value, and documentation — it is never one flat rate.",
+    href: "/shipping-information",
+    label: "Read more",
+  },
+];
+
 export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
+  const go = (path: string) => (event: React.MouseEvent) => {
+    if (!onNavigate) return;
+    event.preventDefault();
+    onNavigate(path);
+  };
+
+  const featuredServices = services.slice(0, 3);
+  const featuredProjects = galleryItems.filter((item) => item.mediaType === "image").slice(0, 3);
+
   return (
     <>
-      <section className="relative overflow-hidden border-b border-[#EFEAE1] w-full min-h-[42rem] lg:min-h-[44rem] xl:min-h-[48rem]">
+      {/* Hero — short and cinematic, with the two actions a new visitor needs */}
+      <section className="relative w-full overflow-hidden border-b border-[#EFEAE1]">
         <HeroBackground />
-
-
-        <Container className="relative z-10 py-14 lg:py-20">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl text-white">
-              <h1 style={{ fontFamily: "'Sora', sans-serif", color: "white" }} className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.95] tracking-[-0.05em]">
-                Global procurement solutions, <span style={{ color: gold }}>sourced with precision.</span>
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#F0F0F0]">
-                BuySmart helps businesses and individuals source, verify, and receive quality products from anywhere in the world, with deep expertise in China and Vietnam sourcing.
-              </p>
+        <Container className="relative z-10 py-12 sm:py-16 lg:py-20">
+          <div className="max-w-3xl text-white">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/40 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] backdrop-blur-md sm:text-[11px]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#C9A227] opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#C9A227]" />
+              </span>
+              CAC registered · Egbeda, Lagos
             </div>
-
-            <button
-              type="button"
-              onClick={() => setProfileDialogOpen(true)}
-              className="group shrink-0 cursor-pointer rounded-[24px] border border-white/20 bg-white/10 p-5 backdrop-blur-md text-left transition hover:bg-white/20 hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
+            <h1
+              style={{ fontFamily: "'Sora', sans-serif", color: "white" }}
+              className="mt-5 text-[clamp(2.25rem,6vw,4.25rem)] font-extrabold leading-[1.02] tracking-[-0.045em]"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition group-hover:bg-white/30" style={{ color: gold }}>
-                  <FileText className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-white" style={{ fontFamily: "'Sora', sans-serif" }}>Company Profile</div>
-                  <p className="text-xs leading-5 text-[#E0DDD5]">Learn more about BuySmart</p>
-                </div>
+              Global procurement, <span style={{ color: gold }}>sourced with precision.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#EDEAE3] sm:text-lg sm:leading-8">
+              We find the supplier, verify the goods, and deliver to your door in Nigeria. China and Vietnam are our strongest markets — the capability is worldwide.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <a
+                href="/request-quote"
+                onClick={go("/request-quote")}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_rgba(201,162,39,0.35)] transition hover:opacity-90"
+                style={{ backgroundColor: gold }}
+              >
+                Request a quote <ArrowRight className="h-4 w-4" />
+              </a>
+              <a
+                href="/how-it-works"
+                onClick={go("/how-it-works")}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/35 bg-white/10 px-6 py-3.5 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20"
+              >
+                See how it works
+              </a>
+              <button
+                type="button"
+                onClick={() => setProfileDialogOpen(true)}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 px-2 py-2 text-sm font-semibold text-white/85 underline-offset-4 transition hover:text-white hover:underline"
+              >
+                <FileText className="h-4 w-4" style={{ color: gold }} /> Company profile
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-9 grid max-w-3xl gap-2.5 sm:grid-cols-3">
+            {homeStats.map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-white/20 bg-black/35 px-4 py-3 backdrop-blur-md">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#C9A227]">{stat.label}</div>
+                <div className="mt-1 text-sm font-semibold leading-5 text-white">{stat.value}</div>
               </div>
-            </button>
+            ))}
           </div>
         </Container>
       </section>
       <CompanyProfileDialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen} />
 
-      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+      {/* What we handle — three teasers, each one opens the full service page */}
+      <section id="what-we-do" className="border-b border-[#EFEAE1] bg-white py-10 lg:py-14">
         <Container>
-          <div className="mb-10 text-center">
-            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              What we <span style={{ color: gold }}>handle.</span>
-            </h2>
-            <p className="mt-4 max-w-3xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
-              Strategic sourcing, supplier verification, inspections, logistics coordination, and complete end-to-end procurement. China and Vietnam remain our strongest sourcing region, but the capability is global.
-            </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <SectionTag>What we handle</SectionTag>
+              <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Three things we do <span style={{ color: gold }}>properly.</span>
+              </h2>
+            </div>
+            <ReadMoreLink href="/services" label={`All ${services.length} services`} onNavigate={onNavigate} />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => {
+
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            {featuredServices.map((service) => {
               const Icon = serviceIconMap[service.icon] ?? PackageCheck;
               return (
-                <div key={service.title} className={`rounded-xl border bg-[#FAFAF8] p-4 shadow-[0_4px_12px_rgba(17,17,17,0.02)] transition hover:shadow-[0_8px_20px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm" style={{ color: gold }}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="text-sm font-bold text-[#111111] leading-tight">{service.title}</div>
+                <a
+                  key={service.title}
+                  href="/services"
+                  onClick={go("/services")}
+                  className={`group flex flex-col rounded-3xl border bg-[#FAFAF8] p-5 transition hover:-translate-y-0.5 hover:border-[#C9A227]/60 hover:bg-white hover:shadow-[0_16px_36px_rgba(17,17,17,0.07)] ${cardBorder}`}
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm transition group-hover:bg-[#FBF6E8]" style={{ color: gold }}>
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <p className="mt-2 text-[13px] leading-relaxed text-[#4A4A4A]">{service.description}</p>
-                </div>
+                  <h3 className="mt-4 text-base font-bold leading-snug tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    {service.title}
+                  </h3>
+                  <p className="mt-2 flex-1 text-sm leading-6 text-[#4A4A4A]">{service.description}</p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[#8A6D14] transition group-hover:text-[#C9A227]">
+                    Read more <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </a>
               );
             })}
           </div>
-          <div className="mt-10 text-center">
-            <a
-              href="/services"
-              onClick={(e) => {
-                if (onNavigate) {
-                  e.preventDefault();
-                  onNavigate("/services");
-                }
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90"
-              style={{ backgroundColor: gold }}
-            >
-              View all services <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-        </Container>
-      </section>
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
-        <Container>
-          <div className="mb-10 text-center">
-            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Why choose <span style={{ color: gold }}>BuySmart?</span>
-            </h2>
-          </div>
-          <WhyChooseGrid />
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+      {/* How it works — the whole process on one line, details on its own page */}
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-10 lg:py-14">
         <Container>
-          <div className="mb-10 text-center">
-            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Who it&rsquo;s <span style={{ color: gold }}>for.</span>
-            </h2>
-            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A] mx-auto">
-              Built for buyers who mean business.
-            </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <SectionTag>How it works</SectionTag>
+              <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Five steps from link to <span style={{ color: gold }}>delivery.</span>
+              </h2>
+            </div>
+            <ReadMoreLink href="/how-it-works" label="Read the full process" onNavigate={onNavigate} />
           </div>
-           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-             {["Small Business Owners", "Bulk Buyers", "Personal Shoppers", "Personal Use", "Companies, Schools & Offices"].map((audience, index) => {
-              const Icon = audienceIcons[index] ?? ShoppingBag;
-              const imgMap: Record<string, string> = {
-                "Small Business Owners": "/images/who-its-for/small-business-owner.webp",
-                "Bulk Buyers": "/images/who-its-for/bulk-buyers.webp",
-                "Personal Shoppers": "/images/who-its-for/personal-shoppers.webp",
-                "Personal Use": "/images/who-its-for/personal-use.webp",
-                "Companies, Schools & Offices": "/images/who-its-for/companies-offices.webp",
-              };
-              const altMap: Record<string, string> = {
-                "Small Business Owners": "Small local shop with products on display, representing small business owners",
-                "Bulk Buyers": "Warehouse with stacked pallets and bulk goods for wholesale buyers",
-                "Personal Shoppers": "Person browsing products on a smartphone while shopping",
-                "Personal Use": "Person shopping online from home in a comfortable living room setting",
-                "Companies, Schools & Offices": "Professionals in a conference room meeting, representing companies and offices",
-              };
+
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {orderSteps.map((step, index) => (
+              <div key={step.title} className={`rounded-2xl border bg-white p-4 ${cardBorder}`}>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white" style={{ backgroundColor: gold }}>
+                  {index + 1}
+                </div>
+                <p className="mt-3 text-[13px] font-semibold leading-5 text-[#111111]">{step.heading}</p>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* Know before you buy — short lessons that link to the full guides */}
+      <section className="border-b border-[#EFEAE1] bg-white py-10 lg:py-14">
+        <Container>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <SectionTag>Buyer knowledge</SectionTag>
+              <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Know this before you <span style={{ color: gold }}>pay.</span>
+              </h2>
+            </div>
+            <ReadMoreLink href="/blog" label="More buying guides" onNavigate={onNavigate} />
+          </div>
+
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            {buyerKnowledge.map((item) => {
+              const Icon = item.icon;
               return (
-                <div key={audience} className={`rounded-2xl border relative overflow-hidden p-5 text-center shadow-[0_8px_20px_rgba(17,17,17,0.03)] min-h-[280px] flex flex-col items-center justify-center ${cardBorder}`}>
-                  <div className="absolute inset-0 z-0">
-                    <img src={imgMap[audience]} alt={altMap[audience]} className="h-full w-full object-cover" loading="lazy" />
-                  </div>
-                  <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/30 to-black/10" />
-                  <div className="relative z-10">
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm" style={{ color: gold }}>
+                <div key={item.title} className={`flex flex-col rounded-3xl border bg-[#FAFAF8] p-5 ${cardBorder}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm" style={{ color: gold }}>
                       <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="mt-3 text-sm font-semibold leading-5 text-white">{audience}</div>
+                    </span>
+                    <h3 className="text-sm font-bold tracking-[-0.01em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>{item.title}</h3>
+                  </div>
+                  <p className="mt-3 flex-1 text-sm leading-6 text-[#4A4A4A]">{item.fact}</p>
+                  <div className="mt-4">
+                    <ReadMoreLink href={item.href} label={item.label} onNavigate={onNavigate} />
                   </div>
                 </div>
               );
@@ -397,155 +490,345 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-8 lg:py-12">
+      {/* Recent projects — clean photography, no heavy overlays, one tap to the gallery */}
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-10 lg:py-14">
         <Container>
-          <div className="mb-10 text-center">
-            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Recent <span style={{ color: gold }}>projects.</span>
-            </h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <SectionTag>Recent projects</SectionTag>
+              <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Real orders, <span style={{ color: gold }}>real proof.</span>
+              </h2>
+            </div>
+            <ReadMoreLink href="/recent-projects" label={`View all ${galleryItems.length} projects`} onNavigate={onNavigate} />
           </div>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-             {galleryItems.slice(0, 3).map((item) => (
-                <div key={item.title} className="group relative overflow-hidden rounded-[20px] bg-[#111111]">
-                  <div className="aspect-[4/3] w-full">
-                    {item.mediaType === "video" ? (
-                      <video src={item.media} className="h-full w-full object-cover opacity-60 transition-transform duration-[800ms] ease-out group-hover:scale-110 group-hover:opacity-80" autoPlay muted loop playsInline />
-                    ) : (
-                      <img src={item.media} alt={item.title} className="h-full w-full object-cover opacity-60 transition-transform duration-[800ms] ease-out group-hover:scale-110 group-hover:opacity-80" loading="lazy" />
-                    )}
-                  </div>
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 pointer-events-none">
-                    <div className="mb-2 inline-flex w-fit items-center rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
-                      {item.category}
-                    </div>
-                    <div className="text-lg font-bold text-white">{item.title}</div>
-                  </div>
+
+          <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredProjects.map((item) => (
+              <a
+                key={item.title}
+                href="/recent-projects"
+                onClick={go("/recent-projects")}
+                className={`group overflow-hidden rounded-3xl border bg-white transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(17,17,17,0.09)] ${cardBorder}`}
+              >
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE8DF]">
+                  <img
+                    src={item.media}
+                    alt={item.alt}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                  <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#111111] shadow-sm backdrop-blur">
+                    {item.category}
+                  </span>
                 </div>
-             ))}
+                <div className="p-5">
+                  <h3 className="text-base font-bold leading-snug tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                    {item.title}
+                  </h3>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-[#7C746C]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" style={{ color: gold }} /> {item.shippedFrom}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      {inferFreightMode(item.timeline) === "Air freight" ? <Plane className="h-3.5 w-3.5" style={{ color: gold }} /> : <Ship className="h-3.5 w-3.5" style={{ color: gold }} />}
+                      {inferFreightMode(item.timeline)}
+                    </span>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[#8A6D14] transition group-hover:text-[#C9A227]">
+                    See the proof <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </a>
+            ))}
           </div>
-          <div className="mt-10 text-center">
-            <a 
-              href="/projects" 
-              onClick={(e) => {
-                if (onNavigate) {
-                  e.preventDefault();
-                  onNavigate("/projects");
-                }
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold text-white transition hover:opacity-90" 
+        </Container>
+      </section>
+
+      {/* BuySmart AI — the assistant, presented as a product rather than a form */}
+      <section className="relative overflow-hidden border-b border-[#EFEAE1] bg-[#111111] py-12 lg:py-16">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-70"
+          style={{
+            background:
+              "radial-gradient(60% 80% at 12% 20%, rgba(201,162,39,0.28) 0%, transparent 60%), radial-gradient(50% 70% at 88% 80%, rgba(66,133,244,0.18) 0%, transparent 65%)",
+          }}
+        />
+        <Container className="relative grid gap-9 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className="text-white">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A227]/40 bg-[#C9A227]/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#C9A227] sm:text-[11px]">
+              <Sparkles className="h-3.5 w-3.5" /> BuySmart AI
+            </div>
+            <h2 className="mt-5 text-[clamp(1.9rem,4vw,2.9rem)] font-extrabold leading-[1.08] tracking-[-0.04em]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Ask once. Get a <span style={{ color: gold }}>real answer.</span>
+            </h2>
+            <p className="mt-4 max-w-lg text-base leading-7 text-white/80">
+              Send a product link or just describe what you need. BuySmart AI answers shipping, timing, and cost questions instantly, then turns the conversation into a structured quote request for our Lagos desk.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {["Air vs sea advice", "Chargeable weight", "Quote in 24 hours", "Track by ID"].map((chip) => (
+                <span key={chip} className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-white/85">
+                  {chip}
+                </span>
+              ))}
+            </div>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a
+                href="/request-quote"
+                onClick={go("/request-quote")}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-[#111111] transition hover:opacity-90"
+                style={{ backgroundColor: gold }}
+              >
+                <MessageCircle className="h-4 w-4" /> Ask BuySmart AI
+              </a>
+              <ReadMoreLink href="/track" label="Track a shipment" onNavigate={onNavigate} tone="light" />
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-white/12 bg-white/[0.06] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+            <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: gold }}>
+                <Sparkles className="h-4 w-4 text-[#111111]" />
+              </span>
+              <div>
+                <div className="text-xs font-bold text-white">BuySmart AI</div>
+                <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#34A853]" /> Online · replies instantly
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3">
+              <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-[#C9A227] px-4 py-2.5 text-[13px] font-medium leading-5 text-[#111111]">
+                I want 50 Bluetooth speakers from China. How fast can they reach Lagos?
+              </div>
+              <div className="mr-auto max-w-[92%] rounded-2xl rounded-bl-sm border border-white/10 bg-white/10 px-4 py-3 text-[13px] leading-6 text-white/90">
+                Air freight is your fastest option — about <span className="font-bold text-[#C9A227]">10 to 15 working days</span> after the supplier ships. I can prepare a quote covering product cost, freight, and clearing. Want me to start it?
+              </div>
+              <div className="mr-auto flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-white/10 bg-white/10 px-4 py-3">
+                {[0, 1, 2].map((dot) => (
+                  <span
+                    key={dot}
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/60"
+                    style={{ animationDelay: `${dot * 140}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* Trust — one compact row, the full verification lives on its own page */}
+      <section className="border-b border-[#EFEAE1] bg-[#FBF6E8] py-10 lg:py-12">
+        <Container className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-4xl font-extrabold tracking-[-0.05em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>5.0</span>
+                <span className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star key={index} className="h-4 w-4 fill-[#C9A227] text-[#C9A227]" />
+                  ))}
+                </span>
+              </div>
+              <div className="mt-1 text-xs font-medium text-[#7C746C]">Verified Google reviews</div>
+            </div>
+            <div className="hidden h-12 w-px bg-[#E0D6BE] sm:block" />
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" style={{ color: gold }} />
+              <div>
+                <div className="text-sm font-bold text-[#111111]">CAC registered business</div>
+                <div className="text-xs leading-5 text-[#7C746C]">Certificate available for inspection</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0" style={{ color: gold }} />
+              <div>
+                <div className="text-sm font-bold text-[#111111]">{ADDRESS_LINE_1}</div>
+                <div className="text-xs leading-5 text-[#7C746C]">{ADDRESS_LINE_2} · Open daily, closes 6pm</div>
+              </div>
+            </div>
+          </div>
+          <a
+            href="/verified-lagos"
+            onClick={go("/verified-lagos")}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[#D6C18A] bg-white px-5 py-3 text-sm font-bold text-[#111111] transition hover:border-[#C9A227]"
+          >
+            See verification &amp; map <ArrowRight className="h-4 w-4" style={{ color: gold }} />
+          </a>
+        </Container>
+      </section>
+
+      {/* Closing action */}
+      <section className="bg-white py-10 lg:py-12">
+        <Container className="flex flex-col items-start gap-5 rounded-[28px] border border-[#E5E2DA] bg-[#FAFAF8] p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-xl">
+            <h2 className="text-[clamp(1.5rem,3vw,2.1rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Tell us what you need. <span style={{ color: gold }}>We will quote it.</span>
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#4A4A4A]">
+              A product link, a photo, or a plain description is enough to start. You get a written quotation within 24 hours.
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <a
+              href="/request-quote"
+              onClick={go("/request-quote")}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-white transition hover:opacity-90"
               style={{ backgroundColor: gold }}
             >
-              View all projects <ArrowRight className="h-4 w-4" />
+              Request a quote <ArrowRight className="h-4 w-4" />
+            </a>
+            <a
+              href={createWhatsAppUrl("Hello BuySmart, I would like to request a quote for sourcing and shipping.")}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#DED9CF] bg-white px-6 py-3.5 text-sm font-bold text-[#111111] transition hover:border-[#C9A227]"
+            >
+              <Phone className="h-4 w-4" style={{ color: gold }} /> WhatsApp us
             </a>
           </div>
         </Container>
       </section>
 
-      <section className="bg-[#FBF6E8] py-8 lg:py-12">
-        <Container className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-[#D6C18A]/35 bg-white/95 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(201,162,39,0.05)] backdrop-blur-sm" style={{ color: gold }}>
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
-              </span>
-              <span className="text-[#111111]/90">Trusted business</span>
-            </div>
-            <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="max-w-2xl text-[clamp(2.2rem,4.8vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.04em] text-[#111111]">
-              Verified in Lagos.
-              <br />
-              Trusted by buyers.
+    </>
+  );
+}
+
+/**
+ * Who BuySmart serves. Moved off the home page so the landing stays short —
+ * every buyer type is a clean photo you can tap to read the full explanation.
+ */
+export function WhoItsForPage({ onNavigate }: { onNavigate?: (path: string) => void }) {
+  const [activeId, setActiveId] = useState(audienceProfiles[0].id);
+  const detailRef = useRef<HTMLDivElement | null>(null);
+  const active = audienceProfiles.find((item) => item.id === activeId) ?? audienceProfiles[0];
+
+  const select = (id: string) => {
+    setActiveId(id);
+    window.setTimeout(() => {
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 60);
+  };
+
+  return (
+    <main className="bg-[#FAFAF8]">
+      <section className="border-b border-[#EFEAE1] bg-white py-10 lg:py-14">
+        <Container>
+          <div className="max-w-2xl">
+            <SectionTag>Who it&rsquo;s for</SectionTag>
+            <h1 className="text-[clamp(2rem,4.6vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Built for buyers who <span style={{ color: gold }}>mean business.</span>
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-8 text-[#4A4A4A]">
-              BuySmart is a registered import-export business operating from Lagos. Customers can see the business location, map listing, rating, and trust documentation before sending a request.
+            <p className="mt-4 text-[17px] leading-relaxed text-[#4A4A4A]">
+              One item for your house or a container for your warehouse — the process is the same. Tap any buyer type below to see exactly what we handle for you.
             </p>
-            <div className="mt-8 grid gap-4">
-              <div className="rounded-[28px] border border-[#E5E2DA] bg-white p-6 shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FBF6E8]">
-                    <MapPin className="h-5 w-5 text-[#4285F4]" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-[#111111]">Google Reviews</div>
-                    <div className="text-sm text-[#7C746C]">Import export company · Egbeda, Lagos</div>
-                  </div>
-                </div>
-                <div className="mt-5 flex flex-wrap items-end gap-4">
-                  <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-6xl font-extrabold tracking-[-0.05em] text-[#111111]">
-                    5.0
-                  </div>
-                  <div className="pb-2">
-                    <div className="flex gap-1.5">
-                      {Array.from({ length: 5 }).map((_, index) => (
-                        <Star key={index} className="h-4 w-4 fill-[#C9A227] text-[#C9A227]" />
-                      ))}
-                    </div>
-                    <div className="mt-2 text-sm text-[#7C746C]">Based on verified reviews</div>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-[28px] border border-[#E5E2DA] bg-white p-5 text-[#4A4A4A] shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
-                <div className="flex items-start gap-3">
-                  <Landmark className="mt-1 h-5 w-5" style={{ color: gold }} />
-                  <p className="text-sm leading-7">
-                    BuySmart Procurement Limited is a verified import-export business registered and actively operating in Lagos, Nigeria.
-                  </p>
-                </div>
-              </div>
-              <div className="rounded-[28px] border border-[#E5E2DA] bg-white p-5 shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
-                <div className="grid gap-4 sm:grid-cols-[0.75fr_1.25fr] sm:items-center">
-                  <div className="overflow-hidden rounded-2xl border border-[#E5E2DA] bg-[#FAFAF8]">
-                    <img src={testimonialMedia[2]?.image} alt={testimonialMedia[2]?.alt} className="h-48 w-full object-cover object-top" />
-                  </div>
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.18em]" style={{ color: gold }}>Business certificate</div>
-                    <div className="mt-2 text-lg font-semibold text-[#111111]">CAC registration certificate</div>
-                    <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">
-                      The certificate is visible here so first-time visitors can immediately see BuySmart is a registered business and not an anonymous online seller.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="rounded-[30px] border border-[#E5E2DA] bg-white p-4 shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
-            <div className="overflow-hidden rounded-[24px] border border-[#E5E2DA]">
-              <iframe
-                title="BuySmart Lagos location map"
-                src="https://www.google.com/maps?q=6+Bassey+Street,+Egbeda,+Lagos&z=15&output=embed"
-                className="h-[24rem] w-full bg-[#FBF6E8]"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-            <div className="grid gap-4 p-4 text-[#111111] sm:grid-cols-[1fr_auto] sm:items-end">
-              <div className="grid gap-3">
-                <div className="flex items-start gap-3">
-                  <MapPin className="mt-1 h-4 w-4" style={{ color: gold }} />
-                  <div>
-                    <div className="text-sm font-semibold">{ADDRESS_LINE_1}, Egbeda</div>
-                    <div className="text-sm text-[#7C746C]">{ADDRESS_LINE_2}</div>
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+            {audienceProfiles.map((item, index) => {
+              const Icon = audienceIcons[index] ?? ShoppingBag;
+              const isActive = item.id === activeId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => select(item.id)}
+                  aria-pressed={isActive}
+                  className={classNames(
+                    "group relative cursor-pointer overflow-hidden rounded-3xl border text-left transition",
+                    isActive
+                      ? "border-[#C9A227] shadow-[0_16px_36px_rgba(201,162,39,0.22)]"
+                      : "border-[#E5E2DA] hover:-translate-y-0.5 hover:border-[#C9A227]/60 hover:shadow-[0_14px_30px_rgba(17,17,17,0.08)]",
+                  )}
+                >
+                  <div className="aspect-[4/5] w-full overflow-hidden bg-[#ECE8DF]">
+                    <img
+                      src={item.image}
+                      alt={item.alt}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
                   </div>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-3 pt-10">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/95" style={{ color: gold }}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="mt-2 block text-[13px] font-bold leading-4 text-white">{item.title}</span>
+                  </div>
+                  {isActive ? (
+                    <span className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full text-white" style={{ backgroundColor: gold }}>
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </Container>
+      </section>
+
+      <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-10 lg:py-14">
+        <Container>
+          <div ref={detailRef} className={`grid gap-6 overflow-hidden rounded-[32px] border bg-white p-5 shadow-[0_18px_48px_rgba(17,17,17,0.06)] sm:p-7 lg:grid-cols-[0.85fr_1.15fr] ${cardBorder}`}>
+            <div className="overflow-hidden rounded-[24px] border border-[#E5E2DA] bg-[#ECE8DF]">
+              <img src={active.image} alt={active.alt} className="h-64 w-full object-cover sm:h-80 lg:h-full" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: gold }}>{active.tagline}</div>
+              <h2 className="mt-2 text-[clamp(1.6rem,3.4vw,2.4rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                {active.title}
+              </h2>
+              <p className="mt-3 text-[15px] leading-7 text-[#4A4A4A]">{active.summary}</p>
+
+              <div className="mt-5 grid gap-2.5">
+                {active.whatYouGet.map((point) => (
+                  <div key={point} className="flex items-start gap-3">
+                    <GoldCheck />
+                    <span className="text-sm leading-6 text-[#111111]">{point}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-[#E5E2DA] bg-[#FAFAF8] p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7C746C]">Typical order</div>
+                  <div className="mt-1.5 text-sm font-semibold leading-5 text-[#111111]">{active.typicalOrder}</div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Clock3 className="mt-1 h-4 w-4" style={{ color: gold }} />
-                  <div className="text-sm text-[#4A4A4A]">Open daily, closes 6pm</div>
+                <div className="rounded-2xl border border-[#E5E2DA] bg-[#FAFAF8] p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#7C746C]">Best shipping mode</div>
+                  <div className="mt-1.5 text-sm font-semibold leading-5 text-[#111111]">{active.bestMode}</div>
                 </div>
               </div>
-              <a
-                href={GOOGLE_MAPS_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-[#D6C18A] bg-[#FBF6E8] px-4 py-3 text-sm font-semibold text-[#111111] transition hover:border-[#C9A227]"
-              >
-                View map profile <ExternalLink className="h-4 w-4" style={{ color: gold }} />
-              </a>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="/request-quote"
+                  onClick={(event) => {
+                    if (!onNavigate) return;
+                    event.preventDefault();
+                    onNavigate("/request-quote");
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: gold }}
+                >
+                  Start my request <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  href={createWhatsAppUrl(`Hello BuySmart, I am a ${active.title.toLowerCase()} buyer and I would like a quote.`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#DED9CF] bg-white px-6 py-3.5 text-sm font-bold text-[#111111] transition hover:border-[#C9A227]"
+                >
+                  <Phone className="h-4 w-4" style={{ color: gold }} /> Ask on WhatsApp
+                </a>
+              </div>
             </div>
           </div>
         </Container>
       </section>
-    </>
+      <ContactSection compact />
+    </main>
   );
 }
 
@@ -1288,78 +1571,164 @@ export function EstimatorPage() {
 export function ProjectsPage() {
   const [category, setCategory] = useState<(typeof galleryCategories)[number] | "All">("All");
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<(typeof galleryItems)[number] | null>(null);
   const filteredItems = category === "All" ? galleryItems : galleryItems.filter((item) => item.category === category);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey, true);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      document.body.style.overflow = previous;
+    };
+  }, [lightbox]);
+
+  const countFor = (value: string) =>
+    value === "All" ? galleryItems.length : galleryItems.filter((item) => item.category === value).length;
+
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
+      <section className="border-b border-[#EFEAE1] bg-white py-10 lg:py-14">
         <Container>
-          <div className="mb-10">
-            <h2 className="text-[clamp(2.3rem,5vw,3.5rem)] font-extrabold tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Recent <span style={{ color: gold }}>projects.</span>
-            </h2>
-            <p className="mt-4 max-w-2xl text-[17px] leading-relaxed text-[#4A4A4A]">
-              Select a category or browse all. Open any project to see shipping route, delivery timeline, and proof media from the actual shipment.
+          <div className="max-w-2xl">
+            <SectionTag>Recent projects</SectionTag>
+            <h1 className="text-[clamp(2rem,4.6vw,3.25rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Every order, <span style={{ color: gold }}>documented.</span>
+            </h1>
+            <p className="mt-4 text-[17px] leading-relaxed text-[#4A4A4A]">
+              Real photos and clips from BuySmart shipments. Tap any image to view it full size, or open the details for the route and timeline.
             </p>
           </div>
-          <div className="mb-8 flex flex-wrap gap-3">
-            <button type="button" onClick={() => setCategory("All")} className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: category === "All" ? gold : dark }}>All</button>
-            {galleryCategories.map((item) => <button key={item} type="button" onClick={() => setCategory(item)} className="rounded-full px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: category === item ? gold : dark }}>{item}</button>)}
+
+          <div className="mt-7 flex flex-wrap gap-2">
+            {["All", ...galleryCategories].map((item) => {
+              const isActive = category === item;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setCategory(item as typeof category)}
+                  className={classNames(
+                    "cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition",
+                    isActive
+                      ? "border-[#C9A227] bg-[#C9A227] text-white shadow-[0_8px_20px_rgba(201,162,39,0.28)]"
+                      : "border-[#E5E2DA] bg-[#FAFAF8] text-[#4A4A4A] hover:border-[#C9A227] hover:text-[#111111]",
+                  )}
+                >
+                  {item}
+                  <span className={classNames("ml-2 text-xs font-bold", isActive ? "text-white/80" : "text-[#A79E93]")}>
+                    {countFor(item)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+
           {filteredItems.length === 0 ? (
-            <div className={`rounded-[28px] border bg-[#FAFAF8] p-8 text-center shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+            <div className={`mt-8 rounded-[28px] border bg-[#FAFAF8] p-8 text-center ${cardBorder}`}>
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white" style={{ color: gold }}><LayoutGrid className="h-5 w-5" /></div>
               <p className="mt-4 text-sm leading-7 text-[#4A4A4A]">No projects in this category yet. Send us a message on WhatsApp and we can share examples relevant to what you are looking for.</p>
               <a href={createWhatsAppUrl("Hello BuySmart, I would like to see examples of recent projects.")} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white" style={{ backgroundColor: gold }}>Ask on WhatsApp <ArrowRight className="h-4 w-4" /></a>
             </div>
           ) : (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {filteredItems.map((item) => {
                 const itemKey = `${item.media}-${item.title}`;
                 const isExpanded = expandedItem === itemKey;
                 return (
-                <div key={itemKey} className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_14px_34px_rgba(17,17,17,0.04)] ${cardBorder}`}>
-                  {item.mediaType === "image" ? (
-                    <div className="group relative overflow-hidden bg-[#111111]">
-                      <img src={item.media} alt={item.alt} className="h-72 w-full object-cover opacity-90 transition-transform duration-[800ms] ease-out group-hover:scale-110 group-hover:opacity-100" loading="lazy" />
-                    </div>
-                  ) : (
-                    <video src={item.media} className="h-72 w-full object-cover" muted playsInline loop controls preload="metadata" />
-                  )}
-                  <div className="p-5">
-                    <div className="text-xs uppercase tracking-[0.18em] text-[#7C746C]">{item.category}</div>
-                    <div className="mt-2 text-lg font-semibold text-[#111111]">{item.title}</div>
-                    <p className="mt-3 text-sm leading-7 text-[#4A4A4A]">{item.caption}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-[#7C746C]">
-                      <span className="rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-3 py-2">From {item.shippedFrom}</span>
-                      <span className="rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-3 py-2">{inferFreightMode(item.timeline)}</span>
-                      <span className="rounded-full border border-[#E5E2DA] bg-[#FAFAF8] px-3 py-2">{item.mediaType === "video" ? "Video proof" : "Photo proof"}</span>
-                    </div>
+                  <article key={itemKey} className={`flex flex-col overflow-hidden rounded-3xl border bg-white transition hover:shadow-[0_18px_40px_rgba(17,17,17,0.08)] ${cardBorder}`}>
                     <button
                       type="button"
-                      onClick={() => setExpandedItem((current) => (current === itemKey ? null : itemKey))}
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#111111]"
+                      onClick={() => setLightbox(item)}
+                      title="View full size"
+                      className="group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-[#ECE8DF]"
                     >
-                      {isExpanded ? "Hide details" : "View details"} <ArrowRight className={`h-4 w-4 transition ${isExpanded ? "rotate-90" : ""}`} style={{ color: gold }} />
+                      {item.mediaType === "image" ? (
+                        <img src={item.media} alt={item.alt} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+                      ) : (
+                        <video src={item.media} className="h-full w-full object-cover" muted playsInline loop preload="metadata" />
+                      )}
+                      <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#111111] shadow-sm backdrop-blur">
+                        {item.category}
+                      </span>
+                      <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/65 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur transition group-hover:bg-black/80">
+                        {item.mediaType === "video" ? <Camera className="h-3.5 w-3.5" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                        {item.mediaType === "video" ? "Play clip" : "View photo"}
+                      </span>
                     </button>
-                    {isExpanded ? (
-                      <div className="mt-5 grid gap-4 rounded-[22px] border border-[#E5E2DA] bg-[#FAFAF8] p-4">
-                        <p className="text-sm leading-7 text-[#4A4A4A]">{buildProjectInsight(item)}</p>
-                        <div className="grid gap-2 text-sm text-[#4A4A4A]">
-                          <div><span className="font-semibold text-[#111111]">What this shows:</span> {item.caption}</div>
-                          <div><span className="font-semibold text-[#111111]">Origin:</span> {item.shippedFrom}</div>
-                          <div><span className="font-semibold text-[#111111]">Expected timeline:</span> {item.timeline}</div>
-                          <div><span className="font-semibold text-[#111111]">Proof type:</span> {item.mediaType === "video" ? "Video from the shipment or handoff stage" : "Image from the shipment or inspection stage"}</div>
-                        </div>
+
+                    <div className="flex flex-1 flex-col p-5">
+                      <h2 className="text-base font-bold leading-snug tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>{item.title}</h2>
+                      <p className="mt-2 flex-1 text-sm leading-6 text-[#4A4A4A]">{item.caption}</p>
+                      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-[#7C746C]">
+                        <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" style={{ color: gold }} /> {item.shippedFrom}</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          {inferFreightMode(item.timeline) === "Air freight" ? <Plane className="h-3.5 w-3.5" style={{ color: gold }} /> : <Ship className="h-3.5 w-3.5" style={{ color: gold }} />}
+                          {item.timeline}
+                        </span>
                       </div>
-                    ) : null}
-                  </div>
-                </div>
-              )})}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedItem((current) => (current === itemKey ? null : itemKey))}
+                        className="mt-4 inline-flex cursor-pointer items-center gap-1.5 self-start text-sm font-bold text-[#8A6D14] transition hover:text-[#C9A227]"
+                      >
+                        {isExpanded ? "Hide details" : "View details"}
+                        <ArrowRight className={classNames("h-4 w-4 transition-transform", isExpanded && "rotate-90")} />
+                      </button>
+                      {isExpanded ? (
+                        <div className="mt-4 grid gap-2 rounded-2xl border border-[#E5E2DA] bg-[#FAFAF8] p-4 text-sm leading-6 text-[#4A4A4A]">
+                          <p>{buildProjectInsight(item)}</p>
+                          <div><span className="font-semibold text-[#111111]">Origin:</span> {item.shippedFrom}</div>
+                          <div><span className="font-semibold text-[#111111]">Timeline:</span> {item.timeline}</div>
+                          <div><span className="font-semibold text-[#111111]">Proof:</span> {item.mediaType === "video" ? "Video from the shipment or handoff stage" : "Image from the shipment or inspection stage"}</div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </Container>
       </section>
 
+      {lightbox ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.title}
+        >
+          <div className="relative max-h-full w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              aria-label="Close preview"
+              className="absolute -top-12 right-0 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              Close <Check className="h-3.5 w-3.5" />
+            </button>
+            <div className="overflow-hidden rounded-3xl border border-white/15 bg-black">
+              {lightbox.mediaType === "image" ? (
+                <img src={lightbox.media} alt={lightbox.alt} className="max-h-[70vh] w-full object-contain" />
+              ) : (
+                <video src={lightbox.media} className="max-h-[70vh] w-full" controls autoPlay muted playsInline loop />
+              )}
+            </div>
+            <div className="mt-3 rounded-2xl border border-white/15 bg-white/10 p-4 text-white backdrop-blur">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#C9A227]">{lightbox.category}</div>
+              <div className="mt-1 text-base font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>{lightbox.title}</div>
+              <p className="mt-1.5 text-sm leading-6 text-white/80">{lightbox.caption}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

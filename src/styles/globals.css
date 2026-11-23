@@ -1,5 +1,6 @@
 html {
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
@@ -10,6 +11,68 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Brand-themed scrollbars — cream track, gold thumb, everywhere the page scrolls */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d9cda9 #f1eee6;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1eee6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d9cda9;
+  border-radius: 999px;
+  border: 2px solid #f1eee6;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c9a227;
+}
+
+/* Horizontal tab strips keep a slim gold rail so mobile users see they can swipe */
+.no-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 39, 0.45) transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.no-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 39, 0.45);
+  border: none;
+  border-radius: 999px;
+}
+
+/* Comfortable tapping: no double-tap zoom delay, no accidental text selection on controls */
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+/* iOS focuses zoom in when a field is under 16px — keep fields readable on phones */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 #root {

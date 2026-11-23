@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Check, Clock3, Send, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, PackageSearch, Send, ShieldCheck, Sparkles, X } from "lucide-react";
 import { findReply } from "./assistant";
-import { classNames, createWhatsAppUrl, gold, WhatsAppBrandIcon } from "./layout";
+import { classNames, Container, createWhatsAppUrl, gold, WhatsAppBrandIcon } from "./layout";
 
 export type QuoteStatus = "pending" | "responded" | "closed";
 
@@ -1021,25 +1021,119 @@ function BuySmartAiQuoteFlow() {
 }
 
 export function BuySmartAiPage() {
+  const guideSteps = [
+    {
+      title: "Ask anything first",
+      body: "Shipping times, duties, installments, restricted items — the assistant answers from our real service terms.",
+    },
+    {
+      title: "Then request a quote",
+      body: "Four short questions: product, quantity, destination, timeline. No account or login needed.",
+    },
+    {
+      title: "Come back to track it",
+      body: "Use the same phone or email and your requests reappear here with live status and team notes.",
+    },
+  ];
+
   return (
     <main className="bg-[#FAFAF8]">
-      <section className="border-b border-[#EFEAE1] bg-white py-8 lg:py-12">
-        <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 lg:px-10">
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: "#1A2332" }}>
-                <AiChatIcon className="h-5 w-5" />
-              </div>
-              <div className="text-left">
-                <h1 className="text-xl font-extrabold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-                  BuySmartAi
-                </h1>
-                <p className="text-sm text-[#7C746C]">Guided quote requests and tracking</p>
+      <section className="relative overflow-hidden bg-[#111111] py-12 lg:py-16">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(60% 90% at 15% 0%, rgba(201,162,39,0.22) 0%, rgba(17,17,17,0) 60%), radial-gradient(50% 80% at 90% 100%, rgba(37,99,235,0.16) 0%, rgba(17,17,17,0) 65%)",
+          }}
+        />
+        <Container className="relative">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A227]/40 bg-[#C9A227]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#E8C55A]">
+            <Sparkles className="h-3.5 w-3.5" /> BuySmart AI desk
+          </div>
+          <h1
+            className="mt-4 max-w-2xl text-[clamp(1.9rem,4.5vw,3rem)] font-extrabold leading-[1.08] tracking-[-0.02em] text-white"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            Ask. Get quoted. <span style={{ color: gold }}>Track it.</span>
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-white/70 sm:text-base">
+            One desk for questions and quote requests — answered by our team, usually in under 18 minutes during business hours.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {[
+              { icon: Clock3, label: "Under 18 min reply" },
+              { icon: ShieldCheck, label: "No login required" },
+              { icon: PackageSearch, label: "Status tracking built in" },
+            ].map((chip) => (
+              <span
+                key={chip.label}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-white/85"
+              >
+                <chip.icon className="h-3.5 w-3.5" style={{ color: gold }} />
+                {chip.label}
+              </span>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section className="py-8 lg:py-12">
+        <Container className="grid items-start gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="grid gap-4 lg:sticky lg:top-28">
+            <div className="rounded-[24px] border border-[#E5E2DA] bg-white p-5 sm:p-6">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8A6D14]">How this desk works</div>
+              <div className="mt-4 grid gap-4">
+                {guideSteps.map((step, index) => (
+                  <div key={step.title} className="flex gap-3.5">
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white"
+                      style={{ backgroundColor: gold }}
+                    >
+                      {index + 1}
+                    </span>
+                    <div>
+                      <div className="text-sm font-bold text-[#111111]">{step.title}</div>
+                      <p className="mt-1 text-sm leading-6 text-[#4A4A4A]">{step.body}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            <div className="rounded-[24px] border border-[#E5E2DA] bg-[#FBF6E8] p-5 sm:p-6">
+              <div className="text-sm font-bold text-[#111111]">Prefer a human right away?</div>
+              <p className="mt-1.5 text-sm leading-6 text-[#4A4A4A]">
+                Message the same desk on WhatsApp — quotes, tracking IDs, and payment questions all welcome.
+              </p>
+              <a
+                href={createWhatsAppUrl("Hello BuySmart, I need help with a procurement request.")}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#111111] px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
+              >
+                <WhatsAppBrandIcon className="h-4 w-4" /> Chat on WhatsApp
+              </a>
+            </div>
           </div>
-          <BuySmartAiContent />
-        </div>
+
+          <div className="rounded-[24px] border border-[#E5E2DA] bg-white p-4 shadow-[0_18px_50px_rgba(17,17,17,0.06)] sm:p-6">
+            <div className="mb-5 flex items-center gap-3 border-b border-[#EFEAE1] pb-4">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: "#1A2332" }}>
+                <AiChatIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="text-base font-extrabold tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  BuySmartAi
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#1F7A34]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#1F7A34]" /> Online — guided quotes &amp; answers
+                </div>
+              </div>
+            </div>
+            <BuySmartAiContent />
+          </div>
+        </Container>
       </section>
     </main>
   );

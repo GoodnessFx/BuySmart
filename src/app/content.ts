@@ -839,3 +839,107 @@ export const assistantFallback =
 
 export const footerConsent =
   "By subscribing, you agree to receive updates from BuySmart. You can unsubscribe anytime.";
+
+export type AudienceProfile = {
+  id: string;
+  title: string;
+  image: string;
+  alt: string;
+  tagline: string;
+  summary: string;
+  whatYouGet: string[];
+  typicalOrder: string;
+  bestMode: string;
+};
+
+/**
+ * The buyer types BuySmart serves. Each one lives on its own page so the home
+ * page stays short, and every card opens a full explanation with a clean photo.
+ */
+export const audienceProfiles: AudienceProfile[] = [
+  {
+    id: "small-business",
+    title: "Small Business Owners",
+    image: "/images/who-its-for/small-business-owner.webp",
+    alt: "Small local shop with products on display, representing small business owners",
+    tagline: "Restock your shop without travelling or guessing.",
+    summary:
+      "You run a shop, a stall, or an online store and you need stock that arrives on time and matches what you paid for. We find the supplier, confirm the exact product, and move it to Nigeria so you can keep selling instead of chasing orders.",
+    whatYouGet: [
+      "Supplier verification before any money leaves your account",
+      "Factory-level pricing on repeat restocks",
+      "Photo and video proof of your goods before they ship",
+      "One consolidated shipment instead of many small costly ones",
+    ],
+    typicalOrder: "Cartons of fast-moving goods, accessories, and shop inventory",
+    bestMode: "Air for urgent restocks, sea for planned bulk stock",
+  },
+  {
+    id: "bulk-buyers",
+    title: "Bulk Buyers",
+    image: "/images/who-its-for/bulk-buyers.webp",
+    alt: "Warehouse with stacked pallets and bulk goods for wholesale buyers",
+    tagline: "Container-level buying with the paperwork handled.",
+    summary:
+      "You buy in volume and your margin depends on landed cost, not just unit price. We negotiate with factories, consolidate purchases, and plan freight so your total cost per unit stays predictable.",
+    whatYouGet: [
+      "Direct factory negotiation and sample confirmation",
+      "Consolidation across suppliers to cut freight cost",
+      "Export packing, documentation, and customs coordination",
+      "Milestone updates from warehouse to Lagos handoff",
+    ],
+    typicalOrder: "Pallets, cartons, and container loads of general goods",
+    bestMode: "Sea freight for the lowest landed cost per unit",
+  },
+  {
+    id: "personal-shoppers",
+    title: "Personal Shoppers",
+    image: "/images/who-its-for/personal-shoppers.webp",
+    alt: "Person browsing products on a smartphone while shopping",
+    tagline: "Buy for other people with proof at every step.",
+    summary:
+      "You shop on behalf of friends, family, or customers who send you links and expect exactly what they saw online. We confirm the product, share inspection media, and keep every order traceable so you can answer your customers confidently.",
+    whatYouGet: [
+      "Link-by-link verification of what the supplier actually sells",
+      "Clear per-item quotations you can forward to your customer",
+      "Inspection photos before the goods leave the supplier",
+      "Delivery updates you can share without chasing anyone",
+    ],
+    typicalOrder: "Mixed personal items, gadgets, fashion, and beauty products",
+    bestMode: "Air freight for quick turnaround on individual orders",
+  },
+  {
+    id: "personal-use",
+    title: "Personal Use",
+    image: "/images/who-its-for/personal-use.webp",
+    alt: "Person shopping online from home in a comfortable living room setting",
+    tagline: "One item is still a real order.",
+    summary:
+      "You want one thing for yourself — a phone, an appliance, a piece of furniture — and you do not want to lose money to a fake seller. A single-item request gets the same verification, quotation clarity, and delivery follow-through as a wholesale shipment.",
+    whatYouGet: [
+      "Honest advice on whether the item is worth importing",
+      "A written quote covering product, freight, and clearing",
+      "Guidance on air versus sea for your budget and timeline",
+      "Door-to-door delivery anywhere in Nigeria",
+    ],
+    typicalOrder: "Single electronics, appliances, and household items",
+    bestMode: "Air freight — most personal orders arrive in 10 to 15 working days",
+  },
+  {
+    id: "companies-offices",
+    title: "Companies, Schools & Offices",
+    image: "/images/who-its-for/companies-offices.webp",
+    alt: "Professionals in a conference room meeting, representing companies and offices",
+    tagline: "Procurement your finance team can audit.",
+    summary:
+      "Your organisation buys equipment, furniture, and supplies on a schedule and needs documents that stand up to internal review. We supply official invoices, receipts, and a procurement trail for every order.",
+    whatYouGet: [
+      "Official invoices and receipts for every payment",
+      "Recurring supply support for operational needs",
+      "Specification matching before purchase orders are approved",
+      "A single point of contact for the whole procurement cycle",
+    ],
+    typicalOrder: "Office equipment, electronics, furniture, and facility supplies",
+    bestMode: "Sea for bulk fit-outs, air for urgent operational equipment",
+  },
+];
