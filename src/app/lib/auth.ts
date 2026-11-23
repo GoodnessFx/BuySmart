@@ -146,13 +146,11 @@ const QUOTES_KEY = 'buysmart_stored_quotes';
 
 // Master Staff & Admin Credentials (Strict Single Login)
 export const MASTER_ADMIN_EMAIL = 'admin@buysmart.ng';
-export const MASTER_ADMIN_PASS = 'BuySmart2026!';
+export const MASTER_ADMIN_PASS = 'adminglorialocked';
 
 export function verifyAdminCredentials(email: string, pass: string): boolean {
   const normEmail = email.trim().toLowerCase();
-  const validEmails = ['admin@buysmart.ng', 'founder@buysmart.ng', 'management@buysmart.ng'];
-  const validPasswords = ['BuySmart2026!', 'buysmart2026', 'BuySmart2026'];
-  return validEmails.includes(normEmail) && validPasswords.includes(pass);
+  return normEmail === 'admin@buysmart.ng' && pass === 'adminglorialocked';
 }
 
 // Initial Registered Clients Seed
