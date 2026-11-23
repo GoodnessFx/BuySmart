@@ -22,7 +22,7 @@ import {
   findClientByEmail,
   registerNewClient,
   verifyAdminCredentials,
-  generateFounderSignupAlertUrl,
+  addAdminNotification,
   MASTER_ADMIN_EMAIL,
   type UserRole,
   type AuthUser,
@@ -157,10 +157,15 @@ export default function LoginPage() {
           notes: 'Google verified client signup.',
         };
         saveClient(client);
-        try {
-          const alertUrl = generateFounderSignupAlertUrl(client);
-          window.open(alertUrl, '_blank');
-        } catch {}
+        addAdminNotification({
+          type: 'new_client',
+          title: 'New Google Client Signup',
+          message: `${client.name} signed in with Google (${client.email}).`,
+          clientName: client.name,
+          clientEmail: client.email,
+          clientPhone: client.phone,
+          clientCode: client.clientCode,
+        });
       }
 
       const authUser: AuthUser = {
@@ -227,10 +232,15 @@ export default function LoginPage() {
           notes: 'Signed in via Google Profile.',
         };
         saveClient(client);
-        try {
-          const alertUrl = generateFounderSignupAlertUrl(client);
-          window.open(alertUrl, '_blank');
-        } catch {}
+        addAdminNotification({
+          type: 'new_client',
+          title: 'New Google Client Signup',
+          message: `${client.name} signed in with Google (${client.email}).`,
+          clientName: client.name,
+          clientEmail: client.email,
+          clientPhone: client.phone,
+          clientCode: client.clientCode,
+        });
       }
 
       const authUser: AuthUser = {
@@ -337,13 +347,18 @@ export default function LoginPage() {
             };
             setAuthUser(authUser);
 
-            // Notify Founder on WhatsApp
-            try {
-              const alertUrl = generateFounderSignupAlertUrl(newClient);
-              window.open(alertUrl, '_blank');
-            } catch {}
+            // Record alert in Admin Console notification inbox
+            addAdminNotification({
+              type: 'new_client',
+              title: 'New Client Registered',
+              message: `${newClient.name} (${newClient.businessName || 'Individual'}) registered on the portal. Contact: ${newClient.phone}`,
+              clientName: newClient.name,
+              clientEmail: newClient.email,
+              clientPhone: newClient.phone,
+              clientCode: newClient.clientCode,
+            });
 
-            setSuccess('Registration successful! Welcome to BuySmart Client Portal. Redirecting...');
+            setSuccess('Registration successful! Welcome to BuySmart Client Portal. Loading your account...');
             setTimeout(() => {
               window.location.href = '/client';
             }, 500);

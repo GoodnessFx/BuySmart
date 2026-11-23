@@ -153,6 +153,100 @@ const CLIENTS_KEY = 'buysmart_registered_clients';
 const SHIPMENTS_KEY = 'buysmart_stored_shipments';
 const QUOTES_KEY = 'buysmart_stored_quotes';
 const RATES_KEY = 'buysmart_shipping_rates';
+const NOTIFICATIONS_KEY = 'buysmart_admin_notifications';
+const TAWK_KEY = 'buysmart_tawk_config';
+
+export type AdminNotification = {
+  id: string;
+  type: 'new_client' | 'payment' | 'shipment';
+  title: string;
+  message: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  clientCode: string;
+  timestamp: string;
+  read: boolean;
+};
+
+export function getAdminNotifications(): AdminNotification[] {
+  try {
+    const raw = localStorage.getItem(NOTIFICATIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addAdminNotification(notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'>): AdminNotification[] {
+  try {
+    const list = getAdminNotifications();
+    const newRecord: AdminNotification = {
+      ...notif,
+      id: 'notif-' + Date.now(),
+      timestamp:
+        new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) +
+        ', ' +
+        new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      read: false,
+    };
+    const updated = [newRecord, ...list].slice(0, 30);
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function markNotificationRead(id: string): AdminNotification[] {
+  try {
+    const list = getAdminNotifications();
+    const updated = list.map((n) => (n.id === id ? { ...n, read: true } : n));
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function clearAllNotifications(): void {
+  try {
+    localStorage.removeItem(NOTIFICATIONS_KEY);
+  } catch {}
+}
+
+// Tawk.to Live Desk Settings
+export type TawkConfig = {
+  propertyId: string;
+  widgetId: string;
+  directChatUrl?: string;
+};
+
+export const DEFAULT_TAWK_CONFIG: TawkConfig = {
+  propertyId: '',
+  widgetId: 'default',
+  directChatUrl: '',
+};
+
+export function getTawkConfig(): TawkConfig {
+  try {
+    const raw = localStorage.getItem(TAWK_KEY);
+    return raw ? { ...DEFAULT_TAWK_CONFIG, ...JSON.parse(raw) } : DEFAULT_TAWK_CONFIG;
+  } catch {
+    return DEFAULT_TAWK_CONFIG;
+  }
+}
+
+export function saveTawkConfig(config: Partial<TawkConfig>): TawkConfig {
+  try {
+    const current = getTawkConfig();
+    const updated = { ...current, ...config };
+    localStorage.setItem(TAWK_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return DEFAULT_TAWK_CONFIG;
+  }
+}
 
 // Master Staff & Admin Credentials (Strict Single Login)
 export const MASTER_ADMIN_EMAIL = 'admin@buysmart.ng';

@@ -44,6 +44,7 @@ import {
   BadgeCheck,
   Calculator,
   Save,
+  Bell,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import {
@@ -63,6 +64,11 @@ import {
   numberToWordsNaira,
   getShippingRates,
   saveShippingRates,
+  getAdminNotifications,
+  markNotificationRead,
+  clearAllNotifications,
+  getTawkConfig,
+  saveTawkConfig,
   type InvoiceRecord,
   type ReceiptRecord,
   type InvoiceLine,
@@ -70,6 +76,8 @@ import {
   type ClientProfile,
   type ShipmentItem,
   type ShippingRates,
+  type AdminNotification,
+  type TawkConfig,
 } from '../../lib/auth';
 
 const inputStyle =
@@ -175,6 +183,9 @@ export function AdminDashboard() {
   const [newShipmentNote, setNewShipmentNote] = useState('');
   const [newShipmentLocation, setNewShipmentLocation] = useState('');
   const [shippingRates, setShippingRates] = useState<ShippingRates>(getShippingRates());
+  const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
+  const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
+  const [tawkConfig, setTawkConfig] = useState<TawkConfig>(getTawkConfig());
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -191,6 +202,8 @@ export function AdminDashboard() {
     const ships = getStoredShipments();
     setShipments(ships);
     setShippingRates(getShippingRates());
+    setAdminNotifications(getAdminNotifications());
+    setTawkConfig(getTawkConfig());
 
     if (invs.length > 0) {
       const nextNum = 'BSP-2026-0' + (invs.length + 1).toString().padStart(2, '0');
@@ -434,7 +447,92 @@ ${link}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowNotificationsDrawer(!showNotificationsDrawer)}
+                title="Client Signup Notifications"
+                className="relative p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+              >
+                <Bell className="h-4 w-4" />
+                {adminNotifications.filter((n) => !n.read).length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#C9A227] text-white text-[10px] font-black flex items-center justify-center animate-pulse">
+                    {adminNotifications.filter((n) => !n.read).length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown Drawer */}
+              {showNotificationsDrawer && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white shadow-2xl border border-[#ECE8DF] p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-4 w-4 text-[#C9A227]" />
+                      <span className="font-extrabold text-xs text-[#111111]">Portal Signup Alerts</span>
+                    </div>
+                    {adminNotifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearAllNotifications();
+                          setAdminNotifications([]);
+                        }}
+                        className="text-[10px] text-[#8C827A] hover:text-red-600 font-semibold cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-[#ECE8DF] py-2">
+                    {adminNotifications.length === 0 ? (
+                      <div className="py-6 text-center text-xs text-[#8C827A]">
+                        No new signup alerts. When clients register on the portal, alerts appear here.
+                      </div>
+                    ) : (
+                      adminNotifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`py-3 px-2 rounded-xl transition ${n.read ? 'opacity-70' : 'bg-[#FAFAF8]'}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-bold text-xs text-[#111111]">{n.title}</span>
+                            <span className="text-[10px] text-[#8C827A] whitespace-nowrap">{n.timestamp}</span>
+                          </div>
+                          <p className="text-[11px] text-[#4A4A4A] mt-1">{n.message}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                markNotificationRead(n.id);
+                                setAdminNotifications(getAdminNotifications());
+                                const matchedClient = clients.find(
+                                  (c) =>
+                                    c.clientCode === n.clientCode ||
+                                    c.email.toLowerCase() === n.clientEmail.toLowerCase()
+                                );
+                                if (matchedClient) {
+                                  setSelectedClientFolder(matchedClient);
+                                  setShowNotificationsDrawer(false);
+                                } else {
+                                  setActiveTab('clients');
+                                  setShowNotificationsDrawer(false);
+                                }
+                              }}
+                              className="text-[10px] font-bold text-[#C9A227] hover:underline cursor-pointer"
+                            >
+                              Open Client Folder &rarr;
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={refreshAllData}
@@ -627,6 +725,19 @@ ${link}
                         </td>
                         <td className="py-4 px-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Copy Public Invoice Link */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const link = `${window.location.origin}/invoice?num=${inv.invoiceNumber}`;
+                                navigator.clipboard.writeText(link);
+                                showNotify(`Public Invoice Link copied: ${link}`);
+                              }}
+                              title="Copy Public Invoice Link"
+                              className="p-2 rounded-xl bg-[#FAFAF8] border border-[#DED9CF] text-[#111111] hover:border-[#C9A227] transition cursor-pointer"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
                             {/* Send to Client via WhatsApp Modal Button */}
                             <button
                               type="button"
@@ -1403,6 +1514,63 @@ ${link}
                 </button>
               </div>
             </form>
+
+            {/* Tawk.to Live Desk Integration Setup */}
+            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
+                <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
+                  <MessageSquare className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-[#111111]">Tawk.to Live Support Desk Integration</h2>
+                  <p className="text-xs text-[#8C827A]">Connect your Tawk.to mobile &amp; web app so clients chat directly with management</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelStyle}>Tawk.to Property ID</label>
+                  <input
+                    type="text"
+                    value={tawkConfig.propertyId}
+                    onChange={(e) => setTawkConfig({ ...tawkConfig, propertyId: e.target.value })}
+                    placeholder="e.g. 65f1234567890abcdef12345"
+                    className={inputStyle}
+                  />
+                  <span className="text-[11px] text-[#8C827A] mt-1 block">
+                    Found in your Tawk.to Dashboard &rarr; Administration &rarr; Property Settings
+                  </span>
+                </div>
+
+                <div>
+                  <label className={labelStyle}>Tawk.to Direct Chat Link (Optional)</label>
+                  <input
+                    type="text"
+                    value={tawkConfig.directChatUrl || ''}
+                    onChange={(e) => setTawkConfig({ ...tawkConfig, directChatUrl: e.target.value })}
+                    placeholder="https://tawk.to/chat/your-property-id/default"
+                    className={inputStyle}
+                  />
+                  <span className="text-[11px] text-[#8C827A] mt-1 block">
+                    Direct chat link from your Tawk app channel settings
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveTawkConfig(tawkConfig);
+                    showNotify('Tawk.to Live Desk settings saved and connected to Client Portal!');
+                  }}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] py-3 px-6 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                >
+                  <Save className="h-4 w-4 text-[#C9A227]" />
+                  <span>Save Live Desk Connection</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

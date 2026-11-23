@@ -47,12 +47,14 @@ import {
   saveClient,
   findClientByEmail,
   setAuthUser,
+  getTawkConfig,
   type InvoiceRecord,
   type ReceiptRecord,
   type ShipmentItem,
   type QuoteRequestRecord,
   type ShippingRates,
   type ClientProfile,
+  type TawkConfig,
 } from '../../lib/auth';
 
 type ClientTab = 'shipments' | 'invoices' | 'profile' | 'quote' | 'estimator' | 'support';
@@ -82,6 +84,7 @@ export function ClientDashboard() {
   const [estWeight, setEstWeight] = useState('15');
   const [estMethod, setEstMethod] = useState<'air' | 'sea'>('air');
   const [rates, setRates] = useState<ShippingRates>(getShippingRates());
+  const [tawkConfig, setTawkConfig] = useState<TawkConfig>(getTawkConfig());
 
   // Profile Settings State
   const [profile, setProfile] = useState<ClientProfile | null>(null);
@@ -106,6 +109,7 @@ export function ClientDashboard() {
     setReceipts(allRecs);
     setShipments(allShips);
     setRates(getShippingRates());
+    setTawkConfig(getTawkConfig());
 
     const clientData = user?.email ? findClientByEmail(user.email) : undefined;
     if (clientData) {
@@ -988,42 +992,73 @@ export function ClientDashboard() {
           </div>
         )}
 
-        {/* TAB 5: ASSIGNED ACCOUNT OFFICER */}
+        {/* TAB 5: LIVE SUPPORT DESK & ASSIGNED OFFICER */}
         {activeTab === 'support' && (
-          <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-xl mx-auto text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-[#FAFAF8] border border-[#ECE8DF] flex items-center justify-center mx-auto text-[#C9A227]">
-              <Phone className="h-7 w-7" />
+          <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-xl mx-auto text-center space-y-6">
+            <div className="h-16 w-16 rounded-full bg-[#111111] text-[#C9A227] flex items-center justify-center mx-auto shadow-md">
+              <MessageCircle className="h-8 w-8" />
             </div>
-            <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
-              Dedicated Account Officer
-            </h2>
-            <p className="text-xs text-[#66615B]">
-              Direct communication for clearing updates, supplier verification, and cargo status.
-            </p>
-            <div className="p-4 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-xs space-y-2 text-left">
-              <div className="flex justify-between">
-                <span className="text-[#8C827A]">Officer:</span>
-                <span className="font-bold text-[#111111]">BuySmart Logistics Operations</span>
+            <div>
+              <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
+                Live Support &amp; Operations Desk
+              </h2>
+              <p className="text-xs text-[#66615B] mt-1">
+                Direct real-time communication with BuySmart executive management and your operations desk.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-xs space-y-3 text-left">
+              <div className="flex justify-between items-center pb-2 border-b border-[#ECE8DF]">
+                <span className="text-[#8C827A] font-bold">Desk Status:</span>
+                <span className="flex items-center gap-1.5 font-bold text-green-700 bg-green-50 px-2.5 py-0.5 rounded-full text-[10px] uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
+                  Management Online
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#8C827A]">Phone / WhatsApp:</span>
-                <span className="font-bold text-[#111111]">0810 013 0714</span>
+                <span className="text-[#8C827A]">Management Officer:</span>
+                <span className="font-bold text-[#111111]">BuySmart Executive Management Desk</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#8C827A]">Email:</span>
+                <span className="text-[#8C827A]">Corporate Email:</span>
                 <span className="font-bold text-[#111111]">buysmartprocurementlimited@gmail.com</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#8C827A]">Emergency Phone:</span>
+                <span className="font-bold text-[#111111]">0810 013 0714</span>
               </div>
             </div>
 
-            <a
-              href="https://wa.me/2348100130714?text=Hello%20BuySmart%2C%20I%20am%20messaging%20from%20my%20Client%20Portal."
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 px-6 text-xs font-bold text-white shadow-sm hover:opacity-95"
-            >
-              <span>Message on WhatsApp</span>
-              <ArrowRight className="h-4 w-4" />
-            </a>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && (window as any).Tawk_API?.maximize) {
+                    (window as any).Tawk_API.maximize();
+                  } else if (tawkConfig.directChatUrl && tawkConfig.directChatUrl.trim() !== '') {
+                    window.open(tawkConfig.directChatUrl, '_blank');
+                  } else if (tawkConfig.propertyId && tawkConfig.propertyId.trim() !== '') {
+                    window.open(`https://tawk.to/chat/${tawkConfig.propertyId}/${tawkConfig.widgetId || 'default'}`, '_blank');
+                  } else {
+                    window.open('https://wa.me/2348100130714?text=Hello%20BuySmart%20Management%2C%20I%20am%20chatting%20from%20my%20Client%20Portal.', '_blank');
+                  }
+                }}
+                className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-3.5 px-6 text-xs font-bold text-white shadow-md hover:opacity-90 cursor-pointer"
+              >
+                <MessageCircle className="h-4 w-4 text-[#C9A227]" />
+                <span>Start Live Desk Chat</span>
+              </button>
+
+              <a
+                href="https://wa.me/2348100130714?text=Hello%20BuySmart%2C%20I%20am%20messaging%20from%20my%20Client%20Portal."
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DED9CF] bg-white py-3.5 px-5 text-xs font-bold text-[#111111] hover:border-[#C9A227] transition"
+              >
+                <Phone className="h-4 w-4 text-green-600" />
+                <span>Call / WhatsApp</span>
+              </a>
+            </div>
           </div>
         )}
       </main>
