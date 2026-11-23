@@ -72,44 +72,52 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   doc.setFillColor(201, 162, 39);
   doc.rect(0, 0, pageWidth, 5, 'F');
 
-  // 2. Large Diagonal Watermark: BUYSMART OFFICIAL
+  // 2. Large Balanced Diagonal Watermark
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(44);
-  doc.setTextColor(243, 241, 236);
-  doc.text('BUYSMART OFFICIAL INVOICE', pageWidth / 2, 145, {
+  doc.setFontSize(32);
+  doc.setTextColor(244, 241, 234);
+  doc.text('BUYSMART PROCUREMENT LIMITED', pageWidth / 2, 142, {
     align: 'center',
-    angle: 45,
+    angle: 32,
   });
+  doc.setFontSize(22);
+  doc.setTextColor(240, 237, 230);
+  doc.text(
+    inv.status === 'Paid' ? 'PAID & CONFIRMED • OFFICIAL SETTLEMENT' : 'AUTHENTIC COMMERCIAL INVOICE',
+    pageWidth / 2,
+    156,
+    { align: 'center', angle: 32 }
+  );
 
-  // 3. Load & Render BuySmart Logo in Header
+  // 3. Load & Render BuySmart Logo in Header with Balanced Proportions
   const logoData = await getBuySmartLogoBase64();
   let textStartX = 20;
 
   if (logoData) {
     try {
-      // Embed official BuySmart Logo (18mm x 18mm)
-      doc.addImage(logoData, 'PNG', 20, 11, 18, 18);
-      textStartX = 42;
+      // Embed official BuySmart Logo (22mm x 22mm)
+      doc.addImage(logoData, 'PNG', 20, 11, 22, 22);
+      textStartX = 46;
     } catch {}
   }
 
   // Company Corporate Header
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setTextColor(17, 17, 17);
-  doc.text('BUYSMART', textStartX, 20);
+  doc.text('BUYSMART', textStartX, 17);
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(201, 162, 39);
-  doc.text('PROCUREMENT LIMITED', textStartX, 25);
+  doc.text('PROCUREMENT LIMITED', textStartX, 22);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(80, 80, 80);
-  doc.text('RC Registered • Corporate Affairs Commission Nigeria', textStartX, 30);
-  doc.text('6 Bassey Street, Egbeda, Lagos 100276, Nigeria', textStartX, 34);
-  doc.text('Phone: 0810 013 0714 | Email: buysmartprocurementlimited@gmail.com', textStartX, 38);
+  doc.text('RC Registered • Corporate Affairs Commission Nigeria', textStartX, 26.5);
+  doc.text('6 Bassey Street, Egbeda, Lagos 100276, Nigeria', textStartX, 30.5);
+  doc.text('Phone: 0810 013 0714 | Email: buysmartprocurementlimited@gmail.com', textStartX, 34.5);
 
   // Invoice Big Heading & Meta
   doc.setFont('helvetica', 'bold');
@@ -219,15 +227,22 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
     doc.text('-' + formatNaira(inv.discount), pageWidth - 25, y, { align: 'right' });
   }
 
-  y += 8;
-  doc.setFillColor(201, 162, 39, 0.15);
-  doc.rect(totalsX - 4, y - 5, pageWidth - totalsX - 16, 10, 'F');
+  y += 7;
+  const boxWidth = pageWidth - totalsX - 16;
+  doc.setFillColor(248, 246, 240);
+  doc.roundedRect(totalsX - 4, y - 4, boxWidth, 12, 1.5, 1.5, 'F');
+  doc.setDrawColor(201, 162, 39);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(totalsX - 4, y - 4, boxWidth, 12, 1.5, 1.5, 'S');
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(9);
   doc.setTextColor(17, 17, 17);
-  doc.text('TOTAL DUE:', totalsX, y + 2);
-  doc.setTextColor(201, 162, 39);
-  doc.text(formatNaira(inv.total), pageWidth - 25, y + 2, { align: 'right' });
+  doc.text(inv.status === 'Paid' ? 'TOTAL SETTLED:' : 'TOTAL DUE:', totalsX, y + 3.5);
+
+  doc.setFontSize(11);
+  doc.setTextColor(180, 135, 20);
+  doc.text(formatNaira(inv.total), pageWidth - 25, y + 3.5, { align: 'right' });
 
   // Official Bank Details
   y += 20;
@@ -241,7 +256,7 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   doc.setTextColor(70, 70, 70);
   doc.text('Bank 1: Zenith Bank PLC | Account Name: BUYSMART PROCUREMENT LIMITED | Account No: 1224890123', 20, y + 5);
   doc.text('Bank 2: Providus Bank | Account Name: BUYSMART PROCUREMENT LIMITED | Account No: 5401893421', 20, y + 9);
-  doc.text('Online Payment Link: ' + (inv.paymentLink || 'https://paystack.com/pay/buysmart'), 20, y + 13);
+  doc.text('Online Payment Link: ' + (inv.paymentLink || 'https://buysmart.ng/invoice?num=' + inv.invoiceNumber), 20, y + 13);
 
   // Bottom Management Verification Seal with Logo Icon
   if (logoData) {
@@ -273,43 +288,60 @@ export async function downloadReceiptPDF(rec: ReceiptRecord): Promise<void> {
   doc.setFillColor(201, 162, 39);
   doc.rect(0, 0, pageWidth, 6, 'F');
 
-  // Large Diagonal Watermark: PAID & CONFIRMED
+  // Large Balanced Diagonal Watermark: PAID & CONFIRMED
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(48);
-  doc.setTextColor(238, 245, 238);
-  doc.text('PAID & CONFIRMED', pageWidth / 2, 140, {
+  doc.setFontSize(34);
+  doc.setTextColor(234, 244, 234);
+  doc.text('BUYSMART PROCUREMENT LIMITED', pageWidth / 2, 138, {
     align: 'center',
-    angle: 45,
+    angle: 32,
+  });
+  doc.setFontSize(26);
+  doc.setTextColor(226, 240, 226);
+  doc.text('PAID & CONFIRMED • OFFICIAL RECEIPT', pageWidth / 2, 152, {
+    align: 'center',
+    angle: 32,
   });
 
-  // Load BuySmart Logo
+  // Load BuySmart Logo with balanced proportions
   const logoData = await getBuySmartLogoBase64();
   let textStartX = 20;
 
   if (logoData) {
     try {
-      doc.addImage(logoData, 'PNG', 20, 11, 18, 18);
-      textStartX = 42;
+      doc.addImage(logoData, 'PNG', 20, 11, 22, 22);
+      textStartX = 46;
     } catch {}
   }
 
   // Header Text
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setTextColor(17, 17, 17);
-  doc.text('BUYSMART', textStartX, 20);
+  doc.text('BUYSMART', textStartX, 17);
 
   doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(201, 162, 39);
-  doc.text('PROCUREMENT LIMITED', textStartX, 25);
+  doc.text('PROCUREMENT LIMITED', textStartX, 22);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(80, 80, 80);
+  doc.text('RC Registered • Corporate Affairs Commission Nigeria', textStartX, 26.5);
+  doc.text('6 Bassey Street, Egbeda, Lagos 100276, Nigeria', textStartX, 30.5);
+  doc.text('Phone: 0810 013 0714 | Email: buysmartprocurementlimited@gmail.com', textStartX, 34.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(16);
   doc.setTextColor(16, 120, 50);
-  doc.text('OFFICIAL RECEIPT', pageWidth - 20, 22, { align: 'right' });
+  doc.text('OFFICIAL RECEIPT', pageWidth - 20, 20, { align: 'right' });
 
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
+  doc.text(`Receipt No: ${rec.receiptNumber}`, pageWidth - 20, 26, { align: 'right' });
+  doc.text(`Date: ${rec.paymentDate}`, pageWidth - 20, 31, { align: 'right' });
+  doc.text(`Ref: ${rec.referenceNumber}`, pageWidth - 20, 36, { align: 'right' });
   doc.text(`Receipt No: ${rec.receiptNumber}`, pageWidth - 20, 28, { align: 'right' });
   doc.text(`Date: ${rec.paymentDate}`, pageWidth - 20, 33, { align: 'right' });
   doc.text(`Ref: ${rec.referenceNumber}`, pageWidth - 20, 38, { align: 'right' });

@@ -550,6 +550,61 @@ const INITIAL_INVOICES: InvoiceRecord[] = [
     dueDate: '2026-11-28',
     notes: '50% initial commitment received. Sourcing in progress at Hanoi factory.',
   },
+  {
+    id: 'inv-004',
+    invoiceNumber: 'BSP-2026-004',
+    clientName: 'Alhaji Musa Danjuma (Northern Agro Ventures)',
+    clientPhone: '0809 112 3344',
+    clientWhatsApp: '+2348091123344',
+    clientEmail: 'musa.danjuma@agroventures.ng',
+    clientAddress: 'Plot 14 Commercial District, Central Business Area, Abuja',
+    currency: 'NGN',
+    exchangeRate: 1550,
+    exchangeRateDate: '2026-11-23',
+    previousBalance: 0,
+    discount: 50000,
+    terms: 'Full payment due within 7 days. Shipment dispatched upon confirmed settlement.',
+    lines: [
+      {
+        id: 'line-9',
+        type: 'goods',
+        description: 'Solar Inverter Batteries & High-Efficiency PV Panels (Guangzhou)',
+        quantity: 50,
+        amount: 4500000,
+      },
+      {
+        id: 'line-10',
+        type: 'freight',
+        description: 'Ocean Freight Container Sharing (Guangzhou Port to Tincan Lagos)',
+        quantity: 1,
+        weight: 680,
+        rate: 850,
+        amount: 578000,
+      },
+      {
+        id: 'line-11',
+        type: 'customs',
+        description: 'Lagos Port Terminal Handling & Fast-Track Customs Clearance',
+        quantity: 1,
+        amount: 320000,
+      },
+      {
+        id: 'line-12',
+        type: 'service',
+        description: 'Quality Inspection & Port Logistics Coordination Fee',
+        quantity: 1,
+        amount: 150000,
+      },
+    ],
+    subtotal: 5548000,
+    total: 5498000,
+    amountPaid: 0,
+    status: 'Unpaid',
+    paymentLink: 'https://paystack.com/pay/buysmart-bsp-2026-004',
+    createdAt: '2026-11-23',
+    dueDate: '2026-11-30',
+    notes: 'Awaiting client online settlement via Paystack or direct corporate bank transfer.',
+  },
 ];
 
 // Initial Receipts Seed
@@ -798,7 +853,20 @@ export function getStoredInvoices(): InvoiceRecord[] {
       return INITIAL_INVOICES;
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_INVOICES;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Auto-merge any initial invoices that might be missing from cached storage
+      const existingNums = new Set(parsed.map((p: InvoiceRecord) => p.invoiceNumber));
+      const missing = INITIAL_INVOICES.filter((init) => !existingNums.has(init.invoiceNumber));
+      if (missing.length > 0) {
+        const merged = [...parsed, ...missing];
+        try {
+          localStorage.setItem(INVOICES_KEY, JSON.stringify(merged));
+        } catch {}
+        return merged;
+      }
+      return parsed;
+    }
+    return INITIAL_INVOICES;
   } catch {
     return INITIAL_INVOICES;
   }
@@ -807,8 +875,29 @@ export function getStoredInvoices(): InvoiceRecord[] {
 export function findInvoiceByNumber(num: string): InvoiceRecord | undefined {
   const list = getStoredInvoices();
   const clean = num.trim().toLowerCase();
-  return list.find(
+  const found = list.find(
     (i) => i.invoiceNumber.toLowerCase() === clean || i.id.toLowerCase() === clean
+  );
+  if (found) return found;
+
+  const initFound = INITIAL_INVOICES.find(
+    (i) => i.invoiceNumber.toLowerCase() === clean || i.id.toLowerCase() === clean
+  );
+  if (initFound) {
+    saveInvoice(initFound);
+    return initFound;
+  }
+  return undefined;
+}
+
+export function findReceiptByNumber(num: string): ReceiptRecord | undefined {
+  const list = getStoredReceipts();
+  const clean = num.trim().toLowerCase();
+  return list.find(
+    (r) =>
+      r.receiptNumber.toLowerCase() === clean ||
+      r.id.toLowerCase() === clean ||
+      r.invoiceNumber.toLowerCase() === clean
   );
 }
 
@@ -1048,4 +1137,40 @@ export function formatNaira(amount: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+// --- PAYSTACK GATEWAY CONFIGURATION ---
+const PAYSTACK_CONFIG_KEY = 'buysmart_paystack_config';
+
+export type PaystackConfig = {
+  publicKey: string;
+  isLive: boolean;
+  merchantName: string;
+};
+
+export const DEFAULT_PAYSTACK_CONFIG: PaystackConfig = {
+  publicKey: 'pk_live_buysmart_procurement_ng',
+  isLive: true,
+  merchantName: 'BuySmart Procurement Limited',
+};
+
+export function getPaystackConfig(): PaystackConfig {
+  try {
+    const raw = localStorage.getItem(PAYSTACK_CONFIG_KEY);
+    if (!raw) return DEFAULT_PAYSTACK_CONFIG;
+    return { ...DEFAULT_PAYSTACK_CONFIG, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_PAYSTACK_CONFIG;
+  }
+}
+
+export function savePaystackConfig(cfg: Partial<PaystackConfig>): PaystackConfig {
+  try {
+    const current = getPaystackConfig();
+    const updated = { ...current, ...cfg };
+    localStorage.setItem(PAYSTACK_CONFIG_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return DEFAULT_PAYSTACK_CONFIG;
+  }
 }

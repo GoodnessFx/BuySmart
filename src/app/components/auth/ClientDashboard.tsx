@@ -34,6 +34,7 @@ import {
   Clock3,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
+import { initiatePaystackCheckout } from '../../lib/paystack';
 import { ModernTrackingCard } from '../shipments/ModernTrackingCard';
 import {
   getAuthUser,
@@ -1066,51 +1067,128 @@ export function ClientDashboard() {
       {/* MODAL: VIEW INVOICE */}
       {selectedInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#ECE8DF] relative">
-            <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF]">
-              <div className="flex items-center gap-2.5">
-                <img src="/brand/logo.png" alt="BuySmart" className="h-8 w-8 object-contain" />
-                <span className="font-extrabold text-sm text-[#111111]">Invoice #{selectedInvoice.invoiceNumber}</span>
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#ECE8DF] relative overflow-hidden my-6">
+            {/* Subtle Watermark */}
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center select-none overflow-hidden opacity-[0.035]">
+              <div className="text-center rotate-[-25deg] transform">
+                <div className="text-5xl font-black uppercase tracking-wider text-[#111111]">
+                  BUYSMART
+                </div>
+                <div className="text-xl font-extrabold tracking-widest text-[#C9A227] mt-1">
+                  OFFICIAL COMMERCIAL INVOICE
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF] relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#111111] p-1.5 border border-[#C9A227]/40 flex items-center justify-center shadow-sm shrink-0">
+                  <img src="/brand/logo.png" alt="BuySmart" className="h-full w-full object-contain" />
+                </div>
+                <div>
+                  <div className="font-extrabold text-sm text-[#111111]">BUYSMART PROCUREMENT LIMITED</div>
+                  <div className="text-[10px] text-[#C9A227] font-bold">CAC RC REGISTERED • #{selectedInvoice.invoiceNumber}</div>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => downloadInvoicePDF(selectedInvoice)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#C9A227] px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] px-3.5 py-2 text-xs font-bold text-white hover:opacity-90 cursor-pointer shadow-2xs"
                 >
-                  <Download className="h-3.5 w-3.5" />
+                  <Download className="h-3.5 w-3.5 text-[#C9A227]" />
                   <span>Download PDF</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedInvoice(null)}
-                  className="p-1 rounded-lg text-[#8C827A] hover:text-[#111111]"
+                  className="p-1.5 rounded-xl text-[#8C827A] hover:text-[#111111] hover:bg-[#FAFAF8]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            <div className="py-4 space-y-4 text-xs">
-              <div className="flex justify-between">
+            <div className="py-4 space-y-4 text-xs relative z-10">
+              <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[#8C827A] font-bold text-[10px] uppercase">Billed To:</span>
-                  <div className="font-bold text-sm text-[#111111]">{selectedInvoice.clientName}</div>
+                  <span className="text-[#8C827A] font-bold text-[10px] uppercase">Billed To (Client):</span>
+                  <div className="font-extrabold text-sm text-[#111111]">{selectedInvoice.clientName}</div>
+                  <div className="text-[#66615B]">{selectedInvoice.clientPhone}</div>
+                  {selectedInvoice.clientEmail && <div className="text-[#66615B]">{selectedInvoice.clientEmail}</div>}
                 </div>
                 <div className="text-right">
-                  <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 font-bold text-[10px] uppercase">
+                  <span
+                    className={`inline-block rounded-md px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider ${
+                      selectedInvoice.status === 'Paid'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
                     {selectedInvoice.status}
                   </span>
-                  <div className="text-[#8C827A] mt-1">{selectedInvoice.createdAt}</div>
+                  <div className="text-[#8C827A] mt-1 text-[11px]">Issued: {selectedInvoice.createdAt}</div>
+                  <div className="text-[#8C827A] text-[11px]">Due: {selectedInvoice.dueDate}</div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#111111] text-white flex justify-between items-center">
-                <span className="text-xs uppercase tracking-wider text-white/70">Total Outstanding</span>
-                <span className="text-xl font-black text-[#C9A227]">{formatNaira(selectedInvoice.total)}</span>
+              {/* Itemized Line Items */}
+              {selectedInvoice.lines && selectedInvoice.lines.length > 0 && (
+                <div className="rounded-2xl border border-[#ECE8DF] bg-[#FAFAF8] p-3 space-y-2">
+                  <span className="font-bold text-[10px] uppercase text-[#8C827A] tracking-wider block">
+                    Itemized Procurement & Freight Charges
+                  </span>
+                  <div className="divide-y divide-[#ECE8DF]">
+                    {selectedInvoice.lines.map((l, i) => (
+                      <div key={i} className="py-2 flex justify-between items-center text-xs">
+                        <div>
+                          <div className="font-semibold text-[#111111]">{l.description}</div>
+                          <div className="text-[10px] text-[#8C827A]">{l.type}</div>
+                        </div>
+                        <div className="font-bold text-[#111111]">{formatNaira(l.amount)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Redesigned Total & Settlement Card */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#161616] via-[#222222] to-[#161616] text-white border border-[#C9A227]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-wider text-[#C9A227]">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span>Total Outstanding Balance</span>
+                  </div>
+                  <div className="text-2xl font-black text-white mt-0.5">{formatNaira(selectedInvoice.total)}</div>
+                </div>
+
+                {selectedInvoice.status !== 'Paid' ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await initiatePaystackCheckout({
+                        invoice: selectedInvoice,
+                        onSuccess: (newReceipt, updatedInv) => {
+                          setSelectedInvoice(updatedInv);
+                          setInvoices((prev) => prev.map((i) => (i.id === updatedInv.id ? updatedInv : i)));
+                          setReceipts((prev) => [newReceipt, ...prev]);
+                          alert('Payment confirmed via Paystack! Official receipt has been added to your portal.');
+                        },
+                      });
+                    }}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#C9A227] to-[#DFB738] py-2.5 px-4 text-xs font-bold text-[#111111] hover:opacity-95 shadow-md cursor-pointer shrink-0"
+                  >
+                    <span>Pay with Paystack</span>
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-900/60 text-green-300 text-xs font-bold border border-green-500/30">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Paid in Full</span>
+                  </span>
+                )}
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1 text-[11px] text-[#66615B]">
+              <div className="p-3.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1 text-[11px] text-[#66615B]">
                 <div className="font-bold text-[#111111]">Direct Bank Transfer Payment:</div>
                 <div>Zenith Bank PLC • Acct: 1224890123 • BUYSMART PROCUREMENT LIMITED</div>
                 <div>Providus Bank • Acct: 5401893421 • BUYSMART PROCUREMENT LIMITED</div>

@@ -68,6 +68,8 @@ import {
   clearAllNotifications,
   getTawkConfig,
   saveTawkConfig,
+  getPaystackConfig,
+  savePaystackConfig,
   type InvoiceRecord,
   type ReceiptRecord,
   type InvoiceLine,
@@ -77,6 +79,7 @@ import {
   type ShippingRates,
   type AdminNotification,
   type TawkConfig,
+  type PaystackConfig,
 } from '../../lib/auth';
 
 const inputStyle =
@@ -185,6 +188,7 @@ export function AdminDashboard() {
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
   const [tawkConfig, setTawkConfig] = useState<TawkConfig>(getTawkConfig());
+  const [paystackConfig, setPaystackConfig] = useState<PaystackConfig>(getPaystackConfig());
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // New Shipment Creation Modal State
@@ -1693,6 +1697,63 @@ ${link}
                 </button>
               </div>
             </div>
+
+            {/* Paystack Payment Gateway Setup */}
+            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
+                <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-[#111111]">Paystack Payment Gateway Configuration</h2>
+                  <p className="text-xs text-[#8C827A]">Set your public API key for 1-click checkout on invoices and client portals</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelStyle}>Paystack Public Key</label>
+                  <input
+                    type="text"
+                    value={paystackConfig.publicKey}
+                    onChange={(e) => setPaystackConfig({ ...paystackConfig, publicKey: e.target.value })}
+                    placeholder="pk_live_... or pk_test_..."
+                    className={inputStyle}
+                  />
+                  <span className="text-[11px] text-[#8C827A] mt-1 block">
+                    Your Paystack Public Key (Card, USSD, Direct Bank Transfer)
+                  </span>
+                </div>
+
+                <div>
+                  <label className={labelStyle}>Merchant Business Name</label>
+                  <input
+                    type="text"
+                    value={paystackConfig.merchantName}
+                    onChange={(e) => setPaystackConfig({ ...paystackConfig, merchantName: e.target.value })}
+                    placeholder="BuySmart Procurement Limited"
+                    className={inputStyle}
+                  />
+                  <span className="text-[11px] text-[#8C827A] mt-1 block">
+                    Displays on client checkout modals
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    savePaystackConfig(paystackConfig);
+                    showNotify('Paystack Gateway settings saved successfully!');
+                  }}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] py-3 px-6 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                >
+                  <Save className="h-4 w-4 text-[#C9A227]" />
+                  <span>Save Paystack Configuration</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2424,16 +2485,25 @@ ${link}
       {previewInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-3xl rounded-3xl bg-white p-6 sm:p-10 shadow-2xl border border-[#ECE8DF] my-8 relative overflow-hidden">
-            {/* Watermark across modal */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-5 select-none rotate-45 text-5xl font-black text-[#111111]">
-              BUYSMART OFFICIAL INVOICE
+            {/* Subtle Balanced Watermark */}
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center select-none overflow-hidden opacity-[0.035]">
+              <div className="text-center rotate-[-25deg] transform">
+                <div className="text-6xl font-black uppercase tracking-wider text-[#111111]">
+                  BUYSMART
+                </div>
+                <div className="text-2xl font-extrabold tracking-widest text-[#C9A227] mt-1">
+                  OFFICIAL COMMERCIAL INVOICE
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-between pb-6 border-b border-[#ECE8DF] relative z-10">
-              <div className="flex items-center gap-3">
-                <img src="/brand/logo.png" alt="BuySmart" className="h-10 w-10 object-contain" />
+              <div className="flex items-center gap-3.5">
+                <div className="h-11 w-11 rounded-2xl bg-[#111111] p-1.5 border border-[#C9A227]/40 flex items-center justify-center shadow-md shrink-0">
+                  <img src="/brand/logo.png" alt="BuySmart" className="h-full w-full object-contain" />
+                </div>
                 <div>
-                  <div className="font-extrabold text-lg text-[#111111]">BUYSMART PROCUREMENT LIMITED</div>
+                  <div className="font-extrabold text-base text-[#111111]">BUYSMART PROCUREMENT LIMITED</div>
                   <div className="text-[11px] text-[#C9A227] font-bold">CAC RC REGISTERED • OFFICIAL INVOICE</div>
                 </div>
               </div>
@@ -2442,15 +2512,15 @@ ${link}
                 <button
                   type="button"
                   onClick={() => handleDownloadInvoicePDF(previewInvoice)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#C9A227] px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] px-4 py-2 text-xs font-bold text-white hover:opacity-90 shadow-2xs"
                 >
-                  <Download className="h-3.5 w-3.5" />
+                  <Download className="h-3.5 w-3.5 text-[#C9A227]" />
                   <span>Download PDF</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewInvoice(null)}
-                  className="p-2 rounded-xl text-[#8C827A] hover:text-[#111111]"
+                  className="p-2 rounded-xl text-[#8C827A] hover:text-[#111111] hover:bg-[#FAFAF8]"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -2458,7 +2528,7 @@ ${link}
             </div>
 
             <div className="py-6 space-y-6 relative z-10 text-xs">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-start">
                 <div>
                   <span className="font-bold text-[#8C827A] uppercase text-[10px]">Invoice To:</span>
                   <div className="font-extrabold text-sm text-[#111111]">{previewInvoice.clientName}</div>
@@ -2497,9 +2567,9 @@ ${link}
               </table>
 
               <div className="flex justify-end pt-4 border-t border-[#ECE8DF]">
-                <div className="text-right space-y-1">
-                  <span className="text-[10px] uppercase tracking-wider text-[#8C827A]">Total Amount Due</span>
-                  <div className="text-2xl font-black text-[#C9A227]">{formatNaira(previewInvoice.total)}</div>
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-[#161616] via-[#222222] to-[#161616] text-white border border-[#C9A227]/40 shadow-sm text-right min-w-[260px]">
+                  <span className="text-[10px] uppercase tracking-wider text-[#C9A227] font-bold block">Total Amount Due</span>
+                  <div className="text-2xl font-black text-white mt-0.5">{formatNaira(previewInvoice.total)}</div>
                 </div>
               </div>
 
