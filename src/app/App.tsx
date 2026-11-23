@@ -151,16 +151,41 @@ function injectAllowedScripts() {
   }
 }
 
+function getInitialRoute(): string {
+  if (typeof window === "undefined") return "/";
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has("num") || searchParams.has("invoice") || searchParams.has("receipt")) {
+      return "/invoice";
+    }
+    const hash = window.location.hash || "";
+
+    // Hash routes (#/invoice?num=..., #/track?track=...) are used by shareable
+    // links because the fragment is never rewritten by the hosting server.
+    if (hash.startsWith("#/")) {
+      const hashRoute = hash.slice(2).split("?")[0].replace(/\/+$/, "");
+      if (hashRoute) return normalizePath("/" + hashRoute);
+    }
+
+    if (hash.startsWith("#invoice")) return "/invoice";
+    const path = normalizePath(window.location.pathname);
+    if (path.startsWith("/invoice")) return "/invoice";
+    if (path.startsWith("/track")) return "/track";
+    return path;
+  } catch {
+    return normalizePath(window.location.pathname);
+  }
+}
+
 export default function App() {
-  const [currentPath, setCurrentPath] = useState(() => normalizePath(window.location.pathname));
+  const [currentPath, setCurrentPath] = useState(getInitialRoute);
   const [menuOpen, setMenuOpen] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "success" | "error">("idle");
   const [newsletterError, setNewsletterError] = useState("");
 
-
   useEffect(() => {
-    const handlePopState = () => setCurrentPath(normalizePath(window.location.pathname));
+    const handlePopState = () => setCurrentPath(getInitialRoute());
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
@@ -175,14 +200,21 @@ export default function App() {
 
   useEffect(() => {
     const hash = window.location.hash;
-    if (!hash) {
+    // Hash routes such as #/invoice?num=... are application routes, not section anchors.
+    if (!hash || hash.startsWith("#/")) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    const target = document.querySelector(hash);
+    let target: Element | null = null;
+    try {
+      target = document.querySelector(hash);
+    } catch {
+      target = null;
+    }
+
     if (target) {
-      requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+      requestAnimationFrame(() => target?.scrollIntoView({ behavior: "smooth", block: "start" }));
     }
   }, [currentPath]);
 

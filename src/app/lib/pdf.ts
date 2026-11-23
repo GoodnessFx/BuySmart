@@ -8,7 +8,6 @@ import {
   type InvoiceRecord,
   type ReceiptRecord,
   type LineType,
-  formatNaira,
 } from './auth';
 
 const LINE_LABELS: Record<LineType, string> = {
@@ -19,6 +18,15 @@ const LINE_LABELS: Record<LineType, string> = {
   service: 'Procurement & Inspection Agency Fee',
   exchange: 'Exchange Conversion Charges',
 };
+
+/**
+ * jsPDF's built-in Helvetica has no Naira glyph (it prints a broken bar), so PDFs
+ * always spell the currency as "NGN" followed by a grouped amount.
+ */
+function pdfMoney(amount: number): string {
+  const value = Number.isFinite(amount) ? amount : 0;
+  return 'NGN ' + value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 // Cache loaded logo to avoid multiple canvas conversions
 let cachedLogoBase64: string | null = null;
@@ -196,9 +204,9 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
     doc.text(qtyText, 145, y, { align: 'right' });
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(10.5);
     doc.setTextColor(17, 17, 17);
-    doc.text(formatNaira(line.amount), pageWidth - 25, y, { align: 'right' });
+    doc.text(pdfMoney(line.amount), pageWidth - 25, y, { align: 'right' });
 
     y += 7;
     doc.setDrawColor(240, 240, 240);
@@ -206,73 +214,146 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
     y += 2;
   });
 
-  // Totals Box
-  y += 5;
-  const totalsX = pageWidth - 90;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  doc.text('Subtotal:', totalsX, y);
-  doc.text(formatNaira(inv.subtotal), pageWidth - 25, y, { align: 'right' });
+  // Totals Block — every row is bold and readable
+  y += 6;
+  const totalsLabelX = pageWidth - 100;
+  const totalsValueX = pageWidth - 24;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(70, 70, 70);
+  doc.text('Subtotal:', totalsLabelX, y);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 17, 17);
+  doc.text(pdfMoney(inv.subtotal), totalsValueX, y, { align: 'right' });
 
   if (inv.previousBalance > 0) {
-    y += 6;
-    doc.text('Previous Balance:', totalsX, y);
-    doc.text(formatNaira(inv.previousBalance), pageWidth - 25, y, { align: 'right' });
+    y += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(70, 70, 70);
+    doc.text('Previous Balance:', totalsLabelX, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 17, 17);
+    doc.text(pdfMoney(inv.previousBalance), totalsValueX, y, { align: 'right' });
   }
 
   if (inv.discount > 0) {
-    y += 6;
-    doc.text('Discount Applied:', totalsX, y);
-    doc.text('-' + formatNaira(inv.discount), pageWidth - 25, y, { align: 'right' });
+    y += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(70, 70, 70);
+    doc.text('Discount Applied:', totalsLabelX, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 17, 17);
+    doc.text('- ' + pdfMoney(inv.discount), totalsValueX, y, { align: 'right' });
   }
 
-  y += 7;
-  const boxWidth = pageWidth - totalsX - 16;
-  doc.setFillColor(248, 246, 240);
-  doc.roundedRect(totalsX - 4, y - 4, boxWidth, 12, 1.5, 1.5, 'F');
+  // Total container is measured from the real text width so the amount can never
+  // spill outside its border, whatever the figure is.
+  y += 9;
+  const totalLabel = inv.status === 'Paid' ? 'TOTAL SETTLED:' : 'TOTAL DUE:';
+  const totalAmount = pdfMoney(inv.total);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  const labelWidth = doc.getTextWidth(totalLabel);
+  doc.setFontSize(15);
+  const amountWidth = doc.getTextWidth(totalAmount);
+
+  const totalPadding = 7;
+  const totalGap = 10;
+  const totalBoxHeight = 17;
+  const totalBoxWidth = Math.min(
+    pageWidth - 40,
+    labelWidth + totalGap + amountWidth + totalPadding * 2
+  );
+  const totalBoxX = pageWidth - 20 - totalBoxWidth;
+  const totalBoxY = y - 5;
+
+  doc.setFillColor(252, 250, 245);
+  doc.roundedRect(totalBoxX, totalBoxY, totalBoxWidth, totalBoxHeight, 2.5, 2.5, 'F');
   doc.setDrawColor(201, 162, 39);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(totalsX - 4, y - 4, boxWidth, 12, 1.5, 1.5, 'S');
+  doc.setLineWidth(0.7);
+  doc.roundedRect(totalBoxX, totalBoxY, totalBoxWidth, totalBoxHeight, 2.5, 2.5, 'S');
+  doc.setLineWidth(0.2);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(17, 17, 17);
+  doc.text(totalLabel, totalBoxX + totalPadding, totalBoxY + totalBoxHeight / 2 + 2);
+
+  doc.setFontSize(15);
+  doc.setTextColor(176, 126, 16);
+  doc.text(totalAmount, totalBoxX + totalBoxWidth - totalPadding, totalBoxY + totalBoxHeight / 2 + 2.4, {
+    align: 'right',
+  });
+
+  // Official Bank Details (larger, bold, high contrast)
+  y = Math.min(totalBoxY + totalBoxHeight + 11, 216);
+  const bankBoxHeight = 43;
+  doc.setFillColor(250, 249, 246);
+  doc.roundedRect(20, y - 6, pageWidth - 40, bankBoxHeight, 2.5, 2.5, 'F');
+  doc.setDrawColor(220, 215, 200);
+  doc.roundedRect(20, y - 6, pageWidth - 40, bankBoxHeight, 2.5, 2.5, 'S');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(17, 17, 17);
+  doc.text('OFFICIAL DIRECT SETTLEMENT BANK ACCOUNTS:', 26, y);
+
+  const bankRows: Array<[string, string]> = [
+    ['Zenith Bank PLC:', '1224890123'],
+    ['Providus Bank:', '5401893421'],
+  ];
+
+  bankRows.forEach(([bankLabel, account], index) => {
+    const rowY = y + 9 + index * 8.5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(17, 17, 17);
+    doc.text(bankLabel, 26, rowY);
+
+    doc.setFontSize(11);
+    doc.setTextColor(176, 126, 16);
+    doc.text(account, 70, rowY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text('BUYSMART PROCUREMENT LIMITED', 108, rowY);
+  });
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(17, 17, 17);
-  doc.text(inv.status === 'Paid' ? 'TOTAL SETTLED:' : 'TOTAL DUE:', totalsX, y + 3.5);
+  doc.text('Online Payment Portal:', 26, y + 27);
+  doc.setTextColor(176, 126, 16);
+  doc.text(inv.paymentLink || 'https://buysmart.ng (Pay online from your invoice link)', 66, y + 27, {
+    maxWidth: pageWidth - 94,
+  });
 
-  doc.setFontSize(11);
-  doc.setTextColor(180, 135, 20);
-  doc.text(formatNaira(inv.total), pageWidth - 25, y + 3.5, { align: 'right' });
+  // Footer seal — logo centred above its caption, never overlapping the text
+  const footerCenter = pageWidth / 2;
+  const sealLineY = pageHeight - 15;
 
-  // Official Bank Details
-  y += 20;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(17, 17, 17);
-  doc.text('Official Payment Accounts (Direct Transfer):', 20, y);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(70, 70, 70);
-  doc.text('Bank 1: Zenith Bank PLC | Account Name: BUYSMART PROCUREMENT LIMITED | Account No: 1224890123', 20, y + 5);
-  doc.text('Bank 2: Providus Bank | Account Name: BUYSMART PROCUREMENT LIMITED | Account No: 5401893421', 20, y + 9);
-  doc.text('Online Payment Link: ' + (inv.paymentLink || 'https://buysmart.ng/invoice?num=' + inv.invoiceNumber), 20, y + 13);
-
-  // Bottom Management Verification Seal with Logo Icon
   if (logoData) {
     try {
-      doc.addImage(logoData, 'PNG', pageWidth / 2 - 45, 274, 9, 9);
+      doc.addImage(logoData, 'PNG', footerCenter - 6, sealLineY - 22, 12, 12);
     } catch {}
   }
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
+  doc.setFontSize(8);
   doc.setTextColor(201, 162, 39);
-  doc.text(
-    'BUYSMART PROCUREMENT LIMITED • OFFICIAL MANAGEMENT SEAL • RC REGISTERED',
-    pageWidth / 2 + 5,
-    280,
-    { align: 'center' }
-  );
+  doc.text('BUYSMART PROCUREMENT LIMITED', footerCenter, sealLineY - 3, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(120, 120, 120);
+  doc.text('OFFICIAL MANAGEMENT SEAL • RC REGISTERED • LAGOS, NIGERIA', footerCenter, sealLineY + 1.5, {
+    align: 'center',
+  });
 
   doc.save(`BuySmart-Invoice-${inv.invoiceNumber}.pdf`);
 }
@@ -342,9 +423,6 @@ export async function downloadReceiptPDF(rec: ReceiptRecord): Promise<void> {
   doc.text(`Receipt No: ${rec.receiptNumber}`, pageWidth - 20, 26, { align: 'right' });
   doc.text(`Date: ${rec.paymentDate}`, pageWidth - 20, 31, { align: 'right' });
   doc.text(`Ref: ${rec.referenceNumber}`, pageWidth - 20, 36, { align: 'right' });
-  doc.text(`Receipt No: ${rec.receiptNumber}`, pageWidth - 20, 28, { align: 'right' });
-  doc.text(`Date: ${rec.paymentDate}`, pageWidth - 20, 33, { align: 'right' });
-  doc.text(`Ref: ${rec.referenceNumber}`, pageWidth - 20, 38, { align: 'right' });
 
   doc.setDrawColor(220, 220, 220);
   doc.line(20, 48, pageWidth - 20, 48);
@@ -366,9 +444,9 @@ export async function downloadReceiptPDF(rec: ReceiptRecord): Promise<void> {
   doc.setTextColor(100, 100, 100);
   doc.text('Amount Received:', 20, y);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(15);
   doc.setTextColor(16, 120, 50);
-  doc.text(formatNaira(rec.amountPaid), 60, y);
+  doc.text(pdfMoney(rec.amountPaid), 60, y);
 
   y += 10;
   doc.setFont('helvetica', 'normal');
@@ -399,28 +477,28 @@ export async function downloadReceiptPDF(rec: ReceiptRecord): Promise<void> {
   doc.text(`${rec.paymentMethod} ${rec.bankName ? '(' + rec.bankName + ')' : ''}`, 60, y);
 
   // Official Stamp Seal Box (Centered)
-  y += 35;
+  y += 30;
   doc.setDrawColor(201, 162, 39);
   doc.setFillColor(254, 252, 245);
-  doc.roundedRect(pageWidth / 2 - 55, y, 110, 42, 3, 3, 'FD');
+  doc.roundedRect(pageWidth / 2 - 55, y, 110, 46, 3, 3, 'FD');
 
   if (logoData) {
     try {
-      doc.addImage(logoData, 'PNG', pageWidth / 2 - 45, y + 8, 12, 12);
+      doc.addImage(logoData, 'PNG', pageWidth / 2 - 5, y + 4, 10, 10);
     } catch {}
   }
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(201, 162, 39);
-  doc.text('★ BUYSMART PROCUREMENT LIMITED ★', pageWidth / 2 + 5, y + 13, { align: 'center' });
+  doc.text('★ BUYSMART PROCUREMENT LIMITED ★', pageWidth / 2, y + 19, { align: 'center' });
   doc.setFontSize(8);
   doc.setTextColor(16, 120, 50);
-  doc.text('OFFICIAL DIGITAL RECEIPT • VERIFIED', pageWidth / 2 + 5, y + 21, { align: 'center' });
+  doc.text('OFFICIAL DIGITAL RECEIPT • VERIFIED', pageWidth / 2, y + 25, { align: 'center' });
   doc.setFontSize(7.5);
   doc.setTextColor(100, 100, 100);
-  doc.text(`Authorized Desk: ${rec.receivedBy}`, pageWidth / 2 + 5, y + 29, { align: 'center' });
-  doc.text('RC Registered • Lagos, Nigeria', pageWidth / 2 + 5, y + 35, { align: 'center' });
+  doc.text(`Authorized Desk: ${rec.receivedBy}`, pageWidth / 2, y + 32, { align: 'center' });
+  doc.text('RC Registered • Lagos, Nigeria', pageWidth / 2, y + 38, { align: 'center' });
 
   doc.save(`BuySmart-Receipt-${rec.receiptNumber}.pdf`);
 }

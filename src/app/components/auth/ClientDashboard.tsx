@@ -290,11 +290,10 @@ export function ClientDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('shipments')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'shipments'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'shipments'
                 ? 'bg-[#111111] text-white shadow-sm'
                 : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
-            }`}
+              }`}
           >
             <Package className={`h-4 w-4 ${activeTab === 'shipments' ? 'text-[#C9A227]' : ''}`} />
             <span>My Active Shipments ({displayShipments.length})</span>
@@ -303,11 +302,10 @@ export function ClientDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('invoices')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'invoices'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'invoices'
                 ? 'bg-[#111111] text-white shadow-sm'
                 : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
-            }`}
+              }`}
           >
             <FileText className={`h-4 w-4 ${activeTab === 'invoices' ? 'text-[#C9A227]' : ''}`} />
             <span>Invoices &amp; Official Receipts ({displayInvoices.length})</span>
@@ -316,11 +314,10 @@ export function ClientDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'profile'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'profile'
                 ? 'bg-[#111111] text-white shadow-sm'
                 : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
-            }`}
+              }`}
           >
             <User className={`h-4 w-4 ${activeTab === 'profile' ? 'text-[#C9A227]' : ''}`} />
             <span>Profile &amp; Account Settings</span>
@@ -329,11 +326,10 @@ export function ClientDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('quote')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'quote'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'quote'
                 ? 'bg-[#111111] text-white shadow-sm'
                 : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
-            }`}
+              }`}
           >
             <MessageCircle className={`h-4 w-4 ${activeTab === 'quote' ? 'text-[#C9A227]' : ''}`} />
             <span>Request a Quote (Direct to Admin)</span>
@@ -342,11 +338,10 @@ export function ClientDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('estimator')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'estimator'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'estimator'
                 ? 'bg-[#111111] text-white shadow-sm'
                 : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
-            }`}
+              }`}
           >
             <Calculator className={`h-4 w-4 ${activeTab === 'estimator' ? 'text-[#C9A227]' : ''}`} />
             <span>Shipping Cost Estimator</span>
@@ -355,11 +350,10 @@ export function ClientDashboard() {
           <button
             type="button"
             onClick={() => setActiveTab('support')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'support'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'support'
                 ? 'bg-[#111111] text-white shadow-sm'
                 : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
-            }`}
+              }`}
           >
             <Phone className={`h-4 w-4 ${activeTab === 'support' ? 'text-[#C9A227]' : ''}`} />
             <span>Assigned Account Officer</span>
@@ -450,13 +444,12 @@ export function ClientDashboard() {
                         <td className="py-4 px-3 font-extrabold text-[#111111]">{formatNaira(inv.total)}</td>
                         <td className="py-4 px-3">
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
-                              inv.status === 'Paid'
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${inv.status === 'Paid'
                                 ? 'bg-green-100 text-green-800'
                                 : inv.status === 'Unpaid'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
                           >
                             {inv.status}
                           </span>
@@ -868,9 +861,8 @@ export function ClientDashboard() {
                       </div>
                       <div className="text-right">
                         <div className="font-extrabold text-sm text-[#111111]">{formatNaira(inv.total)}</div>
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                          inv.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${inv.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
                           {inv.status}
                         </span>
                       </div>
@@ -905,9 +897,8 @@ export function ClientDashboard() {
               <button
                 type="button"
                 onClick={() => setEstMethod('air')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-                  estMethod === 'air' ? 'bg-[#111111] text-white shadow-sm' : 'text-[#66615B] hover:text-[#111111]'
-                }`}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${estMethod === 'air' ? 'bg-[#111111] text-white shadow-sm' : 'text-[#66615B] hover:text-[#111111]'
+                  }`}
               >
                 <Plane className="h-3.5 w-3.5" />
                 <span>Air Freight Priority ({formatNaira(rates.airFreightRatePerKg)}/kg)</span>
@@ -915,9 +906,8 @@ export function ClientDashboard() {
               <button
                 type="button"
                 onClick={() => setEstMethod('sea')}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-                  estMethod === 'sea' ? 'bg-[#111111] text-white shadow-sm' : 'text-[#66615B] hover:text-[#111111]'
-                }`}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${estMethod === 'sea' ? 'bg-[#111111] text-white shadow-sm' : 'text-[#66615B] hover:text-[#111111]'
+                  }`}
               >
                 <Truck className="h-3.5 w-3.5" />
                 <span>Sea Freight ({formatNaira(rates.seaFreightRatePerKg)}/kg)</span>
@@ -1119,11 +1109,10 @@ export function ClientDashboard() {
                 </div>
                 <div className="text-right">
                   <span
-                    className={`inline-block rounded-md px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider ${
-                      selectedInvoice.status === 'Paid'
+                    className={`inline-block rounded-md px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider ${selectedInvoice.status === 'Paid'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-amber-100 text-amber-800'
-                    }`}
+                      }`}
                   >
                     {selectedInvoice.status}
                   </span>

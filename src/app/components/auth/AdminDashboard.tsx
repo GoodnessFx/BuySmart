@@ -44,8 +44,10 @@ import {
   BadgeCheck,
   Calculator,
   Bell,
+  Trash2,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
+import { buildPublicInvoiceLink } from '../../lib/invoice-link';
 import {
   getAuthUser,
   clearAuthUser,
@@ -56,6 +58,7 @@ import {
   saveReceipt,
   getStoredClients,
   saveClient,
+  deleteClient,
   getStoredShipments,
   saveShipment,
   updateShipmentStatus,
@@ -98,6 +101,28 @@ const LINE_LABELS: Record<LineType, string> = {
 
 type AdminTab = 'invoices' | 'receipts' | 'shipments' | 'clients' | 'rates' | 'reports';
 
+const currentYear = new Date().getFullYear();
+const invoiceNumberPrefix = `BSP-${currentYear}-`;
+const receiptNumberPrefix = `BSP-REC-${currentYear}-`;
+
+/** Continues the numbering sequence without demo defaults or duplicate numbers. */
+function nextDocumentNumber(existing: string[] | undefined, prefix: string): string {
+  const highest = (existing || []).reduce((acc, value) => {
+    if (!value || !value.startsWith(prefix)) return acc;
+    const trailing = parseInt(value.slice(prefix.length).replace(/\D/g, ''), 10);
+    return Number.isFinite(trailing) ? Math.max(acc, trailing) : acc;
+  }, 0);
+  return prefix + String(highest + 1).padStart(3, '0');
+}
+
+const blankInvoiceLine = (): InvoiceLine => ({
+  id: 'line-' + Date.now(),
+  type: 'goods',
+  description: '',
+  quantity: 1,
+  amount: 0,
+});
+
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -106,10 +131,10 @@ export function AdminDashboard() {
   const [shipments, setShipments] = useState<ShipmentItem[]>([]);
   const [user, setUser] = useState(getAuthUser());
 
-  // Invoice Form State
+  // Invoice Form State — starts empty so only real business data is entered
   const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>({
     id: '',
-    invoiceNumber: 'BSP-2026-004',
+    invoiceNumber: nextDocumentNumber([], invoiceNumberPrefix),
     clientName: '',
     clientPhone: '',
     clientWhatsApp: '',
@@ -121,49 +146,32 @@ export function AdminDashboard() {
     previousBalance: 0,
     discount: 0,
     terms: 'Payment is due within 5 business days. Goods procurement commences immediately after deposit receipt.',
-    lines: [
-      {
-        id: '1',
-        type: 'goods',
-        description: 'Commercial Items Procurement (China / Vietnam)',
-        quantity: 1,
-        amount: 850000,
-      },
-      {
-        id: '2',
-        type: 'freight',
-        description: 'Cargo Freight to Lagos Port',
-        quantity: 1,
-        weight: 45,
-        rate: 8500,
-        amount: 382500,
-      },
-    ],
-    subtotal: 1232500,
-    total: 1232500,
+    lines: [blankInvoiceLine()],
+    subtotal: 0,
+    total: 0,
     amountPaid: 0,
     status: 'Unpaid',
-    paymentLink: 'https://paystack.com/pay/buysmart-invoice',
+    paymentLink: '',
     createdAt: new Date().toISOString().slice(0, 10),
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-    notes: 'Official BuySmart corporate procurement invoice.',
+    notes: '',
   });
 
   // Receipt Form State
   const [receiptForm, setReceiptForm] = useState<ReceiptRecord>({
     id: '',
-    receiptNumber: 'BSP-REC-2026-003',
-    invoiceNumber: 'BSP-2026-001',
-    clientName: 'Mr. Francis Ogbeide',
-    clientPhone: '0814 555 6789',
-    clientEmail: 'francis.ogbeide@gmail.com',
+    receiptNumber: nextDocumentNumber([], receiptNumberPrefix),
+    invoiceNumber: '',
+    clientName: '',
+    clientPhone: '',
+    clientEmail: '',
     paymentMethod: 'Bank Transfer',
     bankName: 'Zenith Bank PLC',
-    referenceNumber: 'TXN-ZEN-' + Math.floor(100000000 + Math.random() * 900000000),
-    amountPaid: 3951839.59,
-    amountInWords: numberToWordsNaira(3951839.59),
+    referenceNumber: 'TXN-' + Math.floor(10000000 + Math.random() * 90000000),
+    amountPaid: 0,
+    amountInWords: '',
     balanceRemaining: 0,
-    paymentFor: 'Full payment for Industrial Packaging Machinery & Air Freight (BSP-2026-001)',
+    paymentFor: '',
     paymentDate: new Date().toISOString().slice(0, 10),
     receivedBy: 'BuySmart Procurement Limited (Founder & Management Desk)',
     status: 'Confirmed',
@@ -174,6 +182,8 @@ export function AdminDashboard() {
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [clientSearch, setClientSearch] = useState('');
+  const [shipmentSearch, setShipmentSearch] = useState('');
 
   // Modals
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceRecord | null>(null);
@@ -215,6 +225,21 @@ export function AdminDashboard() {
   const [isEditingClient, setIsEditingClient] = useState(false);
   const [clientEditForm, setClientEditForm] = useState<Partial<ClientProfile>>({});
 
+  // Manual client entry (staff-created client)
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [newClientForm, setNewClientForm] = useState({
+    name: '',
+    businessName: '',
+    email: '',
+    phone: '',
+    whatsapp: '',
+    address: '',
+    city: '',
+    state: 'Lagos State',
+    categoryInterest: 'Commercial & General Goods',
+    notes: '',
+  });
+
   useEffect(() => {
     refreshAllData();
   }, []);
@@ -233,8 +258,10 @@ export function AdminDashboard() {
     setTawkConfig(getTawkConfig());
 
     if (invs.length > 0) {
-      const nextNum = 'BSP-2026-0' + (invs.length + 1).toString().padStart(2, '0');
-      setInvoiceForm((prev) => ({ ...prev, invoiceNumber: nextNum }));
+      setInvoiceForm((prev) => ({
+        ...prev,
+        invoiceNumber: nextDocumentNumber(invs.map((i) => i.invoiceNumber), invoiceNumberPrefix),
+      }));
     }
   };
 
@@ -324,7 +351,7 @@ export function AdminDashboard() {
   };
 
   const handleQuickReceiptFromInvoice = (inv: InvoiceRecord) => {
-    const nextRecNum = 'BSP-REC-2026-0' + (receipts.length + 1).toString().padStart(2, '0');
+    const nextRecNum = nextDocumentNumber(receipts.map((r) => r.receiptNumber), receiptNumberPrefix);
     const amt = inv.total;
     const rec: ReceiptRecord = {
       id: 'rec-' + Date.now().toString(),
@@ -352,7 +379,7 @@ export function AdminDashboard() {
 
   // Pre-fill invoice for client from Client Folder
   const handleCreateInvoiceForClient = (client: ClientProfile) => {
-    const nextNum = 'BSP-2026-0' + (invoices.length + 1).toString().padStart(2, '0');
+    const nextNum = nextDocumentNumber(invoices.map((i) => i.invoiceNumber), invoiceNumberPrefix);
     setInvoiceForm((prev) => ({
       ...prev,
       invoiceNumber: nextNum,
@@ -454,6 +481,66 @@ export function AdminDashboard() {
     showNotify(`Client profile for ${updatedClient.name} updated successfully!`);
   };
 
+  const handleAddClientSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClientForm.name.trim() || !newClientForm.phone.trim()) {
+      showNotify('Client name and phone number are required.', 'error');
+      return;
+    }
+
+    const normalizedEmail = newClientForm.email.trim().toLowerCase();
+    if (normalizedEmail && clients.some((c) => c.email.toLowerCase() === normalizedEmail)) {
+      showNotify('A client with this email address already exists in the directory.', 'error');
+      return;
+    }
+
+    const client: ClientProfile = {
+      id: 'client-' + Date.now().toString(),
+      name: newClientForm.name.trim(),
+      businessName: newClientForm.businessName.trim(),
+      email: normalizedEmail || `client-${Date.now()}@buysmart.ng`,
+      phone: newClientForm.phone.trim(),
+      whatsapp: newClientForm.whatsapp.trim() || newClientForm.phone.trim(),
+      address: newClientForm.address.trim(),
+      city: newClientForm.city.trim(),
+      state: newClientForm.state,
+      categoryInterest: newClientForm.categoryInterest,
+      clientCode: 'BSP-CL-' + Math.floor(1000 + Math.random() * 9000),
+      signupMethod: 'manual',
+      notes: newClientForm.notes.trim(),
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+
+    const updated = saveClient(client);
+    setClients(updated);
+    setShowAddClientModal(false);
+    setNewClientForm({
+      name: '',
+      businessName: '',
+      email: '',
+      phone: '',
+      whatsapp: '',
+      address: '',
+      city: '',
+      state: 'Lagos State',
+      categoryInterest: 'Commercial & General Goods',
+      notes: '',
+    });
+    showNotify(`${client.name} added to the client directory (${client.clientCode}).`);
+  };
+
+  const handleDeleteClient = (client: ClientProfile) => {
+    const confirmed = window.confirm(
+      `Remove ${client.name} from the client directory?\n\nTheir invoices, receipts and shipments are kept for record purposes.`
+    );
+    if (!confirmed) return;
+
+    const updated = deleteClient(client.id);
+    setClients(updated);
+    setSelectedClientFolder(null);
+    showNotify(`${client.name} removed from the client directory.`);
+  };
+
   // Save Shipping Rates
   const handleSaveRates = (e: React.FormEvent) => {
     e.preventDefault();
@@ -480,9 +567,9 @@ export function AdminDashboard() {
       showNotify('Failed to generate Receipt PDF: ' + e?.message, 'error');
     }
   };
-  // WhatsApp Message Link (Exact Format matching User's reference image)
+  // WhatsApp Message Link (opens the portable invoice page on any device)
   const getWhatsAppMessage = (inv: InvoiceRecord) => {
-    const link = `https://buysmart.ng/invoice?num=${encodeURIComponent(inv.invoiceNumber)}`;
+    const link = buildPublicInvoiceLink(inv);
     return `Hi, ${inv.clientName},
 You have an outstanding amount of
 ${formatNaira(inv.total)}
@@ -506,7 +593,7 @@ ${link}
   };
 
   const handleCopyShareLink = (inv: InvoiceRecord) => {
-    const link = `https://buysmart.ng/invoice?num=${encodeURIComponent(inv.invoiceNumber)}`;
+    const link = buildPublicInvoiceLink(inv);
     navigator.clipboard.writeText(link);
     showNotify('Invoice link copied to clipboard!');
   };
@@ -519,6 +606,29 @@ ${link}
       i.clientPhone.includes(searchQuery);
     const matchStatus = statusFilter === 'ALL' || i.status === statusFilter;
     return matchSearch && matchStatus;
+  });
+
+  // Filtered Clients (name, email, phone or client code)
+  const filteredClients = clients.filter((c) => {
+    const query = clientSearch.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      c.name.toLowerCase().includes(query) ||
+      (c.email || '').toLowerCase().includes(query) ||
+      (c.phone || '').includes(query) ||
+      (c.clientCode || '').toLowerCase().includes(query)
+    );
+  });
+
+  // Filtered Shipments (tracking ID, client name or phone)
+  const filteredShipments = shipments.filter((s) => {
+    const query = shipmentSearch.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      s.trackingNumber.toLowerCase().includes(query) ||
+      s.clientName.toLowerCase().includes(query) ||
+      (s.clientPhone || '').includes(query)
+    );
   });
 
   return (
@@ -664,19 +774,17 @@ ${link}
               key={id}
               type="button"
               onClick={() => setActiveTab(id as AdminTab)}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                activeTab === id
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === id
                   ? 'bg-[#111111] text-white shadow-sm'
                   : 'text-[#66615B] hover:bg-white hover:text-[#111111]'
-              }`}
+                }`}
             >
               <Icon className={`h-4 w-4 ${activeTab === id ? 'text-[#C9A227]' : ''}`} />
               <span>{label}</span>
               {badge !== undefined && (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                    activeTab === id ? 'bg-[#C9A227] text-white' : 'bg-[#ECE8DF] text-[#111111]'
-                  }`}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${activeTab === id ? 'bg-[#C9A227] text-white' : 'bg-[#ECE8DF] text-[#111111]'
+                    }`}
                 >
                   {badge}
                 </span>
@@ -689,11 +797,10 @@ ${link}
       {/* Notifications Banner */}
       {notification && (
         <div
-          className={`fixed top-24 right-6 z-50 rounded-2xl p-4 shadow-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
-            notification.type === 'error'
+          className={`fixed top-24 right-6 z-50 rounded-2xl p-4 shadow-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${notification.type === 'error'
               ? 'bg-red-50 border-red-200 text-red-800'
               : 'bg-green-50 border-green-200 text-green-900'
-          }`}
+            }`}
         >
           {notification.type === 'error' ? (
             <AlertCircle className="h-5 w-5 text-red-600" />
@@ -725,20 +832,28 @@ ${link}
                 <button
                   type="button"
                   onClick={() => {
-                    const nextNum = 'BSP-2026-0' + (invoices.length + 1).toString().padStart(2, '0');
+                    const nextNum = nextDocumentNumber(
+                      invoices.map((i) => i.invoiceNumber),
+                      invoiceNumberPrefix
+                    );
                     setInvoiceForm({
                       ...invoiceForm,
+                      id: '',
                       invoiceNumber: nextNum,
                       clientName: '',
                       clientEmail: '',
                       clientPhone: '',
                       clientWhatsApp: '',
                       clientAddress: '',
-                      lines: [
-                        { id: '1', type: 'goods', description: 'Procurement Item', quantity: 1, amount: 500000 },
-                      ],
-                      subtotal: 500000,
-                      total: 500000,
+                      previousBalance: 0,
+                      discount: 0,
+                      amountPaid: 0,
+                      status: 'Unpaid',
+                      paymentLink: '',
+                      notes: '',
+                      lines: [blankInvoiceLine()],
+                      subtotal: 0,
+                      total: 0,
                     });
                     showNotify('Loaded new blank invoice form.');
                   }}
@@ -793,6 +908,15 @@ ${link}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#ECE8DF]">
+                    {filteredInvoices.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-10 px-3 text-center text-xs text-[#8C827A]">
+                          {invoices.length === 0
+                            ? 'No invoice has been created yet. Use “Create New Invoice” below to issue the first one.'
+                            : 'No invoice matches this search or status filter.'}
+                        </td>
+                      </tr>
+                    )}
                     {filteredInvoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-[#FAFAF8] transition">
                         <td className="py-4 px-3 font-bold text-[#111111]">
@@ -808,15 +932,14 @@ ${link}
                         <td className="py-4 px-3 font-extrabold text-[#111111]">{formatNaira(inv.total)}</td>
                         <td className="py-4 px-3">
                           <span
-                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                              inv.status === 'Paid'
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${inv.status === 'Paid'
                                 ? 'bg-green-100 text-green-800'
                                 : inv.status === 'Unpaid'
-                                ? 'bg-amber-100 text-amber-800'
-                                : inv.status === 'Partial'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : inv.status === 'Partial'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-gray-100 text-gray-700'
+                              }`}
                           >
                             {inv.status}
                           </span>
@@ -827,7 +950,7 @@ ${link}
                             <button
                               type="button"
                               onClick={() => {
-                                const link = `${window.location.origin}/invoice?num=${inv.invoiceNumber}`;
+                                const link = buildPublicInvoiceLink(inv);
                                 navigator.clipboard.writeText(link);
                                 showNotify(`Public Invoice Link copied: ${link}`);
                               }}
@@ -1274,8 +1397,34 @@ ${link}
               </button>
             </div>
 
+            <div className="relative max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C827A]" />
+              <input
+                type="text"
+                value={shipmentSearch}
+                onChange={(e) => setShipmentSearch(e.target.value)}
+                placeholder="Find by tracking ID, client name or phone..."
+                className="w-full rounded-2xl border border-[#DED9CF] bg-white pl-10 pr-4 py-2.5 text-xs text-[#111111] focus:outline-none focus:border-[#C9A227]"
+              />
+            </div>
+
             <div className="grid grid-cols-1 gap-4">
-              {shipments.map((ship) => (
+              {filteredShipments.length === 0 && (
+                <div className="rounded-3xl border border-dashed border-[#DED9CF] bg-white p-10 text-center space-y-3">
+                  <div className="mx-auto h-12 w-12 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] flex items-center justify-center text-[#C9A227]">
+                    <Truck className="h-6 w-6" />
+                  </div>
+                  <div className="font-bold text-sm text-[#111111]">
+                    {shipments.length === 0 ? 'No consignment registered yet' : 'No consignment matches that search'}
+                  </div>
+                  <p className="text-xs text-[#8C827A]">
+                    {shipments.length === 0
+                      ? 'Create and assign a shipment to start tracking cargo milestones for a client.'
+                      : 'Check the tracking ID or search with the client name instead.'}
+                  </p>
+                </div>
+              )}
+              {filteredShipments.map((ship) => (
                 <div
                   key={ship.id}
                   className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm hover:border-[#C9A227]/40 transition space-y-4"
@@ -1342,16 +1491,14 @@ ${link}
                       {ship.stages.map((stage, idx) => (
                         <div key={idx} className="flex flex-col items-center text-center px-1">
                           <div
-                            className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                              stage.done ? 'bg-[#C9A227] text-white' : 'bg-[#ECE8DF] text-[#8C827A]'
-                            }`}
+                            className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold ${stage.done ? 'bg-[#C9A227] text-white' : 'bg-[#ECE8DF] text-[#8C827A]'
+                              }`}
                           >
                             {stage.done ? '✓' : idx + 1}
                           </div>
                           <span
-                            className={`text-[10px] mt-1 font-semibold ${
-                              stage.done ? 'text-[#111111]' : 'text-[#8C827A]'
-                            }`}
+                            className={`text-[10px] mt-1 font-semibold ${stage.done ? 'text-[#111111]' : 'text-[#8C827A]'
+                              }`}
                           >
                             {stage.label}
                           </span>
@@ -1377,17 +1524,70 @@ ${link}
         {/* ========================================================= */}
         {activeTab === 'clients' && (
           <div className="space-y-8">
-            <div>
-              <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
-                Registered Clients &amp; Client Folders
-              </h1>
-              <p className="text-sm text-[#66615B]">
-                Every registered client (including Google signups) appears here. Open their folder to view and manage their shipments, invoices, and quote requests.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
+                  Registered Clients &amp; Client Folders
+                </h1>
+                <p className="text-sm text-[#66615B]">
+                  Every client added here (by staff or self signup) can be opened to view their invoices, shipments and
+                  contact details, edited, or removed.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddClientModal(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer shrink-0"
+              >
+                <Plus className="h-4 w-4 text-[#C9A227]" />
+                <span>Add New Client</span>
+              </button>
+            </div>
+
+            <div className="relative max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C827A]" />
+              <input
+                type="text"
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                placeholder="Find a client by name, phone, email or client code..."
+                className="w-full rounded-2xl border border-[#DED9CF] bg-white pl-10 pr-4 py-2.5 text-xs text-[#111111] focus:outline-none focus:border-[#C9A227]"
+              />
+            </div>
+
+            <div className="text-xs text-[#8C827A]">
+              Showing <span className="font-bold text-[#111111]">{filteredClients.length}</span> of {clients.length} client
+              {clients.length === 1 ? '' : 's'} on file
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {clients.map((c) => {
+              {clients.length > 0 && filteredClients.length === 0 && (
+                <div className="md:col-span-2 lg:col-span-3 rounded-3xl border border-dashed border-[#DED9CF] bg-white p-8 text-center text-xs text-[#8C827A]">
+                  No client matches that search. Try the client code or phone number, or clear the search box.
+                </div>
+              )}
+              {clients.length === 0 && (
+                <div className="md:col-span-2 lg:col-span-3 rounded-3xl border border-dashed border-[#DED9CF] bg-white p-10 text-center space-y-3">
+                  <div className="mx-auto h-12 w-12 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] flex items-center justify-center text-[#C9A227]">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <div className="font-bold text-sm text-[#111111]">No client on file yet</div>
+                  <p className="text-xs text-[#8C827A] max-w-md mx-auto">
+                    The desk is empty so every record shows real data only. Add your first client to start issuing invoices,
+                    receipts and shipment tracking for them.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddClientModal(true)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] px-5 py-2.5 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4 text-[#C9A227]" />
+                    <span>Add New Client</span>
+                  </button>
+                </div>
+              )}
+              {filteredClients.map((c) => {
                 const clientInvs = invoices.filter(
                   (i) => i.clientName.toLowerCase() === c.name.toLowerCase() || i.clientEmail === c.email
                 );
@@ -1412,11 +1612,10 @@ ${link}
                       </div>
 
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                          c.signupMethod === 'google' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-700'
-                        }`}
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${c.signupMethod === 'google' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-700'
+                          }`}
                       >
-                        {c.signupMethod === 'google' ? 'Google Auth' : 'Email'}
+                        {c.signupMethod === 'google' ? 'Google Auth' : c.signupMethod === 'manual' ? 'Added by Staff' : 'Email'}
                       </span>
                     </div>
 
@@ -1449,14 +1648,24 @@ ${link}
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedClientFolder(c)}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-2.5 px-4 text-xs font-bold text-white hover:opacity-90 transition cursor-pointer"
-                    >
-                      <FolderOpen className="h-4 w-4 text-[#C9A227]" />
-                      <span>Open Client Folder</span>
-                    </button>
+                    <div className="grid grid-cols-[1fr_auto] gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedClientFolder(c)}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-2.5 px-4 text-xs font-bold text-white hover:opacity-90 transition cursor-pointer"
+                      >
+                        <FolderOpen className="h-4 w-4 text-[#C9A227]" />
+                        <span>Open Client Folder</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClient(c)}
+                        title="Remove client"
+                        className="px-3 rounded-2xl border border-[#DED9CF] text-[#B3261E] hover:border-[#B3261E] hover:bg-red-50 transition cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -1764,42 +1973,113 @@ ${link}
           <div className="space-y-8">
             <div>
               <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
-                Financial Summary &amp; Overview
+                Stock, Clients &amp; Financial Summary
               </h1>
               <p className="text-sm text-[#66615B]">
-                Real-time operational cash flow, outstanding client receivables, and receipt tallies.
+                Live counts of registered clients, cargo on hand, deliveries completed and the money movement across the
+                business.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
-                <span className="text-xs font-bold uppercase text-[#8C827A]">Total Invoiced Volume</span>
-                <div className="mt-2 text-2xl font-extrabold text-[#111111]">
-                  {formatNaira(invoices.reduce((acc, i) => acc + (Number(i.total) || 0), 0))}
-                </div>
-                <span className="text-[11px] text-[#8C827A]">{invoices.length} corporate invoices issued</span>
-              </div>
+            {(() => {
+              const activeShipments = shipments.filter((s) => s.status !== 'Delivered');
+              const deliveredShipments = shipments.filter((s) => s.status === 'Delivered');
+              const totalWeight = shipments.reduce((acc, s) => acc + (Number(s.weight) || 0), 0);
+              const totalInvoiced = invoices.reduce((acc, i) => acc + (Number(i.total) || 0), 0);
+              const totalCollected = receipts.reduce((acc, r) => acc + (Number(r.amountPaid) || 0), 0);
+              const outstanding = invoices
+                .filter((i) => i.status === 'Unpaid' || i.status === 'Partial' || i.status === 'Overdue')
+                .reduce((acc, i) => acc + (Number(i.total) - Number(i.amountPaid || 0)), 0);
+              const paidInvoices = invoices.filter((i) => i.status === 'Paid').length;
+              const clientsWithInvoices = clients.filter((c) =>
+                invoices.some((i) => i.clientName.toLowerCase() === c.name.toLowerCase() || i.clientEmail === c.email)
+              ).length;
 
-              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
-                <span className="text-xs font-bold uppercase text-green-700">Total Confirmed Collections</span>
-                <div className="mt-2 text-2xl font-extrabold text-green-700">
-                  {formatNaira(receipts.reduce((acc, r) => acc + (Number(r.amountPaid) || 0), 0))}
-                </div>
-                <span className="text-[11px] text-[#8C827A]">{receipts.length} verified official receipts</span>
-              </div>
+              const stockCards = [
+                { label: 'Registered Clients', value: clients.length.toString(), note: `${clientsWithInvoices} with active invoices`, tone: 'text-[#111111]' },
+                { label: 'Cargo In Stock / In Transit', value: activeShipments.length.toString(), note: `${shipments.length} total consignments`, tone: 'text-[#6B5515]' },
+                { label: 'Delivered To Clients', value: deliveredShipments.length.toString(), note: 'Completed and signed off', tone: 'text-green-700' },
+                { label: 'Total Cargo Weight', value: `${totalWeight.toLocaleString('en-NG')} kg`, note: 'Across all consignments', tone: 'text-[#111111]' },
+              ];
 
-              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
-                <span className="text-xs font-bold uppercase text-amber-700">Outstanding Receivables</span>
-                <div className="mt-2 text-2xl font-extrabold text-amber-700">
-                  {formatNaira(
-                    invoices
-                      .filter((i) => i.status === 'Unpaid' || i.status === 'Partial')
-                      .reduce((acc, i) => acc + (Number(i.total) - Number(i.amountPaid || 0)), 0)
-                  )}
-                </div>
-                <span className="text-[11px] text-[#8C827A]">Including invoice BSP-2026-001 (Mr. Francis Ogbeide)</span>
-              </div>
-            </div>
+              const financeCards = [
+                { label: 'Total Invoiced Volume', value: totalInvoiced, note: `${invoices.length} invoices issued`, tone: 'text-[#111111]' },
+                { label: 'Total Confirmed Collections', value: totalCollected, note: `${receipts.length} verified receipts`, tone: 'text-green-700' },
+                { label: 'Outstanding Receivables', value: outstanding, note: `${paidInvoices} invoices fully settled`, tone: 'text-amber-700' },
+              ];
+
+              return (
+                <>
+                  <div>
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#8C827A] mb-3">
+                      Clients &amp; Stock Count
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                      {stockCards.map((card) => (
+                        <div key={card.label} className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+                          <span className="text-xs font-bold uppercase text-[#8C827A]">{card.label}</span>
+                          <div className={`mt-2 text-2xl font-extrabold ${card.tone}`}>{card.value}</div>
+                          <span className="text-[11px] text-[#8C827A]">{card.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#8C827A] mb-3">
+                      Financial Summary
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                      {financeCards.map((card) => (
+                        <div key={card.label} className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+                          <span className="text-xs font-bold uppercase text-[#8C827A]">{card.label}</span>
+                          <div className={`mt-2 text-2xl font-extrabold ${card.tone}`}>{formatNaira(card.value)}</div>
+                          <span className="text-[11px] text-[#8C827A]">{card.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
+                        Stock Ledger By Consignment
+                      </span>
+                      <span className="text-[11px] text-[#8C827A]">{shipments.length} consignments</span>
+                    </div>
+                    {shipments.length === 0 ? (
+                      <p className="py-6 text-center text-xs text-[#8C827A]">
+                        No cargo registered yet. Add a shipment to start tracking stock.
+                      </p>
+                    ) : (
+                      <div className="divide-y divide-[#ECE8DF]">
+                        {shipments.map((s) => (
+                          <div key={s.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <div>
+                              <div className="font-bold text-[#111111]">{s.clientName}</div>
+                              <div className="text-[11px] text-[#8C827A]">
+                                {s.trackingNumber} • {s.description || 'Cargo'} • {s.mode === 'air' ? 'Air Freight' : 'Sea Freight'}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11px] font-semibold text-[#66615B]">{Number(s.weight) || 0} kg</span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${s.status === 'Delivered'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                  }`}
+                              >
+                                {s.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </main>
@@ -1885,6 +2165,148 @@ ${link}
       )}
 
       {/* ========================================================= */}
+      {/* MODAL: ADD CLIENT MANUALLY */}
+      {/* ========================================================= */}
+      {showAddClientModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#ECE8DF] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF]">
+              <div>
+                <h3 className="text-base font-extrabold text-[#111111]">Add New Client</h3>
+                <p className="text-xs text-[#8C827A]">
+                  Create a client record, then issue invoices or shipments against it.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddClientModal(false)}
+                className="p-1 rounded-lg text-[#8C827A] hover:text-[#111111]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddClientSubmit} className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelStyle}>Client / Contact Name *</label>
+                <input
+                  type="text"
+                  value={newClientForm.name}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, name: e.target.value })}
+                  placeholder="e.g. Mr. John Okoro"
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>Business Name</label>
+                <input
+                  type="text"
+                  value={newClientForm.businessName}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, businessName: e.target.value })}
+                  placeholder="e.g. Skyline Retail Ltd"
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>Phone Number *</label>
+                <input
+                  type="text"
+                  value={newClientForm.phone}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
+                  placeholder="0803 000 0000"
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>WhatsApp Number</label>
+                <input
+                  type="text"
+                  value={newClientForm.whatsapp}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, whatsapp: e.target.value })}
+                  placeholder="+234 803 000 0000"
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>Email Address</label>
+                <input
+                  type="email"
+                  value={newClientForm.email}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
+                  placeholder="client@email.com"
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>Category Interest</label>
+                <input
+                  type="text"
+                  value={newClientForm.categoryInterest}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, categoryInterest: e.target.value })}
+                  className={inputStyle}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelStyle}>Delivery Address</label>
+                <input
+                  type="text"
+                  value={newClientForm.address}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, address: e.target.value })}
+                  placeholder="Plot, street, area"
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>City</label>
+                <input
+                  type="text"
+                  value={newClientForm.city}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, city: e.target.value })}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>State</label>
+                <input
+                  type="text"
+                  value={newClientForm.state}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, state: e.target.value })}
+                  className={inputStyle}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelStyle}>Internal Notes</label>
+                <textarea
+                  value={newClientForm.notes}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, notes: e.target.value })}
+                  rows={3}
+                  placeholder="Sourcing preferences, credit terms, contact history..."
+                  className={inputStyle}
+                />
+              </div>
+
+              <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddClientModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-[#DED9CF] text-xs font-semibold text-[#4A4A4A]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#C9A227] px-5 py-2.5 text-xs font-bold text-white hover:opacity-90"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>Save Client</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
       {/* MODAL: CLIENT FOLDER (DETAIL DRAWER) */}
       {/* ========================================================= */}
       {selectedClientFolder && (
@@ -1899,7 +2321,11 @@ ${link}
                   <h3 className="text-base font-extrabold text-[#111111]">{selectedClientFolder.name}</h3>
                   <div className="text-xs text-[#8C827A]">
                     Client Code: <span className="font-semibold text-[#111111]">{selectedClientFolder.clientCode}</span> •{' '}
-                    {selectedClientFolder.signupMethod === 'google' ? 'Google Registered' : 'Email Registered'}
+                    {selectedClientFolder.signupMethod === 'google'
+                      ? 'Google Registered'
+                      : selectedClientFolder.signupMethod === 'manual'
+                        ? 'Added by Management Desk'
+                        : 'Email Registered'}
                   </div>
                 </div>
               </div>
@@ -1928,6 +2354,14 @@ ${link}
                 >
                   <Edit className="h-3.5 w-3.5 inline mr-1 text-[#C9A227]" />
                   <span>{isEditingClient ? 'Cancel Edit' : 'Edit Profile'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteClient(selectedClientFolder)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#DED9CF] bg-white text-xs font-bold text-[#B3261E] hover:border-[#B3261E] hover:bg-red-50 transition cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Remove</span>
                 </button>
                 <button
                   type="button"

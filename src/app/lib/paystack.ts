@@ -128,83 +128,79 @@ export async function initiatePaystackCheckout({
   customKey,
 }: PaystackCheckoutParams): Promise<void> {
   const config = getPaystackConfig();
-  const publicKey = (
-    customKey ||
-    config.publicKey ||
-    (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string) ||
-    'pk_test_buysmart_procurement'
-  ).trim();
+  const publicKey = (customKey || config.publicKey || '').trim();
+
+  // Real-money gateway: never fabricate a settlement. Without a valid key the
+  // client is told to use the official bank accounts instead.
+  if (!publicKey.startsWith('pk_live_') && !publicKey.startsWith('pk_test_')) {
+    const message =
+      'Online payment is not enabled yet because the Paystack public key has not been saved (Admin → Payment Settings).';
+    if (onError) {
+      onError(new Error(message));
+      return;
+    }
+    throw new Error(message);
+  }
 
   const isScriptLoaded = await loadPaystackScript();
 
-  // If script loaded and PaystackPop is ready
-  if (isScriptLoaded && window.PaystackPop) {
-    try {
-      const email =
-        invoice.clientEmail && invoice.clientEmail.includes('@')
-          ? invoice.clientEmail
-          : 'accounts@buysmart.ng';
-
-      const amountInKobo = Math.round(invoice.total * 100);
-      const reference = `BSP_${invoice.invoiceNumber.replace(/[^A-Za-z0-9]/g, '')}_${Date.now()}`;
-
-      const handler = window.PaystackPop.setup({
-        key: publicKey,
-        email,
-        amount: amountInKobo,
-        currency: 'NGN',
-        ref: reference,
-        metadata: {
-          custom_fields: [
-            {
-              display_name: 'Invoice Number',
-              variable_name: 'invoice_number',
-              value: invoice.invoiceNumber,
-            },
-            {
-              display_name: 'Client Name',
-              variable_name: 'client_name',
-              value: invoice.clientName,
-            },
-            {
-              display_name: 'Client Phone',
-              variable_name: 'client_phone',
-              value: invoice.clientPhone,
-            },
-          ],
-        },
-        callback: (response) => {
-          const transRef = response.reference || reference;
-          const { receipt, invoice: updated } = convertInvoiceToReceipt(invoice, transRef, 'Paystack');
-          onSuccess(receipt, updated);
-        },
-        onClose: () => {
-          if (onClose) onClose();
-        },
-      });
-
-      handler.openIframe();
+  if (!isScriptLoaded || !window.PaystackPop) {
+    const message = 'Unable to reach the Paystack checkout service. Check the connection and try again.';
+    if (onError) {
+      onError(new Error(message));
       return;
-    } catch (err) {
-      console.error('Paystack setup error:', err);
-      if (onError) onError(err as Error);
     }
+    throw new Error(message);
   }
 
-  // Fallback / Offline / Test environment mode:
-  // If CDN is unreachable or running in sandbox preview, provide seamless verification
-  const ref = `BSP_DEMO_${Date.now()}`;
-  const confirmed = window.confirm(
-    `Proceeding to Paystack Gateway for ${invoice.invoiceNumber} (${new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-    }).format(invoice.total)}).\n\nClick OK to simulate instantaneous confirmed settlement via Paystack Gateway.`
-  );
+  try {
+    const email =
+      invoice.clientEmail && invoice.clientEmail.includes('@')
+        ? invoice.clientEmail
+        : 'accounts@buysmart.ng';
 
-  if (confirmed) {
-    const { receipt, invoice: updated } = convertInvoiceToReceipt(invoice, ref, 'Paystack');
-    onSuccess(receipt, updated);
-  } else {
-    if (onClose) onClose();
+    const amountInKobo = Math.round(invoice.total * 100);
+    const reference = `BSP_${invoice.invoiceNumber.replace(/[^A-Za-z0-9]/g, '')}_${Date.now()}`;
+
+    const handler = window.PaystackPop.setup({
+      key: publicKey,
+      email,
+      amount: amountInKobo,
+      currency: 'NGN',
+      ref: reference,
+      metadata: {
+        custom_fields: [
+          {
+            display_name: 'Invoice Number',
+            variable_name: 'invoice_number',
+            value: invoice.invoiceNumber,
+          },
+          {
+            display_name: 'Client Name',
+            variable_name: 'client_name',
+            value: invoice.clientName,
+          },
+          {
+            display_name: 'Client Phone',
+            variable_name: 'client_phone',
+            value: invoice.clientPhone,
+          },
+        ],
+      },
+      callback: (response) => {
+        const transRef = response.reference || reference;
+        const { receipt, invoice: updated } = convertInvoiceToReceipt(invoice, transRef, 'Paystack');
+        onSuccess(receipt, updated);
+      },
+      onClose: () => {
+        if (onClose) onClose();
+      },
+    });
+
+    handler.openIframe();
+    return;
+  } catch (err) {
+    console.error('Paystack setup error:', err);
+    if (onError) onError(err as Error);
   }
 }

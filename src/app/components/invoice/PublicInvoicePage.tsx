@@ -35,6 +35,7 @@ import {
 } from '../../lib/auth';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { initiatePaystackCheckout } from '../../lib/paystack';
+import { buildInvoiceLink, readLinkLocation } from '../../lib/invoice-link';
 
 const LINE_LABELS: Record<LineType, string> = {
   goods: 'Goods Purchase',
@@ -52,49 +53,111 @@ export function PublicInvoicePage() {
   const [copied, setCopied] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState(false);
+  const [lookupState, setLookupState] = useState<'loading' | 'ready' | 'not-found'>('loading');
+  const [lookupNumber, setLookupNumber] = useState('');
+  const [lookupError, setLookupError] = useState('');
 
   const currentUser = getAuthUser();
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const invoiceNum = urlParams.get('num') || urlParams.get('invoice');
-    const receiptNum = urlParams.get('receipt');
-
-    if (receiptNum) {
-      const foundRec = findReceiptByNumber(receiptNum);
-      if (foundRec) {
-        setReceipt(foundRec);
-        setActiveView('receipt');
-        const relatedInv = findInvoiceByNumber(foundRec.invoiceNumber);
-        if (relatedInv) setInvoice(relatedInv);
-        return;
-      }
+  const showInvoice = (found: InvoiceRecord, preferReceipt = false) => {
+    setInvoice(found);
+    const matchingReceipt = getStoredReceipts().find(
+      (r) => r.invoiceNumber.toLowerCase() === found.invoiceNumber.toLowerCase()
+    );
+    if (matchingReceipt) {
+      setReceipt(matchingReceipt);
+      setActiveView(preferReceipt ? 'receipt' : 'invoice');
     }
+    setLookupNumber(found.invoiceNumber);
+    setLookupState('ready');
+  };
 
-    const targetNum = invoiceNum || 'BSP-2026-004';
-    const foundInv = findInvoiceByNumber(targetNum);
-    if (foundInv) {
-      setInvoice(foundInv);
-      // Check if there is already a receipt for this invoice
-      const matchingRec = getStoredReceipts().find(
-        (r) => r.invoiceNumber.toLowerCase() === foundInv.invoiceNumber.toLowerCase()
-      );
-      if (matchingRec) {
-        setReceipt(matchingRec);
-        if (foundInv.status === 'Paid') {
-          setActiveView('invoice');
+  useEffect(() => {
+    const resolveLink = () => {
+      const link = readLinkLocation();
+      setInvoice(null);
+      setReceipt(null);
+      setActiveView('invoice');
+      setLookupError('');
+      setLookupState('loading');
+
+      if (link.receiptNumber) {
+        const foundReceipt = findReceiptByNumber(link.receiptNumber);
+        if (foundReceipt) {
+          setReceipt(foundReceipt);
+          setActiveView('receipt');
+          const relatedInv = findInvoiceByNumber(foundReceipt.invoiceNumber);
+          if (relatedInv) setInvoice(relatedInv);
+          setLookupNumber(foundReceipt.invoiceNumber);
+          setLookupState('ready');
+          return;
         }
       }
-    } else {
-      const all = getStoredInvoices();
-      if (all.length > 0) {
-        setInvoice(all[0]);
+
+      if (link.invoiceNumber) {
+        const stored = findInvoiceByNumber(link.invoiceNumber);
+        if (stored) {
+          showInvoice(stored, false);
+          return;
+        }
       }
-    }
+
+      // The share link carries its own invoice snapshot, so it renders on any device
+      // even when no record exists in this browser's storage.
+      if (link.snapshot) {
+        showInvoice(link.snapshot, false);
+        return;
+      }
+
+      if (!link.invoiceNumber) {
+        const all = getStoredInvoices();
+        if (all.length > 0) {
+          showInvoice(all[0], false);
+          return;
+        }
+      }
+
+      setLookupNumber(link.invoiceNumber || '');
+      setLookupState('not-found');
+    };
+
+    resolveLink();
+    // A pasted or edited link only changes the fragment, so resolve it again.
+    window.addEventListener('hashchange', resolveLink);
+    return () => window.removeEventListener('hashchange', resolveLink);
   }, []);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+  const handleManualLookup = (event: React.FormEvent) => {
+    event.preventDefault();
+    const target = lookupNumber.trim();
+    if (!target) return;
+
+    const foundReceipt = findReceiptByNumber(target);
+    if (foundReceipt) {
+      setReceipt(foundReceipt);
+      setActiveView('receipt');
+      const relatedInv = findInvoiceByNumber(foundReceipt.invoiceNumber);
+      if (relatedInv) setInvoice(relatedInv);
+      setLookupState('ready');
+      return;
+    }
+
+    const foundInvoice = findInvoiceByNumber(target);
+    if (foundInvoice) {
+      showInvoice(foundInvoice, false);
+      return;
+    }
+
+    setLookupError(
+      'No invoice with that number is available on this device. Ask BuySmart Management to resend the original invoice link.'
+    );
+  };
+
+  const handleCopyLink = async () => {
+    const portableLink = invoice ? buildInvoiceLink(invoice) : window.location.href;
+    try {
+      await navigator.clipboard.writeText(portableLink);
+    } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
   };
@@ -125,15 +188,20 @@ export function PublicInvoicePage() {
         },
         onError: (err) => {
           setIsPaying(false);
-          alert('Paystack initialization notice: ' + err.message);
+          alert('Paystack notice: ' + err.message);
         },
       });
-    } catch {
+    } catch (err) {
       setIsPaying(false);
+      alert(
+        'Online payment is not available yet: ' +
+          ((err as Error)?.message || 'the Paystack public key has not been configured.') +
+          '\n\nPlease use the official bank accounts below or contact BuySmart Management.'
+      );
     }
   };
 
-  if (!invoice && !receipt) {
+  if (lookupState === 'loading' && !invoice && !receipt) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
         <div className="text-center space-y-3">
@@ -141,6 +209,79 @@ export function PublicInvoicePage() {
             <img src="/brand/logo.png" alt="BuySmart" className="h-full w-full object-contain" />
           </div>
           <p className="text-sm font-semibold text-[#111111]">Loading official commercial document...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (lookupState === 'not-found' && !invoice && !receipt) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-3xl bg-white border border-[#ECE8DF] p-7 shadow-sm space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-[#111111] p-2 border border-[#C9A227]/40 flex items-center justify-center shrink-0">
+              <img src="/brand/logo.png" alt="BuySmart" className="h-full w-full object-contain" />
+            </div>
+            <div>
+              <div style={{ fontFamily: "'Sora', sans-serif" }} className="text-base font-extrabold text-[#111111]">
+                BuySmart Invoice Desk
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#C9A227]">Procurement Limited</div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] p-4 text-xs text-[#4A4A4A] leading-relaxed">
+            <span className="font-bold text-[#111111]">Open your invoice:</span> enter the invoice number exactly as it
+            appears on your document (for example BSP-2026-001), or use the secure link sent to you by BuySmart.
+          </div>
+
+          <form onSubmit={handleManualLookup} className="space-y-3">
+            <input
+              type="text"
+              value={lookupNumber}
+              onChange={(e) => {
+                setLookupNumber(e.target.value);
+                setLookupError('');
+              }}
+              placeholder="Invoice number e.g. BSP-2026-001"
+              className="w-full rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-sm text-[#111111] outline-none transition focus:border-[#C9A227]"
+            />
+            {lookupError && (
+              <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-800">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{lookupError}</span>
+              </div>
+            )}
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-3 text-xs font-bold text-white hover:opacity-90 transition cursor-pointer"
+            >
+              <FileText className="h-4 w-4 text-[#C9A227]" />
+              <span>Open Invoice</span>
+            </button>
+          </form>
+
+          <div className="flex items-center justify-center gap-3 pt-2 border-t border-[#ECE8DF] text-[11px] font-semibold">
+            <a href="/" className="text-[#66615B] hover:text-[#111111]">
+              BuySmart Home
+            </a>
+            <span className="text-[#DED9CF]">•</span>
+            <button
+              type="button"
+              onClick={() =>
+                window.open(
+                  `https://wa.me/2348100130714?text=${encodeURIComponent(
+                    'Hello BuySmart, please resend my invoice payment link.'
+                  )}`,
+                  '_blank'
+                )
+              }
+              className="inline-flex items-center gap-1.5 text-[#128C7E] hover:underline cursor-pointer"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Request my link
+            </button>
+          </div>
         </div>
       </div>
     );
