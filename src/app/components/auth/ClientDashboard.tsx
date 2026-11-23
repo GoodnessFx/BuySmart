@@ -25,6 +25,13 @@ import {
   HelpCircle,
   X,
   Share2,
+  Building2,
+  MapPin,
+  Mail,
+  Save,
+  Check,
+  Shield,
+  Clock3,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { ModernTrackingCard } from '../shipments/ModernTrackingCard';
@@ -36,13 +43,19 @@ import {
   getStoredShipments,
   saveQuoteRequest,
   formatNaira,
+  getShippingRates,
+  saveClient,
+  findClientByEmail,
+  setAuthUser,
   type InvoiceRecord,
   type ReceiptRecord,
   type ShipmentItem,
   type QuoteRequestRecord,
+  type ShippingRates,
+  type ClientProfile,
 } from '../../lib/auth';
 
-type ClientTab = 'shipments' | 'invoices' | 'quote' | 'estimator' | 'support';
+type ClientTab = 'shipments' | 'invoices' | 'profile' | 'quote' | 'estimator' | 'support';
 
 export function ClientDashboard() {
   const [user, setUser] = useState(getAuthUser());
@@ -68,6 +81,22 @@ export function ClientDashboard() {
   const [estHeight, setEstHeight] = useState('30');
   const [estWeight, setEstWeight] = useState('15');
   const [estMethod, setEstMethod] = useState<'air' | 'sea'>('air');
+  const [rates, setRates] = useState<ShippingRates>(getShippingRates());
+
+  // Profile Settings State
+  const [profile, setProfile] = useState<ClientProfile | null>(null);
+  const [profName, setProfName] = useState('');
+  const [profBusiness, setProfBusiness] = useState('');
+  const [profPhone, setProfPhone] = useState('');
+  const [profWhatsapp, setProfWhatsapp] = useState('');
+  const [profAltPhone, setProfAltPhone] = useState('');
+  const [profEmail, setProfEmail] = useState('');
+  const [profAltEmail, setProfAltEmail] = useState('');
+  const [profAddress, setProfAddress] = useState('');
+  const [profCity, setProfCity] = useState('');
+  const [profState, setProfState] = useState('Lagos State');
+  const [profCategory, setProfCategory] = useState('Commercial Machinery & Equipment');
+  const [profileMsg, setProfileMsg] = useState('');
 
   useEffect(() => {
     const allInvs = getStoredInvoices();
@@ -76,14 +105,75 @@ export function ClientDashboard() {
     setInvoices(allInvs);
     setReceipts(allRecs);
     setShipments(allShips);
-  }, []);
+    setRates(getShippingRates());
+
+    const clientData = user?.email ? findClientByEmail(user.email) : undefined;
+    if (clientData) {
+      setProfile(clientData);
+      setProfName(clientData.name || user?.name || '');
+      setProfBusiness(clientData.businessName || '');
+      setProfPhone(clientData.phone || user?.phone || '');
+      setProfWhatsapp(clientData.whatsapp || clientData.phone || '');
+      setProfAltPhone(clientData.alternatePhone || '');
+      setProfEmail(clientData.email || user?.email || '');
+      setProfAltEmail(clientData.alternateEmail || '');
+      setProfAddress(clientData.address || '');
+      setProfCity(clientData.city || '');
+      setProfState(clientData.state || 'Lagos State');
+      setProfCategory(clientData.categoryInterest || 'Commercial Machinery & Equipment');
+    } else if (user) {
+      setProfName(user.name || '');
+      setProfPhone(user.phone || '');
+      setProfWhatsapp(user.phone || '');
+      setProfEmail(user.email || '');
+    }
+  }, [user]);
 
   const handleSignOut = () => {
     clearAuthUser();
     window.location.href = '/login';
   };
 
-  // Estimator calculation
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updatedClient: ClientProfile = {
+      id: profile?.id || user?.id || 'client-' + Date.now(),
+      name: profName.trim(),
+      businessName: profBusiness.trim() || undefined,
+      email: (profEmail.trim() || user?.email || '').toLowerCase(),
+      alternateEmail: profAltEmail.trim() || undefined,
+      phone: profPhone.trim(),
+      whatsapp: profWhatsapp.trim() || profPhone.trim(),
+      alternatePhone: profAltPhone.trim() || undefined,
+      address: profAddress.trim() || undefined,
+      city: profCity.trim() || undefined,
+      state: profState.trim() || undefined,
+      categoryInterest: profCategory.trim() || undefined,
+      clientCode: profile?.clientCode || user?.clientCode || 'BSP-CL-1049',
+      signupMethod: profile?.signupMethod || 'email',
+      createdAt: profile?.createdAt || new Date().toISOString().slice(0, 10),
+      notes: profile?.notes,
+    };
+
+    saveClient(updatedClient);
+    setProfile(updatedClient);
+
+    const updatedAuth: AuthUser = {
+      ...(user || { id: updatedClient.id, role: 'client' }),
+      name: updatedClient.name,
+      email: updatedClient.email,
+      phone: updatedClient.phone,
+      clientCode: updatedClient.clientCode,
+      role: 'client',
+    };
+    setAuthUser(updatedAuth);
+    setUser(updatedAuth);
+
+    setProfileMsg('Your profile and business details have been updated successfully!');
+    setTimeout(() => setProfileMsg(''), 4000);
+  };
+
+  // Estimator calculation using Live Admin Rates
   const lengthNum = parseFloat(estLength) || 0;
   const widthNum = parseFloat(estWidth) || 0;
   const heightNum = parseFloat(estHeight) || 0;
@@ -91,7 +181,7 @@ export function ClientDashboard() {
 
   const volumetricWeight = Math.round(((lengthNum * widthNum * heightNum) / 5000) * 10) / 10;
   const chargeableWeight = Math.max(actualWeight, volumetricWeight);
-  const ratePerKg = estMethod === 'air' ? 8500 : 2200;
+  const ratePerKg = estMethod === 'air' ? rates.airFreightRatePerKg : rates.seaFreightRatePerKg;
   const estimatedCost = Math.round(chargeableWeight * ratePerKg);
 
   // Filter items for current logged-in client (or fallback to all if generic client)
@@ -216,6 +306,19 @@ export function ClientDashboard() {
           >
             <FileText className={`h-4 w-4 ${activeTab === 'invoices' ? 'text-[#C9A227]' : ''}`} />
             <span>Invoices &amp; Official Receipts ({displayInvoices.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'profile'
+                ? 'bg-[#111111] text-white shadow-sm'
+                : 'text-[#4A4A4A] hover:bg-white hover:text-[#111111]'
+            }`}
+          >
+            <User className={`h-4 w-4 ${activeTab === 'profile' ? 'text-[#C9A227]' : ''}`} />
+            <span>Profile &amp; Account Settings</span>
           </button>
 
           <button
@@ -520,16 +623,300 @@ export function ClientDashboard() {
           </div>
         )}
 
+        {/* TAB 2.5: PROFILE & ACCOUNT SETTINGS */}
+        {activeTab === 'profile' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Profile Header Card */}
+            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#ECE8DF]">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-[#111111] text-[#C9A227] flex items-center justify-center text-xl font-black shadow-md">
+                    {profName ? profName.charAt(0).toUpperCase() : 'C'}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl sm:text-2xl font-extrabold text-[#111111]">
+                        {profName || user?.name || 'Valued Client'}
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 text-[10px] font-bold uppercase flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#66615B] mt-0.5">
+                      {profBusiness ? `${profBusiness} • ` : ''}Client ID: <span className="font-mono font-bold text-[#111111]">{profile?.clientCode || user?.clientCode || 'BSP-CL-1049'}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right text-xs text-[#8C827A]">
+                  <div>Member Since: <span className="font-semibold text-[#111111]">{profile?.createdAt || '2026'}</span></div>
+                  <div>Auth: <span className="font-semibold capitalize text-[#111111]">{profile?.signupMethod || user?.authProvider || 'Email'}</span></div>
+                </div>
+              </div>
+
+              {profileMsg && (
+                <div className="mt-4 p-4 rounded-2xl bg-green-50 border border-green-200 text-xs text-green-800 flex items-center gap-2">
+                  <Check className="h-4 w-4 shrink-0 text-green-600" />
+                  <span className="font-semibold">{profileMsg}</span>
+                </div>
+              )}
+
+              {/* Editable Profile Form */}
+              <form onSubmit={handleSaveProfile} className="mt-6 space-y-6">
+                <div>
+                  <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider mb-3">
+                    Personal &amp; Business Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={profName}
+                        onChange={(e) => setProfName(e.target.value)}
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Business / Company Name</label>
+                      <input
+                        type="text"
+                        value={profBusiness}
+                        onChange={(e) => setProfBusiness(e.target.value)}
+                        placeholder="e.g. Okafor International Ventures"
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[#ECE8DF]">
+                  <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider mb-3">
+                    Contact &amp; WhatsApp Communication
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Primary WhatsApp Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={profPhone}
+                        onChange={(e) => {
+                          setProfPhone(e.target.value);
+                          if (!profWhatsapp) setProfWhatsapp(e.target.value);
+                        }}
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Alternate Phone Number</label>
+                      <input
+                        type="tel"
+                        value={profAltPhone}
+                        onChange={(e) => setProfAltPhone(e.target.value)}
+                        placeholder="0802 000 0000"
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Primary Email *</label>
+                      <input
+                        type="email"
+                        required
+                        value={profEmail}
+                        onChange={(e) => setProfEmail(e.target.value)}
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Alternate Email</label>
+                      <input
+                        type="email"
+                        value={profAltEmail}
+                        onChange={(e) => setProfAltEmail(e.target.value)}
+                        placeholder="accounts@company.com"
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[#ECE8DF]">
+                  <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider mb-3">
+                    Delivery Address &amp; Logistics Hub
+                  </h3>
+                  <div className="space-y-4 text-xs">
+                    <div className="space-y-1">
+                      <label className="font-bold text-[#4A4A4A] block">Delivery / Office / Warehouse Address</label>
+                      <input
+                        type="text"
+                        value={profAddress}
+                        onChange={(e) => setProfAddress(e.target.value)}
+                        placeholder="Plot 12, Commercial Road, Ikeja or Trade Fair Complex"
+                        className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="font-bold text-[#4A4A4A] block">State</label>
+                        <select
+                          value={profState}
+                          onChange={(e) => setProfState(e.target.value)}
+                          className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                        >
+                          <option value="Lagos State">Lagos State</option>
+                          <option value="Abuja FCT">Abuja FCT</option>
+                          <option value="Rivers State">Rivers State (Port Harcourt)</option>
+                          <option value="Anambra State">Anambra State (Onitsha/Nnewi)</option>
+                          <option value="Kano State">Kano State</option>
+                          <option value="Ogun State">Ogun State</option>
+                          <option value="Oyo State">Oyo State (Ibadan)</option>
+                          <option value="Delta State">Delta State</option>
+                          <option value="Edo State">Edo State (Benin)</option>
+                          <option value="Enugu State">Enugu State</option>
+                          <option value="Other State">Other Nigerian State</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="font-bold text-[#4A4A4A] block">City / Town</label>
+                        <input
+                          type="text"
+                          value={profCity}
+                          onChange={(e) => setProfCity(e.target.value)}
+                          placeholder="e.g. Ikeja / Lekki / Wuse 2"
+                          className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-[#ECE8DF]">
+                  <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider mb-3">
+                    Primary Procurement Interest
+                  </h3>
+                  <div className="space-y-1 text-xs">
+                    <label className="font-bold text-[#4A4A4A] block">Goods Category</label>
+                    <select
+                      value={profCategory}
+                      onChange={(e) => setProfCategory(e.target.value)}
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227] focus:bg-white"
+                    >
+                      <option value="Commercial Machinery & Equipment">Commercial Machinery & Equipment</option>
+                      <option value="Home & Kitchen Appliances">Home & Commercial Kitchen Appliances</option>
+                      <option value="Smartphones & Electronics">Smartphones, Gadgets & Electronics</option>
+                      <option value="Automotive Parts & Accessories">Automotive Parts & Accessories</option>
+                      <option value="Fashion, Footwear & Bags">Fashion, Footwear & Bags</option>
+                      <option value="Hair, Beauty & Skincare">Hair Extensions, Beauty & Cosmetics</option>
+                      <option value="Solar, Inverters & Energy">Solar Panels, Inverters & Electrical</option>
+                      <option value="Hardware, Building Materials">Hardware & Building Materials</option>
+                      <option value="General Import Cargo">General Import & Bulk Containers</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-end">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] px-6 py-3 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
+                  >
+                    <Save className="h-4 w-4 text-[#C9A227]" />
+                    <span>Save Profile Changes</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Invoices Sent to You by Admin Overview */}
+            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF]">
+                <div>
+                  <h3 style={{ fontFamily: "'Sora', sans-serif" }} className="text-base font-extrabold text-[#111111]">
+                    Invoices Issued to Your Account ({displayInvoices.length})
+                  </h3>
+                  <p className="text-xs text-[#66615B]">
+                    All official proforma and commercial invoices dispatched by BuySmart management.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('invoices')}
+                  className="text-xs font-bold text-[#C9A227] hover:underline cursor-pointer"
+                >
+                  View All &rarr;
+                </button>
+              </div>
+
+              {displayInvoices.length === 0 ? (
+                <div className="py-6 text-center text-xs text-[#8C827A]">
+                  No invoices currently pending. When BuySmart issues your invoice, it will appear here.
+                </div>
+              ) : (
+                <div className="divide-y divide-[#ECE8DF]">
+                  {displayInvoices.slice(0, 3).map((inv) => (
+                    <div key={inv.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <div className="font-extrabold text-[#111111]">#{inv.invoiceNumber}</div>
+                        <div className="text-[11px] text-[#8C827A]">Date: {inv.createdAt} • Due: {inv.dueDate}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-extrabold text-sm text-[#111111]">{formatNaira(inv.total)}</div>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                          inv.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {inv.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* TAB 4: SHIPPING ESTIMATOR */}
         {activeTab === 'estimator' && (
           <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-2xl mx-auto space-y-6">
             <div>
-              <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
-                Shipping Cost Calculator
-              </h2>
-              <p className="text-xs text-[#66615B]">
-                Calculate air and sea freight rates based on actual vs. volumetric weight.
+              <div className="flex items-center justify-between gap-2">
+                <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
+                  Shipping Cost Calculator
+                </h2>
+                <span className="px-2.5 py-1 rounded-full bg-[#C9A227]/15 text-[#6B5515] text-[10px] font-bold flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#C9A227] animate-pulse" />
+                  Live Sync
+                </span>
+              </div>
+              <p className="text-xs text-[#66615B] mt-1">
+                Real-time freight estimator reflecting current BuySmart rates updated by Operations Desk.
               </p>
+            </div>
+
+            {/* Mode Switcher */}
+            <div className="flex rounded-2xl bg-[#FAFAF8] p-1 border border-[#ECE8DF]">
+              <button
+                type="button"
+                onClick={() => setEstMethod('air')}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  estMethod === 'air' ? 'bg-[#111111] text-white shadow-sm' : 'text-[#66615B] hover:text-[#111111]'
+                }`}
+              >
+                <Plane className="h-3.5 w-3.5" />
+                <span>Air Freight Priority ({formatNaira(rates.airFreightRatePerKg)}/kg)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEstMethod('sea')}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  estMethod === 'sea' ? 'bg-[#111111] text-white shadow-sm' : 'text-[#66615B] hover:text-[#111111]'
+                }`}
+              >
+                <Truck className="h-3.5 w-3.5" />
+                <span>Sea Freight ({formatNaira(rates.seaFreightRatePerKg)}/kg)</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -573,17 +960,30 @@ export function ClientDashboard() {
 
             <div className="p-5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-xs space-y-2">
               <div className="flex justify-between">
+                <span className="text-[#66615B]">Actual Weight:</span>
+                <span className="font-bold text-[#111111]">{actualWeight} KG</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#66615B]">Volumetric Weight:</span>
+                <span className="font-bold text-[#111111]">{volumetricWeight} KG</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-[#66615B]">Chargeable Weight:</span>
                 <span className="font-bold text-[#111111]">{chargeableWeight} KG</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#66615B]">Rate per KG:</span>
+                <span className="text-[#66615B]">Applied Rate:</span>
                 <span className="font-bold text-[#111111]">{formatNaira(ratePerKg)}/kg</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-[#ECE8DF] text-sm font-extrabold">
                 <span>Estimated Shipping Cost:</span>
                 <span className="text-[#C9A227]">{formatNaira(estimatedCost)}</span>
               </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[11px] text-[#66615B] flex items-center justify-between">
+              <span>USD Benchmark: ₦{rates.usdToNgnRate}/$</span>
+              <span>Updated: {rates.lastUpdated}</span>
             </div>
           </div>
         )}

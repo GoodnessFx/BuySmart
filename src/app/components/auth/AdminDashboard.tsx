@@ -42,6 +42,8 @@ import {
   RefreshCw,
   Edit,
   BadgeCheck,
+  Calculator,
+  Save,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import {
@@ -57,17 +59,17 @@ import {
   getStoredShipments,
   saveShipment,
   updateShipmentStatus,
-  getStoredQuotes,
-  updateQuoteStatus,
   formatNaira,
   numberToWordsNaira,
+  getShippingRates,
+  saveShippingRates,
   type InvoiceRecord,
   type ReceiptRecord,
   type InvoiceLine,
   type LineType,
   type ClientProfile,
   type ShipmentItem,
-  type QuoteRequestRecord,
+  type ShippingRates,
 } from '../../lib/auth';
 
 const inputStyle =
@@ -84,7 +86,7 @@ const LINE_LABELS: Record<LineType, string> = {
   exchange: 'Exchange Conversion Charges',
 };
 
-type AdminTab = 'invoices' | 'receipts' | 'shipments' | 'clients' | 'quotes' | 'reports';
+type AdminTab = 'invoices' | 'receipts' | 'shipments' | 'clients' | 'rates' | 'reports';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
@@ -92,7 +94,6 @@ export function AdminDashboard() {
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [shipments, setShipments] = useState<ShipmentItem[]>([]);
-  const [quotes, setQuotes] = useState<QuoteRequestRecord[]>([]);
   const [user, setUser] = useState(getAuthUser());
 
   // Invoice Form State
@@ -172,6 +173,8 @@ export function AdminDashboard() {
   const [updatingShipment, setUpdatingShipment] = useState<ShipmentItem | null>(null);
   const [newShipmentStatus, setNewShipmentStatus] = useState<ShipmentItem['status']>('Order approved');
   const [newShipmentNote, setNewShipmentNote] = useState('');
+  const [newShipmentLocation, setNewShipmentLocation] = useState('');
+  const [shippingRates, setShippingRates] = useState<ShippingRates>(getShippingRates());
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -187,8 +190,7 @@ export function AdminDashboard() {
     setClients(cls);
     const ships = getStoredShipments();
     setShipments(ships);
-    const qts = getStoredQuotes();
-    setQuotes(qts);
+    setShippingRates(getShippingRates());
 
     if (invs.length > 0) {
       const nextNum = 'BSP-2026-0' + (invs.length + 1).toString().padStart(2, '0');
@@ -308,43 +310,6 @@ export function AdminDashboard() {
     showNotify(`Populated Receipt Generator for Invoice ${inv.invoiceNumber}`);
   };
 
-  // Convert Quote Request to Invoice with 1 Click
-  const handleConvertQuoteToInvoice = (quote: QuoteRequestRecord) => {
-    const nextNum = 'BSP-2026-0' + (invoices.length + 1).toString().padStart(2, '0');
-    setInvoiceForm({
-      ...invoiceForm,
-      invoiceNumber: nextNum,
-      clientName: quote.clientName,
-      clientEmail: quote.clientEmail,
-      clientPhone: quote.clientPhone,
-      clientWhatsApp: quote.clientPhone,
-      lines: [
-        {
-          id: 'q-line-1',
-          type: 'goods',
-          description: quote.itemDescription,
-          quantity: parseInt(quote.quantity) || 1,
-          amount: 1500000,
-        },
-        {
-          id: 'q-line-2',
-          type: 'freight',
-          description: `${quote.shippingMethod} Cargo (China to Lagos)`,
-          quantity: 1,
-          weight: 50,
-          rate: quote.shippingMethod === 'Air Freight' ? 8500 : 2200,
-          amount: quote.shippingMethod === 'Air Freight' ? 425000 : 110000,
-        },
-      ],
-      subtotal: quote.shippingMethod === 'Air Freight' ? 1925000 : 1610000,
-      total: quote.shippingMethod === 'Air Freight' ? 1925000 : 1610000,
-      notes: `Generated from Quote Request: ${quote.itemDescription}. Target timeline: ${quote.targetTimeline || 'Standard'}.`,
-    });
-    updateQuoteStatus(quote.id, 'Invoiced');
-    setActiveTab('invoices');
-    showNotify(`Quote request converted to Invoice #${nextNum}!`);
-  };
-
   // Pre-fill invoice for client from Client Folder
   const handleCreateInvoiceForClient = (client: ClientProfile) => {
     const nextNum = 'BSP-2026-0' + (invoices.length + 1).toString().padStart(2, '0');
@@ -362,14 +327,28 @@ export function AdminDashboard() {
     showNotify(`Invoice form loaded for ${client.name}`);
   };
 
-  // Update Shipment Milestone
+  // Update Shipment Milestone & Active Location Per Client
   const handleApplyShipmentUpdate = () => {
     if (!updatingShipment) return;
-    const updated = updateShipmentStatus(updatingShipment.id, newShipmentStatus, newShipmentNote);
+    const updated = updateShipmentStatus(
+      updatingShipment.id,
+      newShipmentStatus,
+      newShipmentNote,
+      newShipmentLocation
+    );
     setShipments(updated);
     setUpdatingShipment(null);
     setNewShipmentNote('');
-    showNotify('Shipment tracking milestone updated! Client live portal synced.');
+    setNewShipmentLocation('');
+    showNotify('Shipment tracking milestone & active location updated! Client live portal synced.');
+  };
+
+  // Save Shipping Rates
+  const handleSaveRates = (e: React.FormEvent) => {
+    e.preventDefault();
+    const saved = saveShippingRates(shippingRates);
+    setShippingRates(saved);
+    showNotify('Official shipping rates updated! Live synchronized across all client calculators.');
   };
 
   // PDF Generation with Official BuySmart Logo & Watermark
@@ -482,14 +461,9 @@ ${link}
             { id: 'receipts', label: 'Official Receipts', icon: ReceiptIcon, badge: receipts.length },
             { id: 'shipments', label: 'Shipments & Milestones', icon: Truck, badge: shipments.length },
             { id: 'clients', label: 'Clients Directory & Folders', icon: Users, badge: clients.length },
-            {
-              id: 'quotes',
-              label: 'Quote Requests Inbox',
-              icon: MessageSquare,
-              badge: quotes.filter((q) => q.status === 'Pending').length || undefined,
-            },
+            { id: 'rates', label: 'Shipping Rates & Calculator', icon: Calculator },
             { id: 'reports', label: 'Financial Summary', icon: TrendingUp },
-          ].map(({ id, label, icon: Icon, badge }) => (
+          ].map(({ id, label, icon: Icon, badge }: any) => (
             <button
               key={id}
               type="button"
@@ -1093,15 +1067,23 @@ ${link}
                         setUpdatingShipment(ship);
                         setNewShipmentStatus(ship.status);
                         setNewShipmentNote(ship.staffNotes);
+                        setNewShipmentLocation(ship.currentLocation || 'Guangzhou Warehouse, Baiyun');
                       }}
                       className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2 text-xs font-bold text-white hover:opacity-90 cursor-pointer self-start sm:self-auto"
                     >
                       <Edit className="h-3.5 w-3.5 text-[#C9A227]" />
-                      <span>Update Milestone</span>
+                      <span>Update Milestone &amp; Location</span>
                     </button>
                   </div>
 
-                  <p className="text-xs font-semibold text-[#111111]">{ship.description}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-[#111111]">{ship.description}</p>
+                    <div className="flex items-center gap-1.5 text-xs text-[#111111] bg-[#FAFAF8] px-3 py-1.5 rounded-xl border border-[#ECE8DF] w-fit">
+                      <MapPin className="h-3.5 w-3.5 text-[#C9A227]" />
+                      <span className="font-bold text-[10px] uppercase text-[#8C827A]">Active Location:</span>
+                      <span className="font-bold">{ship.currentLocation || 'Guangzhou Warehouse, Baiyun'}</span>
+                    </div>
+                  </div>
 
                   {/* Clean Milestone Progress Bar */}
                   <div className="space-y-2">
@@ -1246,97 +1228,181 @@ ${link}
         )}
 
         {/* ========================================================= */}
-        {/* TAB 5: QUOTE REQUESTS INBOX (Delivered from Clients) */}
+        {/* TAB 5: SHIPPING RATES & CALCULATOR SETTINGS (Live Sync) */}
         {/* ========================================================= */}
-        {activeTab === 'quotes' && (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
+        {activeTab === 'rates' && (
+          <div className="space-y-8 max-w-4xl">
+            <div>
+              <div className="flex items-center gap-2">
                 <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
-                  Quote Requests Delivered to Admin
+                  Shipping Rates &amp; Calculator Desk
                 </h1>
-                <p className="text-sm text-[#66615B]">
-                  Live procurement leads and quotes submitted by clients through the website or client portal.
-                </p>
+                <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold uppercase">
+                  Live Sync Active
+                </span>
               </div>
+              <p className="text-sm text-[#66615B] mt-1">
+                Configure official cargo tariffs and clearing benchmarks. Any changes saved here immediately reflect across every client portal calculator in real-time.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {quotes.map((q) => (
-                <div
-                  key={q.id}
-                  className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm space-y-4 hover:border-[#C9A227]/40 transition"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#ECE8DF]">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-sm text-[#111111]">{q.clientName}</span>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
-                            q.status === 'Invoiced'
-                              ? 'bg-green-100 text-green-800'
-                              : q.status === 'Responded'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {q.status}
-                        </span>
-                      </div>
-                      <div className="text-xs text-[#8C827A]">
-                        {q.clientEmail} • {q.clientPhone} • {q.createdAt}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const url = `https://wa.me/${q.clientPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                            `Hello ${q.clientName}, BuySmart Procurement has reviewed your quote request for ${q.itemDescription}. Let us assist you with the pricing and freight details.`
-                          )}`;
-                          window.open(url, '_blank');
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#25D366] bg-[#25D366]/10 px-3.5 py-2 text-xs font-bold text-[#128C7E] hover:bg-[#25D366]/20 cursor-pointer"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        <span>WhatsApp Client</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleConvertQuoteToInvoice(q)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] px-4 py-2 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
-                      >
-                        <FileText className="h-3.5 w-3.5 text-[#C9A227]" />
-                        <span>Convert to Invoice</span>
-                      </button>
-                    </div>
+            <form onSubmit={handleSaveRates} className="space-y-6">
+              {/* Air Cargo Tariffs */}
+              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
+                  <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
+                    <Plane className="h-5 w-5" />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-[#FAFAF8] p-4 rounded-2xl border border-[#ECE8DF]">
-                    <div>
-                      <span className="font-bold text-[#8C827A] uppercase text-[10px]">Item Requested</span>
-                      <p className="font-semibold text-[#111111]">{q.itemDescription}</p>
-                    </div>
-                    <div>
-                      <span className="font-bold text-[#8C827A] uppercase text-[10px]">Quantity</span>
-                      <p className="font-semibold text-[#111111]">{q.quantity}</p>
-                    </div>
-                    <div>
-                      <span className="font-bold text-[#8C827A] uppercase text-[10px]">Preferred Freight Mode</span>
-                      <p className="font-semibold text-[#111111]">{q.shippingMethod}</p>
-                    </div>
+                  <div>
+                    <h2 className="text-sm font-extrabold text-[#111111]">Air Freight Cargo Tariffs</h2>
+                    <p className="text-xs text-[#8C827A]">Priority air shipping rates (China / Vietnam to Lagos Airport)</p>
                   </div>
-
-                  {q.notes && (
-                    <p className="text-xs text-[#66615B] italic">
-                      Client Notes: &quot;{q.notes}&quot;
-                    </p>
-                  )}
                 </div>
-              ))}
-            </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelStyle}>Air Freight Rate per KG (₦)</label>
+                    <input
+                      type="number"
+                      required
+                      value={shippingRates.airFreightRatePerKg}
+                      onChange={(e) =>
+                        setShippingRates({ ...shippingRates, airFreightRatePerKg: parseFloat(e.target.value) || 0 })
+                      }
+                      className={inputStyle}
+                    />
+                    <span className="text-[11px] text-[#8C827A] mt-1 block">
+                      Currently: {formatNaira(shippingRates.airFreightRatePerKg)} per KG
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className={labelStyle}>Customs Airport Clearing Fee per KG (₦)</label>
+                    <input
+                      type="number"
+                      required
+                      value={shippingRates.clearanceFeePerKg}
+                      onChange={(e) =>
+                        setShippingRates({ ...shippingRates, clearanceFeePerKg: parseFloat(e.target.value) || 0 })
+                      }
+                      className={inputStyle}
+                    />
+                    <span className="text-[11px] text-[#8C827A] mt-1 block">
+                      Currently: {formatNaira(shippingRates.clearanceFeePerKg)} per KG
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sea Cargo Tariffs */}
+              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
+                  <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
+                    <Ship className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-extrabold text-[#111111]">Sea Freight Container Tariffs</h2>
+                    <p className="text-xs text-[#8C827A]">Consolidated container cargo rates (Guangzhou / Yiwu to Lagos Port)</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelStyle}>Sea Freight Rate per KG (₦)</label>
+                    <input
+                      type="number"
+                      required
+                      value={shippingRates.seaFreightRatePerKg}
+                      onChange={(e) =>
+                        setShippingRates({ ...shippingRates, seaFreightRatePerKg: parseFloat(e.target.value) || 0 })
+                      }
+                      className={inputStyle}
+                    />
+                    <span className="text-[11px] text-[#8C827A] mt-1 block">
+                      Currently: {formatNaira(shippingRates.seaFreightRatePerKg)} per KG
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className={labelStyle}>Sea Freight Rate per CBM (₦)</label>
+                    <input
+                      type="number"
+                      required
+                      value={shippingRates.seaFreightRatePerCbm}
+                      onChange={(e) =>
+                        setShippingRates({ ...shippingRates, seaFreightRatePerCbm: parseFloat(e.target.value) || 0 })
+                      }
+                      className={inputStyle}
+                    />
+                    <span className="text-[11px] text-[#8C827A] mt-1 block">
+                      Currently: {formatNaira(shippingRates.seaFreightRatePerCbm)} per Cubic Metre
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Exchange Benchmark & Handling Fees */}
+              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
+                  <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
+                    <Calculator className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-extrabold text-[#111111]">Currency Benchmark &amp; Documentation</h2>
+                    <p className="text-xs text-[#8C827A]">Baseline conversion and terminal verification charges</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelStyle}>USD to NGN Benchmark Exchange Rate (₦/$)</label>
+                    <input
+                      type="number"
+                      required
+                      value={shippingRates.usdToNgnRate}
+                      onChange={(e) =>
+                        setShippingRates({ ...shippingRates, usdToNgnRate: parseFloat(e.target.value) || 0 })
+                      }
+                      className={inputStyle}
+                    />
+                    <span className="text-[11px] text-[#8C827A] mt-1 block">
+                      Benchmark: $1.00 = ₦{shippingRates.usdToNgnRate.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className={labelStyle}>Standard Crating &amp; Documentation Handling Fee (₦)</label>
+                    <input
+                      type="number"
+                      required
+                      value={shippingRates.handlingFee}
+                      onChange={(e) =>
+                        setShippingRates({ ...shippingRates, handlingFee: parseFloat(e.target.value) || 0 })
+                      }
+                      className={inputStyle}
+                    />
+                    <span className="text-[11px] text-[#8C827A] mt-1 block">
+                      Currently: {formatNaira(shippingRates.handlingFee)} per shipment
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF]">
+                <div className="text-xs text-[#66615B]">
+                  Last Updated: <span className="font-bold text-[#111111]">{shippingRates.lastUpdated}</span> by{' '}
+                  <span className="font-bold text-[#111111]">{shippingRates.updatedBy}</span>
+                </div>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-3.5 px-8 text-xs font-bold text-white shadow-md hover:opacity-90 cursor-pointer"
+                >
+                  <Save className="h-4 w-4 text-[#C9A227]" />
+                  <span>Save &amp; Sync Live Rates across All Portals</span>
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -1571,13 +1637,18 @@ ${link}
       )}
 
       {/* ========================================================= */}
-      {/* MODAL: UPDATE SHIPMENT MILESTONE */}
+      {/* MODAL: UPDATE SHIPMENT MILESTONE & ACTIVE LOCATION */}
       {/* ========================================================= */}
       {updatingShipment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-[#ECE8DF]">
             <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
-              <span className="font-bold text-sm text-[#111111]">Update Shipment Milestone</span>
+              <div>
+                <span className="font-bold text-sm text-[#111111] block">Update Milestone &amp; Active Location</span>
+                <span className="text-[11px] text-[#8C827A]">
+                  {updatingShipment.trackingNumber} • Client: <span className="font-semibold text-[#111111]">{updatingShipment.clientName}</span>
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => setUpdatingShipment(null)}
@@ -1588,6 +1659,37 @@ ${link}
             </div>
 
             <div className="my-4 space-y-3">
+              <div>
+                <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Active Shipment Location</label>
+                <input
+                  type="text"
+                  value={newShipmentLocation}
+                  onChange={(e) => setNewShipmentLocation(e.target.value)}
+                  placeholder="e.g. Murtala Muhammed Cargo Airport, Lagos / Guangzhou Warehouse"
+                  className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111] focus:outline-none focus:border-[#C9A227]"
+                />
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {[
+                    'Guangzhou Warehouse, Baiyun',
+                    'In Flight to Lagos Cargo Terminal',
+                    'Murtala Muhammed Cargo Airport, Lagos',
+                    'Apapa Port Container Terminal',
+                    'Ikeja Hub Clearance Office',
+                    'Out for Delivery to Client Address',
+                    'Delivered to Client',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setNewShipmentLocation(preset)}
+                      className="text-[9px] px-2 py-0.5 rounded-full bg-[#FAFAF8] border border-[#ECE8DF] text-[#66615B] hover:text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">New Milestone Stage</label>
                 <select
@@ -1630,7 +1732,7 @@ ${link}
                 onClick={handleApplyShipmentUpdate}
                 className="rounded-xl bg-[#111111] px-5 py-2 text-xs font-bold text-white hover:opacity-90"
               >
-                Save Milestone
+                Save Milestone &amp; Location
               </button>
             </div>
           </div>

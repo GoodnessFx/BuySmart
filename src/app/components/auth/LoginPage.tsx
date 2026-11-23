@@ -22,6 +22,7 @@ import {
   findClientByEmail,
   registerNewClient,
   verifyAdminCredentials,
+  generateFounderSignupAlertUrl,
   MASTER_ADMIN_EMAIL,
   type UserRole,
   type AuthUser,
@@ -65,6 +66,14 @@ export default function LoginPage() {
   const [clientMode, setClientMode] = useState<'login' | 'register'>('login');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [alternatePhone, setAlternatePhone] = useState('');
+  const [alternateEmail, setAlternateEmail] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
+  const [clientState, setClientState] = useState('Lagos State');
+  const [clientCity, setClientCity] = useState('');
+  const [categoryInterest, setCategoryInterest] = useState('Commercial Machinery & Equipment');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Google Modal fallback
   const [showGoogleModal, setShowGoogleModal] = useState(false);
@@ -145,9 +154,13 @@ export default function LoginPage() {
           signupMethod: 'google',
           createdAt: new Date().toISOString().slice(0, 10),
           avatar,
-          notes: 'Google verified client.',
+          notes: 'Google verified client signup.',
         };
         saveClient(client);
+        try {
+          const alertUrl = generateFounderSignupAlertUrl(client);
+          window.open(alertUrl, '_blank');
+        } catch {}
       }
 
       const authUser: AuthUser = {
@@ -214,6 +227,10 @@ export default function LoginPage() {
           notes: 'Signed in via Google Profile.',
         };
         saveClient(client);
+        try {
+          const alertUrl = generateFounderSignupAlertUrl(client);
+          window.open(alertUrl, '_blank');
+        } catch {}
       }
 
       const authUser: AuthUser = {
@@ -271,7 +288,13 @@ export default function LoginPage() {
           // Client mode
           if (clientMode === 'register') {
             if (!clientName.trim() || !clientPhone.trim() || !email.includes('@') || password.length < 6) {
-              setError('Please fill all fields. Password must be at least 6 characters.');
+              setError('Please fill in your name, WhatsApp number, valid email, and password (at least 6 characters).');
+              setLoading(false);
+              return;
+            }
+
+            if (confirmPassword && password !== confirmPassword) {
+              setError('Passwords do not match. Please verify your password entry.');
               setLoading(false);
               return;
             }
@@ -280,13 +303,20 @@ export default function LoginPage() {
             const regResult = registerNewClient({
               id: 'client-' + Date.now(),
               name: clientName.trim(),
+              businessName: businessName.trim() || undefined,
               email: email.trim().toLowerCase(),
+              alternateEmail: alternateEmail.trim() || undefined,
               phone: clientPhone.trim(),
               whatsapp: clientPhone.trim(),
+              alternatePhone: alternatePhone.trim() || undefined,
+              address: clientAddress.trim() || undefined,
+              state: clientState || 'Lagos State',
+              city: clientCity.trim() || undefined,
+              categoryInterest: categoryInterest || 'Commercial & General Goods',
               clientCode: 'BSP-CL-' + Math.floor(1000 + Math.random() * 9000),
               signupMethod: 'email',
               createdAt: new Date().toISOString().slice(0, 10),
-              notes: 'Registered client account.',
+              notes: `Registered client. Business: ${businessName || 'Individual'}. Category: ${categoryInterest || 'General'}.`,
             });
 
             if (!regResult.success) {
@@ -306,7 +336,14 @@ export default function LoginPage() {
               authProvider: 'email',
             };
             setAuthUser(authUser);
-            setSuccess('Registration successful! Welcome to BuySmart Client Portal...');
+
+            // Notify Founder on WhatsApp
+            try {
+              const alertUrl = generateFounderSignupAlertUrl(newClient);
+              window.open(alertUrl, '_blank');
+            } catch {}
+
+            setSuccess('Registration successful! Welcome to BuySmart Client Portal. Redirecting...');
             setTimeout(() => {
               window.location.href = '/client';
             }, 500);
@@ -536,26 +573,126 @@ export default function LoginPage() {
             {/* Client Registration Extra Fields */}
             {role === 'client' && clientMode === 'register' && (
               <>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111111]">Full Name or Company</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder="e.g. Chief Emeka Okafor"
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Business / Company Name</label>
+                    <input
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="e.g. Okafor Commercial Ltd"
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">WhatsApp Phone Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      placeholder="0810 013 0714"
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Alternate Phone (Optional)</label>
+                    <input
+                      type="tel"
+                      value={alternatePhone}
+                      onChange={(e) => setAlternatePhone(e.target.value)}
+                      placeholder="0802 000 0000"
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Office / Delivery Address *</label>
                   <input
                     type="text"
                     required
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="e.g. Chief Emeka Okafor / Mr. Francis Ogbeide"
-                    className="w-full rounded-2xl border border-[#DED9CF] bg-[#FAFAF8] px-4 py-3 text-sm focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    value={clientAddress}
+                    onChange={(e) => setClientAddress(e.target.value)}
+                    placeholder="Plot 12, Commercial Road, Ikeja or Trade Fair Complex"
+                    className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111111]">Phone Number (WhatsApp Active)</label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">State *</label>
+                    <select
+                      value={clientState}
+                      onChange={(e) => setClientState(e.target.value)}
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227]"
+                    >
+                      <option value="Lagos State">Lagos State</option>
+                      <option value="Abuja FCT">Abuja FCT</option>
+                      <option value="Rivers State">Rivers (Port Harcourt)</option>
+                      <option value="Anambra State">Anambra (Onitsha/Nnewi)</option>
+                      <option value="Kano State">Kano State</option>
+                      <option value="Ogun State">Ogun State</option>
+                      <option value="Oyo State">Oyo (Ibadan)</option>
+                      <option value="Delta State">Delta State</option>
+                      <option value="Edo State">Edo (Benin)</option>
+                      <option value="Enugu State">Enugu State</option>
+                      <option value="Other State">Other Nigerian State</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">City / Town</label>
+                    <input
+                      type="text"
+                      value={clientCity}
+                      onChange={(e) => setClientCity(e.target.value)}
+                      placeholder="e.g. Ikeja / Lekki / Wuse 2"
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Primary Category of Goods</label>
+                  <select
+                    value={categoryInterest}
+                    onChange={(e) => setCategoryInterest(e.target.value)}
+                    className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs font-medium text-[#111111] focus:outline-none focus:border-[#C9A227]"
+                  >
+                    <option value="Commercial Machinery & Equipment">Commercial Machinery & Equipment</option>
+                    <option value="Home & Kitchen Appliances">Home & Commercial Kitchen Appliances</option>
+                    <option value="Smartphones & Electronics">Smartphones, Gadgets & Electronics</option>
+                    <option value="Automotive Parts & Accessories">Automotive Parts & Accessories</option>
+                    <option value="Fashion, Footwear & Bags">Fashion, Footwear & Bags</option>
+                    <option value="Hair, Beauty & Skincare">Hair Extensions, Beauty & Cosmetics</option>
+                    <option value="Solar, Inverters & Energy">Solar Panels, Inverters & Electrical</option>
+                    <option value="Hardware, Building Materials">Hardware & Building Materials</option>
+                    <option value="General Import Cargo">General Import & Bulk Containers</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Alternate Email (Optional)</label>
                   <input
-                    type="tel"
-                    required
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="0810 013 0714"
-                    className="w-full rounded-2xl border border-[#DED9CF] bg-[#FAFAF8] px-4 py-3 text-sm focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                    type="email"
+                    value={alternateEmail}
+                    onChange={(e) => setAlternateEmail(e.target.value)}
+                    placeholder="backup@company.com"
+                    className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
                   />
                 </div>
               </>
@@ -612,6 +749,21 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Confirm Password (Register Only) */}
+            {role === 'client' && clientMode === 'register' && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#111111]">Confirm Password *</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat your password"
+                  className="w-full rounded-2xl border border-[#DED9CF] bg-[#FAFAF8] px-4 py-3 text-sm focus:outline-none focus:border-[#C9A227] focus:ring-2 focus:ring-[#C9A227]/20"
+                />
+              </div>
+            )}
 
             {/* Error & Success Messages */}
             {error && (

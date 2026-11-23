@@ -127,8 +127,8 @@ export function ModernTrackingCard({ shipment, onUpdateMilestone, isAdmin }: Mod
         </div>
       </div>
 
-      {/* Cargo Meta Grid (Weight, Route, Items) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-[#FAFAF8] p-4 rounded-2xl border border-[#ECE8DF]">
+      {/* Cargo Meta Grid (Weight, Route, Active Location, Items) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs bg-[#FAFAF8] p-4 rounded-2xl border border-[#ECE8DF]">
         <div>
           <span className="text-[#8C827A] font-bold text-[10px] uppercase">Cargo Description</span>
           <p className="font-bold text-[#111111] truncate">{shipment.description}</p>
@@ -142,6 +142,15 @@ export function ModernTrackingCard({ shipment, onUpdateMilestone, isAdmin }: Mod
         <div>
           <span className="text-[#8C827A] font-bold text-[10px] uppercase">Verified Weight</span>
           <p className="font-bold text-[#111111]">{shipment.weight} KG (Air/Sea Scaled)</p>
+        </div>
+        <div>
+          <span className="text-[#8C827A] font-bold text-[10px] uppercase flex items-center gap-1">
+            <MapPin className="h-3 w-3 text-[#C9A227]" />
+            Active Location
+          </span>
+          <p className="font-bold text-[#111111] truncate">
+            {shipment.currentLocation || 'Guangzhou International Logistics Hub'}
+          </p>
         </div>
       </div>
 

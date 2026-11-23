@@ -82,7 +82,13 @@ export type ClientProfile = {
   email: string;
   phone: string;
   whatsapp?: string;
+  businessName?: string;
+  alternatePhone?: string;
+  alternateEmail?: string;
   address?: string;
+  city?: string;
+  state?: string;
+  categoryInterest?: string;
   clientCode: string;
   signupMethod: 'email' | 'google';
   createdAt: string;
@@ -120,6 +126,9 @@ export type ShipmentItem = {
   staffNotes: string;
   progressPercent: number;
   stages: ShipmentStage[];
+  currentLocation?: string;
+  assignedClientId?: string;
+  assignedClientCode?: string;
 };
 
 export type QuoteRequestRecord = {
@@ -143,6 +152,7 @@ const RECEIPTS_KEY = 'buysmart_stored_receipts';
 const CLIENTS_KEY = 'buysmart_registered_clients';
 const SHIPMENTS_KEY = 'buysmart_stored_shipments';
 const QUOTES_KEY = 'buysmart_stored_quotes';
+const RATES_KEY = 'buysmart_shipping_rates';
 
 // Master Staff & Admin Credentials (Strict Single Login)
 export const MASTER_ADMIN_EMAIL = 'admin@buysmart.ng';
@@ -150,7 +160,79 @@ export const MASTER_ADMIN_PASS = 'adminglorialocked';
 
 export function verifyAdminCredentials(email: string, pass: string): boolean {
   const normEmail = email.trim().toLowerCase();
-  return normEmail === 'admin@buysmart.ng' && pass === 'adminglorialocked';
+  const normPass = pass.trim();
+  return (normEmail === 'admin@buysmart.ng' || normEmail === 'management@buysmart.ng') && normPass === 'adminglorialocked';
+}
+
+// Shipping Calculator Rates Configuration
+export type ShippingRates = {
+  airFreightRatePerKg: number;
+  seaFreightRatePerKg: number;
+  seaFreightRatePerCbm: number;
+  usdToNgnRate: number;
+  clearanceFeePerKg: number;
+  handlingFee: number;
+  lastUpdated: string;
+  updatedBy: string;
+};
+
+export const DEFAULT_SHIPPING_RATES: ShippingRates = {
+  airFreightRatePerKg: 8500,
+  seaFreightRatePerKg: 2200,
+  seaFreightRatePerCbm: 450000,
+  usdToNgnRate: 1550,
+  clearanceFeePerKg: 500,
+  handlingFee: 3000,
+  lastUpdated: 'Nov 23, 2026',
+  updatedBy: 'Operations Management',
+};
+
+export function getShippingRates(): ShippingRates {
+  try {
+    const raw = localStorage.getItem(RATES_KEY);
+    if (!raw) {
+      localStorage.setItem(RATES_KEY, JSON.stringify(DEFAULT_SHIPPING_RATES));
+      return DEFAULT_SHIPPING_RATES;
+    }
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_SHIPPING_RATES, ...parsed };
+  } catch {
+    return DEFAULT_SHIPPING_RATES;
+  }
+}
+
+export function saveShippingRates(rates: Partial<ShippingRates>): ShippingRates {
+  try {
+    const current = getShippingRates();
+    const updated: ShippingRates = {
+      ...current,
+      ...rates,
+      lastUpdated: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      updatedBy: 'Admin Console',
+    };
+    localStorage.setItem(RATES_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return DEFAULT_SHIPPING_RATES;
+  }
+}
+
+// Founder WhatsApp notification details
+export const FOUNDER_WHATSAPP_NUMBER = '2348100130714';
+
+export function generateFounderSignupAlertUrl(client: ClientProfile): string {
+  const text = `🔔 *NEW CLIENT SIGNUP - BUYSMART PORTAL*
+👤 *Client:* ${client.name}
+🏢 *Business:* ${client.businessName || 'Not specified'}
+📧 *Email:* ${client.email}
+📱 *Phone:* ${client.phone}
+💬 *WhatsApp:* ${client.whatsapp || client.phone}
+📍 *Delivery Address:* ${client.address || 'Not specified'}${client.city ? `, ${client.city}` : ''}${client.state ? `, ${client.state}` : ''}
+🏷️ *Client Code:* ${client.clientCode}
+📦 *Category:* ${client.categoryInterest || 'General Procurement'}
+🌐 *Signup Method:* ${client.signupMethod.toUpperCase()}
+🕒 *Date:* ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  return `https://wa.me/${FOUNDER_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
 
 // Initial Registered Clients Seed
@@ -436,6 +518,8 @@ const INITIAL_SHIPMENTS: ShipmentItem[] = [
     description: 'Commercial Blenders & High-Speed Juicers (50 Cartons)',
     estimatedArrival: 'Today at 09:20 AM',
     lastUpdated: 'Today at 10:15 AM',
+    currentLocation: 'Murtala Muhammed Cargo Terminal, Ikeja, Lagos',
+    assignedClientCode: 'BSP-CL-1049',
     staffNotes: 'Cargo landed at Murtala Muhammed Cargo Airport. Clearing agent processing final terminal release.',
     progressPercent: 80,
     stages: [
@@ -462,6 +546,8 @@ const INITIAL_SHIPMENTS: ShipmentItem[] = [
     description: 'Virgin Vietnamese Human Hair Bundles & HD Closures',
     estimatedArrival: 'Nov 26, 2026',
     lastUpdated: 'Yesterday at 4:30 PM',
+    currentLocation: 'Noi Bai Cargo Terminal, Hanoi',
+    assignedClientCode: 'BSP-CL-1049',
     staffNotes: 'Packed in waterproof crates. Flight manifest confirmed with Qatar Airways Cargo.',
     progressPercent: 60,
     stages: [
@@ -732,7 +818,8 @@ export function saveShipment(shipment: ShipmentItem): ShipmentItem[] {
 export function updateShipmentStatus(
   id: string,
   newStatus: ShipmentItem['status'],
-  notes?: string
+  notes?: string,
+  location?: string
 ): ShipmentItem[] {
   try {
     const list = getStoredShipments();
@@ -758,8 +845,9 @@ export function updateShipmentStatus(
         return {
           ...s,
           status: newStatus,
-          staffNotes: notes || s.staffNotes,
-          lastUpdated: 'Just now by Operations',
+          staffNotes: notes !== undefined ? notes : s.staffNotes,
+          currentLocation: location !== undefined && location.trim() !== '' ? location.trim() : s.currentLocation,
+          lastUpdated: 'Just now by Operations Desk',
           progressPercent,
           stages: updatedStages,
         };
