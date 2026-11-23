@@ -188,6 +188,30 @@ export function AdminDashboard() {
   const [tawkConfig, setTawkConfig] = useState<TawkConfig>(getTawkConfig());
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // New Shipment Creation Modal State
+  const [showCreateShipmentModal, setShowCreateShipmentModal] = useState(false);
+  const [createShipmentForm, setCreateShipmentForm] = useState({
+    clientId: '',
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientCode: '',
+    trackingNumber: 'BSP-NG-' + Math.floor(10000 + Math.random() * 90000),
+    origin: 'Guangzhou, China',
+    destination: 'Lagos, Nigeria',
+    mode: 'air' as 'air' | 'sea',
+    status: 'Order approved' as ShipmentItem['status'],
+    weight: 25,
+    description: '',
+    estimatedArrival: 'In 5-7 business days',
+    currentLocation: 'Guangzhou Warehouse, Baiyun',
+    staffNotes: 'Cargo received and registered at procurement hub.',
+  });
+
+  // Client Profile Editing Mode in Folder
+  const [isEditingClient, setIsEditingClient] = useState(false);
+  const [clientEditForm, setClientEditForm] = useState<Partial<ClientProfile>>({});
+
   useEffect(() => {
     refreshAllData();
   }, []);
@@ -354,6 +378,77 @@ export function AdminDashboard() {
     setNewShipmentNote('');
     setNewShipmentLocation('');
     showNotify('Shipment tracking milestone & active location updated! Client live portal synced.');
+  };
+
+  // Create & Assign New Shipment
+  const handleCreateShipmentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createShipmentForm.clientName || !createShipmentForm.description) {
+      showNotify('Please enter client details and cargo description.', 'error');
+      return;
+    }
+
+    const stagesOrder: ShipmentItem['status'][] = [
+      'Order approved',
+      'Sourced in China',
+      'Arrived at warehouse',
+      'Cargo flight booked',
+      'Customs clearing Lagos',
+      'Ready for pickup',
+      'Delivered',
+    ];
+    const targetIdx = stagesOrder.indexOf(createShipmentForm.status);
+    const progressPercent = Math.min(100, Math.round(((targetIdx + 1) / stagesOrder.length) * 100));
+
+    const newShip: ShipmentItem = {
+      id: 's-' + Date.now(),
+      trackingNumber:
+        createShipmentForm.trackingNumber.trim() || 'BSP-NG-' + Math.floor(10000 + Math.random() * 90000),
+      clientName: createShipmentForm.clientName.trim(),
+      clientEmail: createShipmentForm.clientEmail.trim(),
+      clientPhone: createShipmentForm.clientPhone.trim(),
+      origin: createShipmentForm.origin.trim(),
+      destination: createShipmentForm.destination.trim(),
+      mode: createShipmentForm.mode,
+      status: createShipmentForm.status,
+      weight: Number(createShipmentForm.weight) || 1,
+      description: createShipmentForm.description.trim(),
+      estimatedArrival: createShipmentForm.estimatedArrival.trim(),
+      lastUpdated: 'Just now by Management',
+      currentLocation: createShipmentForm.currentLocation.trim() || 'Guangzhou Warehouse, Baiyun',
+      assignedClientCode: createShipmentForm.clientCode,
+      staffNotes: createShipmentForm.staffNotes.trim(),
+      progressPercent,
+      stages: [
+        { label: 'Order Approved', done: targetIdx >= 0, date: targetIdx >= 0 ? 'Today' : undefined },
+        { label: 'Sourced in China', done: targetIdx >= 1, date: targetIdx >= 1 ? 'Today' : undefined },
+        { label: 'Arrived at Warehouse', done: targetIdx >= 2, date: targetIdx >= 2 ? 'Today' : undefined },
+        { label: 'Cargo Flight Booked', done: targetIdx >= 3, date: targetIdx >= 3 ? 'Today' : undefined },
+        { label: 'Customs Clearing Lagos', done: targetIdx >= 4, date: targetIdx >= 4 ? 'Today' : undefined },
+        { label: 'Ready for Pickup', done: targetIdx >= 5, date: targetIdx >= 5 ? 'Today' : undefined },
+        { label: 'Delivered', done: targetIdx >= 6, date: targetIdx >= 6 ? 'Today' : undefined },
+      ],
+    };
+
+    const updatedList = saveShipment(newShip);
+    setShipments(updatedList);
+    setShowCreateShipmentModal(false);
+    showNotify(`Shipment ${newShip.trackingNumber} registered & assigned to ${newShip.clientName}!`);
+  };
+
+  // Founder Edit Client Profile from Admin Desk
+  const handleSaveClientEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClientFolder) return;
+    const updatedClient: ClientProfile = {
+      ...selectedClientFolder,
+      ...clientEditForm,
+    };
+    const updatedList = saveClient(updatedClient);
+    setClients(updatedList);
+    setSelectedClientFolder(updatedClient);
+    setIsEditingClient(false);
+    showNotify(`Client profile for ${updatedClient.name} updated successfully!`);
   };
 
   // Save Shipping Rates
@@ -1143,9 +1238,37 @@ ${link}
                   Shipments &amp; Live Milestones
                 </h1>
                 <p className="text-sm text-[#66615B]">
-                  Update shipping stages, customs releases, and notes. Instantly reflected in client portals.
+                  Update shipping stages, customs releases, and active locations. Instantly reflected in client portals.
                 </p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateShipmentForm({
+                    clientId: '',
+                    clientName: clients[0]?.name || '',
+                    clientEmail: clients[0]?.email || '',
+                    clientPhone: clients[0]?.phone || '',
+                    clientCode: clients[0]?.clientCode || '',
+                    trackingNumber: 'BSP-NG-' + Math.floor(10000 + Math.random() * 90000),
+                    origin: 'Guangzhou, China',
+                    destination: 'Lagos, Nigeria',
+                    mode: 'air',
+                    status: 'Order approved',
+                    weight: 25,
+                    description: '',
+                    estimatedArrival: 'In 5-7 business days',
+                    currentLocation: 'Guangzhou Warehouse, Baiyun',
+                    staffNotes: 'Cargo received and registered at procurement hub.',
+                  });
+                  setShowCreateShipmentModal(true);
+                }}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="h-4 w-4 text-[#C9A227]" />
+                <span>Create &amp; Assign Shipment</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
@@ -1721,43 +1844,212 @@ ${link}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSelectedClientFolder(null)}
-                className="p-1 rounded-lg text-[#8C827A] hover:text-[#111111]"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingClient(!isEditingClient);
+                    setClientEditForm({
+                      name: selectedClientFolder.name,
+                      businessName: selectedClientFolder.businessName || '',
+                      phone: selectedClientFolder.phone,
+                      whatsapp: selectedClientFolder.whatsapp || selectedClientFolder.phone,
+                      alternatePhone: selectedClientFolder.alternatePhone || '',
+                      email: selectedClientFolder.email,
+                      alternateEmail: selectedClientFolder.alternateEmail || '',
+                      address: selectedClientFolder.address || '',
+                      state: selectedClientFolder.state || 'Lagos State',
+                      city: selectedClientFolder.city || '',
+                      categoryInterest: selectedClientFolder.categoryInterest || 'Commercial & General Goods',
+                      notes: selectedClientFolder.notes || '',
+                    });
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-[#DED9CF] bg-[#FAFAF8] text-xs font-bold text-[#111111] hover:border-[#C9A227] transition cursor-pointer"
+                >
+                  <Edit className="h-3.5 w-3.5 inline mr-1 text-[#C9A227]" />
+                  <span>{isEditingClient ? 'Cancel Edit' : 'Edit Profile'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClientFolder(null);
+                    setIsEditingClient(false);
+                  }}
+                  className="p-1 rounded-lg text-[#8C827A] hover:text-[#111111]"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Client Info Grid */}
-            <div className="my-5 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-[#FAFAF8] p-4 rounded-2xl border border-[#ECE8DF]">
-              <div>
-                <span className="text-[#8C827A] text-[10px] font-bold uppercase">Phone Number</span>
-                <p className="font-semibold text-[#111111]">{selectedClientFolder.phone}</p>
-              </div>
-              <div>
-                <span className="text-[#8C827A] text-[10px] font-bold uppercase">Email Address</span>
-                <p className="font-semibold text-[#111111]">{selectedClientFolder.email}</p>
-              </div>
-              <div>
-                <span className="text-[#8C827A] text-[10px] font-bold uppercase">Member Since</span>
-                <p className="font-semibold text-[#111111]">{selectedClientFolder.createdAt}</p>
-              </div>
-              {selectedClientFolder.address && (
-                <div className="col-span-2 sm:col-span-3">
-                  <span className="text-[#8C827A] text-[10px] font-bold uppercase">Delivery Address</span>
-                  <p className="font-semibold text-[#111111]">{selectedClientFolder.address}</p>
+            {/* Client Info Grid / Editing Form */}
+            {isEditingClient ? (
+              <form onSubmit={handleSaveClientEdit} className="my-5 space-y-4 text-xs">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-900 font-semibold">
+                  Founder Editing Mode: Updates made here immediately sync to this client&apos;s portal and session.
                 </div>
-              )}
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelStyle}>Client Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={clientEditForm.name || ''}
+                      onChange={(e) => setClientEditForm({ ...clientEditForm, name: e.target.value })}
+                      className={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>Business / Company Name</label>
+                    <input
+                      type="text"
+                      value={clientEditForm.businessName || ''}
+                      onChange={(e) => setClientEditForm({ ...clientEditForm, businessName: e.target.value })}
+                      className={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>WhatsApp Phone Number</label>
+                    <input
+                      type="tel"
+                      required
+                      value={clientEditForm.phone || ''}
+                      onChange={(e) =>
+                        setClientEditForm({ ...clientEditForm, phone: e.target.value, whatsapp: e.target.value })
+                      }
+                      className={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>Alternate Contact Phone</label>
+                    <input
+                      type="tel"
+                      value={clientEditForm.alternatePhone || ''}
+                      onChange={(e) => setClientEditForm({ ...clientEditForm, alternatePhone: e.target.value })}
+                      className={inputStyle}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelStyle}>Delivery Address</label>
+                    <input
+                      type="text"
+                      value={clientEditForm.address || ''}
+                      onChange={(e) => setClientEditForm({ ...clientEditForm, address: e.target.value })}
+                      className={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>State</label>
+                    <input
+                      type="text"
+                      value={clientEditForm.state || ''}
+                      onChange={(e) => setClientEditForm({ ...clientEditForm, state: e.target.value })}
+                      className={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelStyle}>City</label>
+                    <input
+                      type="text"
+                      value={clientEditForm.city || ''}
+                      onChange={(e) => setClientEditForm({ ...clientEditForm, city: e.target.value })}
+                      className={inputStyle}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingClient(false)}
+                    className="px-4 py-2 rounded-xl border border-[#DED9CF] text-xs font-semibold text-[#4A4A4A]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-[#111111] text-xs font-bold text-white hover:opacity-90"
+                  >
+                    Save Changes to Client Portal
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="my-5 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-[#FAFAF8] p-4 rounded-2xl border border-[#ECE8DF]">
+                <div>
+                  <span className="text-[#8C827A] text-[10px] font-bold uppercase">Phone Number</span>
+                  <p className="font-semibold text-[#111111]">{selectedClientFolder.phone}</p>
+                </div>
+                <div>
+                  <span className="text-[#8C827A] text-[10px] font-bold uppercase">Business Name</span>
+                  <p className="font-semibold text-[#111111]">{selectedClientFolder.businessName || 'Individual'}</p>
+                </div>
+                <div>
+                  <span className="text-[#8C827A] text-[10px] font-bold uppercase">Email Address</span>
+                  <p className="font-semibold text-[#111111]">{selectedClientFolder.email}</p>
+                </div>
+                <div>
+                  <span className="text-[#8C827A] text-[10px] font-bold uppercase">Member Since</span>
+                  <p className="font-semibold text-[#111111]">{selectedClientFolder.createdAt}</p>
+                </div>
+                <div>
+                  <span className="text-[#8C827A] text-[10px] font-bold uppercase">Category Interest</span>
+                  <p className="font-semibold text-[#111111]">
+                    {selectedClientFolder.categoryInterest || 'General Cargo'}
+                  </p>
+                </div>
+                {selectedClientFolder.address && (
+                  <div className="col-span-2 sm:col-span-3">
+                    <span className="text-[#8C827A] text-[10px] font-bold uppercase">Delivery Address</span>
+                    <p className="font-semibold text-[#111111]">
+                      {selectedClientFolder.address}
+                      {selectedClientFolder.city ? `, ${selectedClientFolder.city}` : ''}
+                      {selectedClientFolder.state ? `, ${selectedClientFolder.state}` : ''}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Client Assigned Shipments */}
             <div className="my-5 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#111111] uppercase tracking-wider">
-                  Assigned Shipments ({shipments.filter((s) => s.clientName.toLowerCase() === selectedClientFolder.name.toLowerCase()).length})
+                  Assigned Shipments (
+                  {
+                    shipments.filter(
+                      (s) => s.clientName.toLowerCase() === selectedClientFolder.name.toLowerCase()
+                    ).length
+                  }
+                  )
                 </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreateShipmentForm({
+                      clientId: selectedClientFolder.id,
+                      clientName: selectedClientFolder.name,
+                      clientEmail: selectedClientFolder.email,
+                      clientPhone: selectedClientFolder.phone,
+                      clientCode: selectedClientFolder.clientCode,
+                      trackingNumber: 'BSP-NG-' + Math.floor(10000 + Math.random() * 90000),
+                      origin: 'Guangzhou, China',
+                      destination: 'Lagos, Nigeria',
+                      mode: 'air',
+                      status: 'Order approved',
+                      weight: 25,
+                      description: '',
+                      estimatedArrival: 'In 5-7 business days',
+                      currentLocation: 'Guangzhou Warehouse, Baiyun',
+                      staffNotes: 'Cargo received and registered at procurement hub.',
+                    });
+                    setSelectedClientFolder(null);
+                    setShowCreateShipmentModal(true);
+                  }}
+                  className="text-[11px] font-bold text-[#C9A227] hover:underline cursor-pointer"
+                >
+                  + Add Shipment for this Client
+                </button>
               </div>
 
               {shipments
@@ -1771,6 +2063,10 @@ ${link}
                       </span>
                     </div>
                     <p className="text-[#66615B]">{ship.description}</p>
+                    <div className="text-[11px] text-[#8C827A] flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-[#C9A227]" />
+                      <span>{ship.currentLocation || 'Guangzhou Warehouse'}</span>
+                    </div>
                   </div>
                 ))}
             </div>
@@ -1903,6 +2199,222 @@ ${link}
                 Save Milestone &amp; Location
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CREATE & ASSIGN NEW SHIPMENT */}
+      {/* ========================================================= */}
+      {showCreateShipmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-[#ECE8DF] my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
+              <div>
+                <span className="font-bold text-sm text-[#111111] block">Create &amp; Assign New Shipment</span>
+                <span className="text-[11px] text-[#8C827A]">
+                  New cargo registered here is immediately visible in the assigned client&apos;s portal.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateShipmentModal(false)}
+                className="text-[#8C827A] hover:text-[#111111]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateShipmentSubmit} className="my-4 space-y-3.5 text-xs">
+              <div>
+                <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">
+                  Assign to Registered Client *
+                </label>
+                <select
+                  value={createShipmentForm.clientId || ''}
+                  onChange={(e) => {
+                    const sel = clients.find((c) => c.id === e.target.value);
+                    if (sel) {
+                      setCreateShipmentForm({
+                        ...createShipmentForm,
+                        clientId: sel.id,
+                        clientName: sel.name,
+                        clientEmail: sel.email,
+                        clientPhone: sel.phone,
+                        clientCode: sel.clientCode,
+                      });
+                    }
+                  }}
+                  className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs font-bold text-[#111111]"
+                >
+                  <option value="">-- Choose a registered client --</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.businessName ? `(${c.businessName})` : ''} • {c.clientCode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Client Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={createShipmentForm.clientName}
+                    onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, clientName: e.target.value })}
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Tracking Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={createShipmentForm.trackingNumber}
+                    onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, trackingNumber: e.target.value })}
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs font-mono font-bold text-[#111111]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Cargo Description *</label>
+                <input
+                  type="text"
+                  required
+                  value={createShipmentForm.description}
+                  onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, description: e.target.value })}
+                  placeholder="e.g. Commercial Blenders & High-Speed Juicers (50 Cartons)"
+                  className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Freight Mode</label>
+                  <select
+                    value={createShipmentForm.mode}
+                    onChange={(e) =>
+                      setCreateShipmentForm({ ...createShipmentForm, mode: e.target.value as 'air' | 'sea' })
+                    }
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs font-bold text-[#111111]"
+                  >
+                    <option value="air">Air Freight</option>
+                    <option value="sea">Sea Freight</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Weight (KG)</label>
+                  <input
+                    type="number"
+                    required
+                    value={createShipmentForm.weight}
+                    onChange={(e) =>
+                      setCreateShipmentForm({ ...createShipmentForm, weight: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Initial Status</label>
+                  <select
+                    value={createShipmentForm.status}
+                    onChange={(e) =>
+                      setCreateShipmentForm({
+                        ...createShipmentForm,
+                        status: e.target.value as ShipmentItem['status'],
+                      })
+                    }
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs font-bold text-[#111111]"
+                  >
+                    <option value="Order approved">Order approved</option>
+                    <option value="Sourced in China">Sourced in China</option>
+                    <option value="Arrived at warehouse">Arrived at warehouse</option>
+                    <option value="Cargo flight booked">Cargo flight booked</option>
+                    <option value="Customs clearing Lagos">Customs clearing Lagos</option>
+                    <option value="Ready for pickup">Ready for pickup</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Origin</label>
+                  <input
+                    type="text"
+                    value={createShipmentForm.origin}
+                    onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, origin: e.target.value })}
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">Destination</label>
+                  <input
+                    type="text"
+                    value={createShipmentForm.destination}
+                    onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, destination: e.target.value })}
+                    className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">
+                  Current Active Location
+                </label>
+                <input
+                  type="text"
+                  value={createShipmentForm.currentLocation}
+                  onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, currentLocation: e.target.value })}
+                  placeholder="e.g. Guangzhou Warehouse, Baiyun"
+                  className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">
+                  Estimated Delivery Timeline
+                </label>
+                <input
+                  type="text"
+                  value={createShipmentForm.estimatedArrival}
+                  onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, estimatedArrival: e.target.value })}
+                  placeholder="e.g. In 5-7 business days / Nov 28, 2026"
+                  className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-[#8C827A] uppercase mb-1 block">
+                  Staff / Operational Notes
+                </label>
+                <textarea
+                  rows={2}
+                  value={createShipmentForm.staffNotes}
+                  onChange={(e) => setCreateShipmentForm({ ...createShipmentForm, staffNotes: e.target.value })}
+                  className="w-full rounded-xl border border-[#DED9CF] p-2.5 text-xs text-[#111111]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#ECE8DF]">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateShipmentModal(false)}
+                  className="rounded-xl border border-[#DED9CF] px-4 py-2 text-xs font-semibold text-[#4A4A4A]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-[#111111] px-5 py-2 text-xs font-bold text-white hover:opacity-90"
+                >
+                  Register &amp; Assign Shipment
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

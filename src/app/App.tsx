@@ -32,6 +32,7 @@ import LoginPage from "./components/auth/LoginPage";
 import { AdminDashboard } from "./components/auth/AdminDashboard";
 import { PublicInvoicePage } from "./components/invoice/PublicInvoicePage";
 import { ClientDashboard } from "./components/auth/ClientDashboard";
+import { getTawkConfig } from "./lib/auth";
 
 
 function buildLocalBusinessSchema() {
@@ -249,6 +250,25 @@ export default function App() {
 
     schemaElement.text = JSON.stringify(schemas.length === 1 ? schemas[0] : schemas);
   }, [activeMeta.description, activeMeta.title, activePost, currentPath]);
+
+  // Dynamic Tawk.to Live Desk injection when configured by Admin
+  useEffect(() => {
+    try {
+      const config = getTawkConfig();
+      if (config.propertyId && config.propertyId.trim() !== '') {
+        const scriptId = 'tawk-live-desk-script';
+        if (!document.getElementById(scriptId)) {
+          const s1 = document.createElement('script');
+          s1.id = scriptId;
+          s1.async = true;
+          s1.src = `https://embed.tawk.to/${config.propertyId.trim()}/${config.widgetId?.trim() || 'default'}`;
+          s1.charset = 'UTF-8';
+          s1.setAttribute('crossorigin', '*');
+          document.head.appendChild(s1);
+        }
+      }
+    } catch {}
+  }, []);
 
   const navigate = (path: string) => {
     const normalized = normalizePath(path);
