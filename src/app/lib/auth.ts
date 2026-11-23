@@ -33,6 +33,7 @@ export type InvoiceLine = {
 export type InvoiceRecord = {
   id: string;
   invoiceNumber: string;
+  clientId?: string;
   clientName: string;
   clientPhone: string;
   clientWhatsApp: string;
@@ -213,6 +214,17 @@ export function clearAllNotifications(): void {
   try {
     localStorage.removeItem(NOTIFICATIONS_KEY);
   } catch {}
+}
+
+/** Removes a single signup alert so the desk can dismiss it for good. */
+export function dismissAdminNotification(id: string): AdminNotification[] {
+  try {
+    const updated = getAdminNotifications().filter((n) => n.id !== id);
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
 }
 
 // Tawk.to Live Desk Settings

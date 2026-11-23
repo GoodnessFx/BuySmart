@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Shield,
   FileText,
@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { buildPublicInvoiceLink } from '../../lib/invoice-link';
+import { COMPANY_BANK_ACCOUNTS, PRIMARY_BANK_ACCOUNT, bankAccountLine } from '../../lib/bank';
 import {
   getAuthUser,
   clearAuthUser,
@@ -69,6 +70,7 @@ import {
   getAdminNotifications,
   markNotificationRead,
   clearAllNotifications,
+  dismissAdminNotification,
   getTawkConfig,
   saveTawkConfig,
   getPaystackConfig,
@@ -123,18 +125,12 @@ const blankInvoiceLine = (): InvoiceLine => ({
   amount: 0,
 });
 
-export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
-  const [clients, setClients] = useState<ClientProfile[]>([]);
-  const [shipments, setShipments] = useState<ShipmentItem[]>([]);
-  const [user, setUser] = useState(getAuthUser());
-
-  // Invoice Form State — starts empty so only real business data is entered
-  const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>({
+/** A completely empty invoice, numbered after the records already on file. */
+function createBlankInvoice(existingNumbers: string[] = []): InvoiceRecord {
+  return {
     id: '',
-    invoiceNumber: nextDocumentNumber([], invoiceNumberPrefix),
+    invoiceNumber: nextDocumentNumber(existingNumbers, invoiceNumberPrefix),
+    clientId: '',
     clientName: '',
     clientPhone: '',
     clientWhatsApp: '',
@@ -155,7 +151,20 @@ export function AdminDashboard() {
     createdAt: new Date().toISOString().slice(0, 10),
     dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     notes: '',
-  });
+  };
+}
+
+export function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
+  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [shipments, setShipments] = useState<ShipmentItem[]>([]);
+  const [user, setUser] = useState(getAuthUser());
+
+  // Invoice Form State — starts empty so only real business data is entered
+  const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>(createBlankInvoice());
+  const invoiceGeneratorRef = useRef<HTMLDivElement | null>(null);
 
   // Receipt Form State
   const [receiptForm, setReceiptForm] = useState<ReceiptRecord>({
@@ -166,7 +175,7 @@ export function AdminDashboard() {
     clientPhone: '',
     clientEmail: '',
     paymentMethod: 'Bank Transfer',
-    bankName: 'Zenith Bank PLC',
+    bankName: PRIMARY_BANK_ACCOUNT.bankName,
     referenceNumber: 'TXN-' + Math.floor(10000000 + Math.random() * 90000000),
     amountPaid: 0,
     amountInWords: '',
@@ -197,6 +206,7 @@ export function AdminDashboard() {
   const [shippingRates, setShippingRates] = useState<ShippingRates>(getShippingRates());
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const [tawkConfig, setTawkConfig] = useState<TawkConfig>(getTawkConfig());
   const [paystackConfig, setPaystackConfig] = useState<PaystackConfig>(getPaystackConfig());
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -244,6 +254,39 @@ export function AdminDashboard() {
     refreshAllData();
   }, []);
 
+  // The signup alerts popover closes on outside click/tap, Escape or its own X button.
+  useEffect(() => {
+    if (!showNotificationsDrawer) return;
+
+    const handlePointerDown = (event: Event) => {
+      const target = event.target as Node | null;
+      if (target && notificationsRef.current && !notificationsRef.current.contains(target)) {
+        setShowNotificationsDrawer(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' || event.key === 'Esc' || event.keyCode === 27) {
+        setShowNotificationsDrawer(false);
+      }
+    };
+
+    // Capture phase on window so no inner handler can swallow the dismissal.
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    window.addEventListener('mousedown', handlePointerDown, true);
+    window.addEventListener('click', handlePointerDown, true);
+    window.addEventListener('touchstart', handlePointerDown, true);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      window.removeEventListener('mousedown', handlePointerDown, true);
+      window.removeEventListener('click', handlePointerDown, true);
+      window.removeEventListener('touchstart', handlePointerDown, true);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyDown, true);
+    };
+  }, [showNotificationsDrawer]);
+
   const refreshAllData = () => {
     const invs = getStoredInvoices();
     setInvoices(invs);
@@ -258,16 +301,23 @@ export function AdminDashboard() {
     setTawkConfig(getTawkConfig());
 
     if (invs.length > 0) {
-      setInvoiceForm((prev) => ({
-        ...prev,
-        invoiceNumber: nextDocumentNumber(invs.map((i) => i.invoiceNumber), invoiceNumberPrefix),
-      }));
+      setInvoiceForm((prev) =>
+        prev.id
+          ? prev
+          : {
+              ...prev,
+              invoiceNumber: nextDocumentNumber(invs.map((i) => i.invoiceNumber), invoiceNumberPrefix),
+            }
+      );
     }
   };
 
+  const notifyTimerRef = useRef<number | null>(null);
+
   const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3500);
+    if (notifyTimerRef.current) window.clearTimeout(notifyTimerRef.current);
+    notifyTimerRef.current = window.setTimeout(() => setNotification(null), 4500);
   };
 
   const handleSignOut = () => {
@@ -320,18 +370,145 @@ export function AdminDashboard() {
     setInvoiceForm({ ...invoiceForm, lines: updatedLines, subtotal, total });
   };
 
+  /**
+   * Every invoice belongs to a customer. This finds the customer in the directory
+   * (by email, then by name + phone) or registers them, so the invoice immediately
+   * shows inside their client folder.
+   */
+  const ensureInvoiceClient = (form: InvoiceRecord): ClientProfile => {
+    const email = form.clientEmail.trim().toLowerCase();
+    const phone = (form.clientWhatsApp || form.clientPhone).trim();
+    const name = form.clientName.trim();
+
+    const existing =
+      clients.find((c) => c.id === form.clientId) ||
+      (email ? clients.find((c) => (c.email || '').toLowerCase() === email) : undefined) ||
+      clients.find(
+        (c) => c.name.trim().toLowerCase() === name.toLowerCase() && (c.phone || '').trim() === phone
+      );
+
+    if (existing) {
+      const merged: ClientProfile = {
+        ...existing,
+        email: existing.email || email,
+        phone: existing.phone || phone,
+        whatsapp: existing.whatsapp || form.clientWhatsApp.trim() || phone,
+        address: existing.address || form.clientAddress.trim(),
+      };
+      saveClient(merged);
+      return merged;
+    }
+
+    const created: ClientProfile = {
+      id: 'client-' + Date.now().toString(),
+      name,
+      email,
+      phone,
+      whatsapp: form.clientWhatsApp.trim() || phone,
+      businessName: '',
+      address: form.clientAddress.trim(),
+      city: '',
+      state: '',
+      categoryInterest: 'Commercial & General Goods',
+      clientCode: 'BSP-CL-' + Math.floor(1000 + Math.random() * 9000),
+      signupMethod: 'manual',
+      createdAt: new Date().toISOString().slice(0, 10),
+      notes: 'Registered automatically when their first invoice was issued.',
+    };
+    saveClient(created);
+    return created;
+  };
+
   const handleSaveCurrentInvoice = () => {
-    if (!invoiceForm.clientName.trim()) {
-      showNotify('Please enter a Client Name for this invoice.', 'error');
+    const name = invoiceForm.clientName.trim();
+    const phone = (invoiceForm.clientWhatsApp || invoiceForm.clientPhone).trim();
+
+    if (!name) {
+      showNotify('Enter the customer name — pick an existing client or type a new one.', 'error');
       return;
     }
+    if (!phone) {
+      showNotify('Enter the customer WhatsApp / phone number so the invoice can be sent to them.', 'error');
+      return;
+    }
+
+    const lines = invoiceForm.lines.filter((l) => l.description.trim() !== '' || Number(l.amount) > 0);
+    if (lines.length === 0) {
+      showNotify('Add at least one item with a description and an amount.', 'error');
+      return;
+    }
+    if (lines.some((l) => !l.description.trim())) {
+      showNotify('Every invoice line needs a description of the goods or service.', 'error');
+      return;
+    }
+
+    const { subtotal, total } = recalculateInvoice(lines, invoiceForm.previousBalance, invoiceForm.discount);
+    if (total <= 0) {
+      showNotify('The invoice total must be greater than zero.', 'error');
+      return;
+    }
+
+    const client = ensureInvoiceClient({ ...invoiceForm, clientName: name });
+    setClients(getStoredClients());
+
+    // Never overwrite another invoice: a new record always gets a free number.
+    let number = invoiceForm.invoiceNumber.trim() || nextDocumentNumber(invoices.map((i) => i.invoiceNumber), invoiceNumberPrefix);
+    const numberTaken = invoices.some(
+      (i) => i.invoiceNumber.toLowerCase() === number.toLowerCase() && i.id !== invoiceForm.id
+    );
+    if (numberTaken) {
+      number = nextDocumentNumber(invoices.map((i) => i.invoiceNumber), invoiceNumberPrefix);
+    }
+
+    const isUpdate = Boolean(invoiceForm.id);
     const recordToSave: InvoiceRecord = {
       ...invoiceForm,
       id: invoiceForm.id || 'inv-' + Date.now().toString(),
+      invoiceNumber: number,
+      clientId: client.id,
+      clientName: name,
+      clientPhone: phone,
+      clientWhatsApp: invoiceForm.clientWhatsApp.trim() || phone,
+      clientEmail: invoiceForm.clientEmail.trim().toLowerCase(),
+      clientAddress: invoiceForm.clientAddress.trim(),
+      lines,
+      subtotal,
+      total,
+      createdAt: invoiceForm.createdAt || new Date().toISOString().slice(0, 10),
     };
+
     const updated = saveInvoice(recordToSave);
     setInvoices(updated);
-    showNotify(`Invoice #${recordToSave.invoiceNumber} saved successfully!`);
+    // Ready for the next customer straight away.
+    setInvoiceForm(createBlankInvoice(updated.map((i) => i.invoiceNumber)));
+    showNotify(
+      isUpdate
+        ? `Invoice #${number} updated for ${name}.`
+        : `Invoice #${number} created for ${name} and filed in their client folder (${client.clientCode}).`
+    );
+    setSendInvoiceTarget(recordToSave);
+  };
+
+  const handleEditInvoice = (inv: InvoiceRecord) => {
+    setInvoiceForm({
+      ...inv,
+      clientId: inv.clientId || '',
+      lines: inv.lines && inv.lines.length > 0 ? inv.lines : [blankInvoiceLine()],
+    });
+    showNotify(`Editing invoice #${inv.invoiceNumber} — change the details, then press Update Invoice.`);
+    window.setTimeout(() => {
+      invoiceGeneratorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  };
+
+  const handleDeleteInvoice = (inv: InvoiceRecord) => {
+    if (!window.confirm(`Delete invoice ${inv.invoiceNumber} for ${inv.clientName}? This cannot be undone.`)) return;
+    const updated = deleteInvoice(inv.id);
+    setInvoices(updated);
+    if (invoiceForm.id === inv.id) {
+      setInvoiceForm(createBlankInvoice(updated.map((i) => i.invoiceNumber)));
+    }
+    showNotify(`Invoice ${inv.invoiceNumber} deleted.`);
   };
 
   const handleSaveCurrentReceipt = () => {
@@ -361,7 +538,7 @@ export function AdminDashboard() {
       clientPhone: inv.clientPhone,
       clientEmail: inv.clientEmail,
       paymentMethod: 'Bank Transfer',
-      bankName: 'Zenith Bank PLC',
+      bankName: PRIMARY_BANK_ACCOUNT.bankName,
       referenceNumber: 'TXN-' + Math.floor(10000000 + Math.random() * 90000000),
       amountPaid: amt,
       amountInWords: numberToWordsNaira(amt),
@@ -379,19 +556,22 @@ export function AdminDashboard() {
 
   // Pre-fill invoice for client from Client Folder
   const handleCreateInvoiceForClient = (client: ClientProfile) => {
-    const nextNum = nextDocumentNumber(invoices.map((i) => i.invoiceNumber), invoiceNumberPrefix);
-    setInvoiceForm((prev) => ({
-      ...prev,
-      invoiceNumber: nextNum,
+    const fresh = createBlankInvoice(invoices.map((i) => i.invoiceNumber));
+    setInvoiceForm({
+      ...fresh,
+      clientId: client.id,
       clientName: client.name,
       clientEmail: client.email,
       clientPhone: client.phone,
       clientWhatsApp: client.whatsapp || client.phone,
       clientAddress: client.address || '',
-    }));
+    });
     setSelectedClientFolder(null);
     setActiveTab('invoices');
-    showNotify(`Invoice form loaded for ${client.name}`);
+    showNotify(`New blank invoice ${fresh.invoiceNumber} opened for ${client.name}.`);
+    window.setTimeout(() => {
+      invoiceGeneratorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
   };
 
   // Update Shipment Milestone & Active Location Per Client
@@ -578,6 +758,9 @@ for the invoice - ${inv.invoiceNumber} from Buysmart Procurement Limited.
 View and pay your invoice at -
 ${link}
 
+Or pay by direct transfer:
+${bankAccountLine()}
+
 • The Buysmart Procurement Limited Team`;
   };
 
@@ -633,6 +816,15 @@ ${link}
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#111111] antialiased">
+      {/* Tap anywhere outside the alerts popover to dismiss it */}
+      {showNotificationsDrawer && (
+        <div
+          aria-hidden="true"
+          onClick={() => setShowNotificationsDrawer(false)}
+          className="fixed inset-0 z-30 bg-[#111111]/10"
+        />
+      )}
+
       {/* Top Header */}
       <header className="sticky top-0 z-40 border-b border-[#ECE8DF] bg-white/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -656,7 +848,7 @@ ${link}
           </div>
 
           <div className="flex items-center gap-2.5">
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
                 type="button"
                 onClick={() => setShowNotificationsDrawer(!showNotificationsDrawer)}
@@ -679,18 +871,29 @@ ${link}
                       <Bell className="h-4 w-4 text-[#C9A227]" />
                       <span className="font-extrabold text-xs text-[#111111]">Portal Signup Alerts</span>
                     </div>
-                    {adminNotifications.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      {adminNotifications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearAllNotifications();
+                            setAdminNotifications([]);
+                          }}
+                          className="text-[10px] text-[#8C827A] hover:text-red-600 font-semibold cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => {
-                          clearAllNotifications();
-                          setAdminNotifications([]);
-                        }}
-                        className="text-[10px] text-[#8C827A] hover:text-red-600 font-semibold cursor-pointer"
+                        onClick={() => setShowNotificationsDrawer(false)}
+                        title="Close alerts"
+                        aria-label="Close alerts"
+                        className="p-1.5 rounded-lg border border-[#ECE8DF] text-[#66615B] hover:border-[#C9A227] hover:text-[#111111] transition cursor-pointer"
                       >
-                        Clear All
+                        <X className="h-3.5 w-3.5" />
                       </button>
-                    )}
+                    </div>
                   </div>
 
                   <div className="max-h-80 overflow-y-auto divide-y divide-[#ECE8DF] py-2">
@@ -706,7 +909,18 @@ ${link}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <span className="font-bold text-xs text-[#111111]">{n.title}</span>
-                            <span className="text-[10px] text-[#8C827A] whitespace-nowrap">{n.timestamp}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[10px] text-[#8C827A] whitespace-nowrap">{n.timestamp}</span>
+                              <button
+                                type="button"
+                                onClick={() => setAdminNotifications(dismissAdminNotification(n.id))}
+                                title="Dismiss this alert"
+                                aria-label="Dismiss this alert"
+                                className="p-1 rounded-md text-[#8C827A] hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
                           </div>
                           <p className="text-[11px] text-[#4A4A4A] mt-1">{n.message}</p>
                           <div className="flex items-center gap-2 mt-2">
@@ -808,6 +1022,15 @@ ${link}
             <CheckCircle2 className="h-5 w-5 text-green-600" />
           )}
           <span className="text-sm font-semibold">{notification.message}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            title="Dismiss"
+            aria-label="Dismiss notification"
+            className="p-1 rounded-lg opacity-60 hover:opacity-100 transition cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
@@ -832,30 +1055,11 @@ ${link}
                 <button
                   type="button"
                   onClick={() => {
-                    const nextNum = nextDocumentNumber(
-                      invoices.map((i) => i.invoiceNumber),
-                      invoiceNumberPrefix
-                    );
-                    setInvoiceForm({
-                      ...invoiceForm,
-                      id: '',
-                      invoiceNumber: nextNum,
-                      clientName: '',
-                      clientEmail: '',
-                      clientPhone: '',
-                      clientWhatsApp: '',
-                      clientAddress: '',
-                      previousBalance: 0,
-                      discount: 0,
-                      amountPaid: 0,
-                      status: 'Unpaid',
-                      paymentLink: '',
-                      notes: '',
-                      lines: [blankInvoiceLine()],
-                      subtotal: 0,
-                      total: 0,
-                    });
-                    showNotify('Loaded new blank invoice form.');
+                    setInvoiceForm(createBlankInvoice(invoices.map((i) => i.invoiceNumber)));
+                    showNotify('Blank invoice opened — choose the customer, add the items, then create it.');
+                    window.setTimeout(() => {
+                      invoiceGeneratorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 80);
                   }}
                   className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
                 >
@@ -986,11 +1190,27 @@ ${link}
                             </button>
                             <button
                               type="button"
+                              onClick={() => handleEditInvoice(inv)}
+                              title="Edit this invoice"
+                              className="p-2 rounded-xl bg-[#FAFAF8] border border-[#DED9CF] text-[#111111] hover:border-[#C9A227] transition cursor-pointer"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleQuickReceiptFromInvoice(inv)}
                               title="Issue Official Receipt"
                               className="p-2 rounded-xl bg-[#111111] text-white hover:opacity-90 transition cursor-pointer"
                             >
                               <ReceiptIcon className="h-3.5 w-3.5 text-[#C9A227]" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteInvoice(inv)}
+                              title="Delete this invoice"
+                              className="p-2 rounded-xl border border-[#DED9CF] text-[#B3261E] hover:border-[#B3261E] hover:bg-red-50 transition cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </td>
@@ -1002,24 +1222,97 @@ ${link}
             </div>
 
             {/* Invoice Generator Form */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF]">
+            <div
+              ref={invoiceGeneratorRef}
+              className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-28"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#ECE8DF]">
                 <div>
                   <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-lg font-bold text-[#111111]">
-                    Invoice Generator &amp; Editor
+                    {invoiceForm.id ? `Editing Invoice ${invoiceForm.invoiceNumber}` : 'Create Invoice for a Customer'}
                   </h2>
                   <p className="text-xs text-[#66615B]">
-                    Create official itemized invoice with automatic calculations &amp; company branding
+                    Pick the customer, add the items, then create the invoice — it is filed in their client folder and a
+                    shareable payment link is generated instantly.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSaveCurrentInvoice}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-[#C9A227] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
-                >
+                <div className="flex items-center gap-2 shrink-0">
+                  {invoiceForm.id && (
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceForm(createBlankInvoice(invoices.map((i) => i.invoiceNumber)))}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-[#DED9CF] bg-white px-4 py-2.5 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4 text-[#C9A227]" />
+                      <span>New Instead</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveCurrentInvoice}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[#C9A227] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
+                  >
                   <Save className="h-4 w-4" />
-                  <span>Save Invoice</span>
-                </button>
+                  <span>{invoiceForm.id ? 'Update Invoice' : 'Create Invoice'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Customer picker — every invoice is issued to a real customer */}
+              <div className="rounded-2xl border border-[#ECE8DF] bg-[#FAFAF8] p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                  <div className="flex-1">
+                    <label className={labelStyle}>Bill this customer</label>
+                    <select
+                      value={invoiceForm.clientId || ''}
+                      onChange={(e) => {
+                        const picked = clients.find((c) => c.id === e.target.value);
+                        if (!picked) {
+                          setInvoiceForm({
+                            ...invoiceForm,
+                            clientId: '',
+                            clientName: '',
+                            clientPhone: '',
+                            clientWhatsApp: '',
+                            clientEmail: '',
+                            clientAddress: '',
+                          });
+                          return;
+                        }
+                        setInvoiceForm({
+                          ...invoiceForm,
+                          clientId: picked.id,
+                          clientName: picked.name,
+                          clientPhone: picked.phone,
+                          clientWhatsApp: picked.whatsapp || picked.phone,
+                          clientEmail: picked.email,
+                          clientAddress: picked.address || '',
+                        });
+                      }}
+                      className={inputStyle}
+                    >
+                      <option value="">New customer — type their details below</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} • {c.clientCode} • {c.phone}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddClientModal(true)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DED9CF] bg-white px-4 py-3 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer shrink-0"
+                  >
+                    <Users className="h-4 w-4 text-[#C9A227]" />
+                    <span>Register a Client</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#8C827A]">
+                  {invoiceForm.clientId
+                    ? 'This invoice will be filed inside the selected client folder.'
+                    : 'A brand-new customer is added to the Clients Directory automatically when you create the invoice.'}
+                </p>
               </div>
 
               {/* Client Info Grid */}
@@ -1038,7 +1331,17 @@ ${link}
                   <input
                     type="text"
                     value={invoiceForm.clientName}
-                    onChange={(e) => setInvoiceForm({ ...invoiceForm, clientName: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const picked = clients.find((c) => c.id === invoiceForm.clientId);
+                      const stillSameClient =
+                        picked && picked.name.trim().toLowerCase() === value.trim().toLowerCase();
+                      setInvoiceForm({
+                        ...invoiceForm,
+                        clientName: value,
+                        clientId: stillSameClient ? invoiceForm.clientId : '',
+                      });
+                    }}
                     placeholder="e.g. Mr. Francis Ogbeide"
                     className={inputStyle}
                   />
@@ -1589,7 +1892,10 @@ ${link}
               )}
               {filteredClients.map((c) => {
                 const clientInvs = invoices.filter(
-                  (i) => i.clientName.toLowerCase() === c.name.toLowerCase() || i.clientEmail === c.email
+                  (i) =>
+                    i.clientId === c.id ||
+                    i.clientName.toLowerCase() === c.name.toLowerCase() ||
+                    (!!i.clientEmail && i.clientEmail === c.email)
                 );
                 const clientShips = shipments.filter(
                   (s) => s.clientName.toLowerCase() === c.name.toLowerCase() || s.clientEmail === c.email
@@ -1992,7 +2298,12 @@ ${link}
                 .reduce((acc, i) => acc + (Number(i.total) - Number(i.amountPaid || 0)), 0);
               const paidInvoices = invoices.filter((i) => i.status === 'Paid').length;
               const clientsWithInvoices = clients.filter((c) =>
-                invoices.some((i) => i.clientName.toLowerCase() === c.name.toLowerCase() || i.clientEmail === c.email)
+                invoices.some(
+                  (i) =>
+                    i.clientId === c.id ||
+                    i.clientName.toLowerCase() === c.name.toLowerCase() ||
+                    (!!i.clientEmail && i.clientEmail === c.email)
+                )
               ).length;
 
               const stockCards = [
@@ -2505,6 +2816,75 @@ ${link}
               </div>
             )}
 
+            {/* Invoices issued to this client */}
+            {(() => {
+              const folderInvoices = invoices.filter(
+                (i) =>
+                  i.clientId === selectedClientFolder.id ||
+                  i.clientName.toLowerCase() === selectedClientFolder.name.toLowerCase() ||
+                  (!!i.clientEmail && i.clientEmail.toLowerCase() === (selectedClientFolder.email || '').toLowerCase())
+              );
+              const folderOutstanding = folderInvoices.reduce(
+                (acc, i) => acc + Math.max(0, (Number(i.total) || 0) - (Number(i.amountPaid) || 0)),
+                0
+              );
+
+              return (
+                <div className="my-5 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-[#111111] uppercase tracking-wider">
+                      Invoices ({folderInvoices.length})
+                    </span>
+                    <span className="text-[11px] font-bold text-[#6B5515]">
+                      Outstanding: {formatNaira(folderOutstanding)}
+                    </span>
+                  </div>
+
+                  {folderInvoices.length === 0 ? (
+                    <p className="text-[11px] text-[#8C827A] p-3 rounded-2xl border border-dashed border-[#DED9CF] bg-[#FAFAF8]">
+                      No invoice issued to this client yet. Use “Generate Invoice for this Client” below.
+                    </p>
+                  ) : (
+                    folderInvoices.map((inv) => (
+                      <div
+                        key={inv.id}
+                        className="p-3.5 rounded-2xl border border-[#ECE8DF] bg-[#FAFAF8] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      >
+                        <div>
+                          <div className="font-bold text-[#111111]">{inv.invoiceNumber}</div>
+                          <div className="text-[11px] text-[#8C827A]">
+                            {inv.createdAt} • {inv.status} • {formatNaira(inv.total)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedClientFolder(null);
+                              handleEditInvoice(inv);
+                            }}
+                            className="px-3 py-1.5 rounded-xl border border-[#DED9CF] bg-white text-[10px] font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedClientFolder(null);
+                              setSendInvoiceTarget(inv);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-[#111111] text-[10px] font-bold text-white hover:opacity-90 cursor-pointer"
+                          >
+                            Send Link
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Client Assigned Shipments */}
             <div className="my-5 space-y-3">
               <div className="flex items-center justify-between">
@@ -3008,9 +3388,10 @@ ${link}
               </div>
 
               <div className="p-4 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1 text-[11px] text-[#66615B]">
-                <div className="font-bold text-[#111111]">Payment Bank Accounts:</div>
-                <div>Zenith Bank PLC • Acct: 1224890123 • BUYSMART PROCUREMENT LIMITED</div>
-                <div>Providus Bank • Acct: 5401893421 • BUYSMART PROCUREMENT LIMITED</div>
+                <div className="font-bold text-[#111111]">Official Settlement Account:</div>
+                {COMPANY_BANK_ACCOUNTS.map((account) => (
+                  <div key={account.accountNumber}>{bankAccountLine(account)}</div>
+                ))}
               </div>
             </div>
           </div>

@@ -36,6 +36,7 @@ import {
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { initiatePaystackCheckout } from '../../lib/paystack';
 import { buildInvoiceLink, readLinkLocation } from '../../lib/invoice-link';
+import { COMPANY_BANK_ACCOUNTS } from '../../lib/bank';
 
 const LINE_LABELS: Record<LineType, string> = {
   goods: 'Goods Purchase',
@@ -51,6 +52,7 @@ export function PublicInvoicePage() {
   const [receipt, setReceipt] = useState<ReceiptRecord | null>(null);
   const [activeView, setActiveView] = useState<'invoice' | 'receipt'>('invoice');
   const [copied, setCopied] = useState(false);
+  const [copiedAccount, setCopiedAccount] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [paySuccess, setPaySuccess] = useState(false);
   const [lookupState, setLookupState] = useState<'loading' | 'ready' | 'not-found'>('loading');
@@ -160,6 +162,14 @@ export function PublicInvoicePage() {
     } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleCopyAccount = async (accountNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+    } catch {}
+    setCopiedAccount(accountNumber);
+    setTimeout(() => setCopiedAccount(''), 3000);
   };
 
   const handleWhatsAppConfirm = () => {
@@ -603,22 +613,42 @@ export function PublicInvoicePage() {
               <div className="flex items-center gap-2 pb-2 border-b border-[#ECE8DF]">
                 <Building2 className="h-4 w-4 text-[#C9A227]" />
                 <span className="font-extrabold text-xs text-[#111111]">
-                  Official Corporate Bank Accounts (Direct Settlement)
+                  Official Corporate Settlement Account (Direct Transfer)
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1">
-                  <div className="font-bold text-[#111111]">Zenith Bank PLC</div>
-                  <div className="text-[11px] text-[#66615B]">BUYSMART PROCUREMENT LIMITED</div>
-                  <div className="font-mono font-bold text-sm text-[#C9A227]">1224890123</div>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1">
-                  <div className="font-bold text-[#111111]">Providus Bank</div>
-                  <div className="text-[11px] text-[#66615B]">BUYSMART PROCUREMENT LIMITED</div>
-                  <div className="font-mono font-bold text-sm text-[#C9A227]">5401893421</div>
-                </div>
+              <div className="grid grid-cols-1 gap-3">
+                {COMPANY_BANK_ACCOUNTS.map((account) => (
+                  <div
+                    key={account.accountNumber}
+                    className="p-4 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-bold text-[#111111]">{account.bankName}</div>
+                      <div className="text-[11px] text-[#66615B]">{account.accountName}</div>
+                      <div className="font-mono font-black text-xl text-[#C9A227] tracking-wide">
+                        {account.accountNumber}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyAccount(account.accountNumber)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DED9CF] bg-white px-4 py-2.5 text-[11px] font-bold text-[#111111] hover:border-[#C9A227] transition cursor-pointer shrink-0"
+                    >
+                      {copiedAccount === account.accountNumber ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-green-600" />
+                          <span>Account number copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5 text-[#C9A227]" />
+                          <span>Copy account number</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 

@@ -9,6 +9,7 @@ import {
   type ReceiptRecord,
   type LineType,
 } from './auth';
+import { COMPANY_BANK_ACCOUNTS } from './bank';
 
 const LINE_LABELS: Record<LineType, string> = {
   goods: 'Goods Purchase',
@@ -289,9 +290,9 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
     align: 'right',
   });
 
-  // Official Bank Details (larger, bold, high contrast)
-  y = Math.min(totalBoxY + totalBoxHeight + 11, 216);
-  const bankBoxHeight = 43;
+  // Official settlement account (large, bold, high contrast)
+  y = Math.min(totalBoxY + totalBoxHeight + 11, 214);
+  const bankBoxHeight = 12 + COMPANY_BANK_ACCOUNTS.length * 15;
   doc.setFillColor(250, 249, 246);
   doc.roundedRect(20, y - 6, pageWidth - 40, bankBoxHeight, 2.5, 2.5, 'F');
   doc.setDrawColor(220, 215, 200);
@@ -300,37 +301,34 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(17, 17, 17);
-  doc.text('OFFICIAL DIRECT SETTLEMENT BANK ACCOUNTS:', 26, y);
+  doc.text('OFFICIAL DIRECT SETTLEMENT ACCOUNT:', 26, y);
 
-  const bankRows: Array<[string, string]> = [
-    ['Zenith Bank PLC:', '1224890123'],
-    ['Providus Bank:', '5401893421'],
-  ];
+  COMPANY_BANK_ACCOUNTS.forEach((account, index) => {
+    const rowY = y + 10 + index * 15;
 
-  bankRows.forEach(([bankLabel, account], index) => {
-    const rowY = y + 9 + index * 8.5;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
+    doc.setFontSize(10);
     doc.setTextColor(17, 17, 17);
-    doc.text(bankLabel, 26, rowY);
+    doc.text(account.bankName, 26, rowY);
 
-    doc.setFontSize(11);
+    doc.setFontSize(15);
     doc.setTextColor(176, 126, 16);
-    doc.text(account, 70, rowY);
+    doc.text(account.accountNumber, 26, rowY + 7);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(9);
     doc.setTextColor(60, 60, 60);
-    doc.text('BUYSMART PROCUREMENT LIMITED', 108, rowY);
+    doc.text(account.accountName, 70, rowY + 7);
   });
 
+  const portalY = y + 8 + COMPANY_BANK_ACCOUNTS.length * 15;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(17, 17, 17);
-  doc.text('Online Payment Portal:', 26, y + 27);
+  doc.text('Pay Online:', 26, portalY);
   doc.setTextColor(176, 126, 16);
-  doc.text(inv.paymentLink || 'https://buysmart.ng (Pay online from your invoice link)', 66, y + 27, {
-    maxWidth: pageWidth - 94,
+  doc.text(inv.paymentLink || 'Open your BuySmart invoice link and tap Pay Online with Paystack.', 48, portalY, {
+    maxWidth: pageWidth - 76,
   });
 
   // Footer seal — logo centred above its caption, never overlapping the text

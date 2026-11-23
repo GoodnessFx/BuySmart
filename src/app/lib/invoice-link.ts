@@ -21,6 +21,7 @@ type CompactLine = [LineType, string, number, number | undefined, number | undef
 type CompactInvoice = {
   n: string;
   i: string;
+  ci: string;
   cn: string;
   cp: string;
   cw: string;
@@ -64,6 +65,7 @@ export function encodeInvoiceSnapshot(invoice: InvoiceRecord): string {
   const compact: CompactInvoice = {
     n: invoice.invoiceNumber,
     i: invoice.id,
+    ci: invoice.clientId || '',
     cn: invoice.clientName,
     cp: invoice.clientPhone,
     cw: invoice.clientWhatsApp || '',
@@ -115,6 +117,7 @@ export function decodeInvoiceSnapshot(token: string): InvoiceRecord | null {
     return {
       id: parsed.i || `link-${parsed.n}`,
       invoiceNumber: parsed.n,
+      clientId: parsed.ci || undefined,
       clientName: parsed.cn,
       clientPhone: parsed.cp || '',
       clientWhatsApp: parsed.cw || '',

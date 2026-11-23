@@ -36,6 +36,7 @@ import {
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { initiatePaystackCheckout } from '../../lib/paystack';
 import { ModernTrackingCard } from '../shipments/ModernTrackingCard';
+import { COMPANY_BANK_ACCOUNTS } from '../../lib/bank';
 import {
   getAuthUser,
   clearAuthUser,
@@ -1179,8 +1180,13 @@ export function ClientDashboard() {
 
               <div className="p-3.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1 text-[11px] text-[#66615B]">
                 <div className="font-bold text-[#111111]">Direct Bank Transfer Payment:</div>
-                <div>Zenith Bank PLC • Acct: 1224890123 • BUYSMART PROCUREMENT LIMITED</div>
-                <div>Providus Bank • Acct: 5401893421 • BUYSMART PROCUREMENT LIMITED</div>
+                {COMPANY_BANK_ACCOUNTS.map((account) => (
+                  <div key={account.accountNumber}>
+                    {account.bankName} • Acct:{' '}
+                    <span className="font-mono font-bold text-[#C9A227]">{account.accountNumber}</span> •{' '}
+                    {account.accountName}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
