@@ -43,7 +43,6 @@ import {
   Edit,
   BadgeCheck,
   Calculator,
-  Save,
   Bell,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
