@@ -29,7 +29,7 @@ import { PublicTrackingPage } from "./components/shipments/PublicTrackingPage";
 import { SettingsScreen } from "./components/settings/SettingsScreen";
 import { OfflineBanner } from "./components/offline/OfflineBanner";
 import LoginPage from "./components/auth/LoginPage";
-
+import { AdminDashboard } from "./components/auth/AdminDashboard";
 import { PublicInvoicePage } from "./components/invoice/PublicInvoicePage";
 import { ClientDashboard } from "./components/auth/ClientDashboard";
 
