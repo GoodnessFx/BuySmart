@@ -172,12 +172,12 @@ export const routeMeta: Record<string, RouteMeta> = {
   "/projects": {
     title: "Projects | BuySmart Imports Gallery",
     description:
-      "Browse all BuySmart projects — electronics, baby products, and general goods with proof media and delivery timelines.",
+      "Browse BuySmart procurement across vehicles and autos, electronics and appliances, and beauty and hair with available proof media and delivery timelines.",
   },
   "/recent-projects": {
     title: "Recent Projects | BuySmart Imports Gallery",
     description:
-      "See recent BuySmart imports across electronics, baby products, and general goods with proof media and delivery timelines.",
+      "Explore BuySmart projects across vehicles and autos, electronics and appliances, and beauty and hair, with shipment proof media added as it becomes available.",
   },
   "/testimonials": {
     title: "Testimonials | BuySmart Reviews",

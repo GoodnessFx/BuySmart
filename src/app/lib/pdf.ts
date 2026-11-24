@@ -311,8 +311,17 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   });
 
   // Official settlement account (large, bold, high contrast)
-  y = Math.min(totalBoxY + totalBoxHeight + 11, 214);
   const bankBoxHeight = 12 + COMPANY_BANK_ACCOUNTS.length * 15;
+  y = totalBoxY + totalBoxHeight + 11;
+  if (y + bankBoxHeight + 34 > pageHeight - 28) {
+    doc.addPage();
+    y = 30;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(17, 17, 17);
+    doc.text(`Invoice ${inv.invoiceNumber} — official settlement details`, 20, 18);
+  }
+
   doc.setFillColor(250, 249, 246);
   doc.roundedRect(20, y - 6, pageWidth - 40, bankBoxHeight, 2.5, 2.5, 'F');
   doc.setDrawColor(220, 215, 200);
@@ -321,7 +330,7 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(17, 17, 17);
-  doc.text('OFFICIAL DIRECT SETTLEMENT ACCOUNT:', 26, y);
+  doc.text('OFFICIAL OPay SETTLEMENT ACCOUNT:', 26, y);
 
   COMPANY_BANK_ACCOUNTS.forEach((account, index) => {
     const rowY = y + 10 + index * 15;

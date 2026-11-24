@@ -77,7 +77,7 @@ type ClientTourRect = {
 };
 
 const CLIENT_TIPS_KEY = 'buysmart_client_tab_tips_dismissed';
-const CLIENT_TOUR_KEY_PREFIX = 'buysmart_client_walkthrough_completed:';
+const CLIENT_TOUR_KEY_PREFIX = 'buysmart_client_walkthrough_session:';
 
 const CLIENT_TOUR_STEPS: ClientTourStep[] = [
   {
@@ -118,7 +118,7 @@ function clientTourStorageKey(identity?: string): string {
 
 function hasCompletedClientTour(identity?: string): boolean {
   try {
-    return window.localStorage.getItem(clientTourStorageKey(identity)) === '1';
+    return window.sessionStorage.getItem(clientTourStorageKey(identity)) === '1';
   } catch {
     return false;
   }
@@ -126,9 +126,17 @@ function hasCompletedClientTour(identity?: string): boolean {
 
 function markClientTourComplete(identity?: string): void {
   try {
-    window.localStorage.setItem(clientTourStorageKey(identity), '1');
+    window.sessionStorage.setItem(clientTourStorageKey(identity), '1');
   } catch {
     /* The tour still closes when browser storage is unavailable. */
+  }
+}
+
+function clearClientTourSession(identity?: string): void {
+  try {
+    window.sessionStorage.removeItem(clientTourStorageKey(identity));
+  } catch {
+    /* The next login can still show the tour when storage is unavailable. */
   }
 }
 
@@ -206,6 +214,7 @@ export function ClientDashboard() {
   };
 
   const startClientWalkthrough = () => {
+    clearClientTourSession(clientTourIdentity);
     setWalkthroughStep(0);
     setActiveTab(CLIENT_TOUR_STEPS[0].tab);
     setTourRect(null);
@@ -316,19 +325,20 @@ export function ClientDashboard() {
         setTourRect(null);
         return;
       }
-      setTourRect({
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-      });
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const width = Math.min(rect.width, Math.max(0, viewportWidth - 16));
+      const height = Math.min(rect.height, Math.max(0, viewportHeight - 16));
+      const left = Math.max(8, Math.min(rect.left, viewportWidth - width - 8));
+      const top = Math.max(8, Math.min(rect.top, viewportHeight - height - 8));
+      setTourRect({ top, left, width, height });
     };
 
     const revealTarget = () => {
       const target = document.querySelector<HTMLElement>(
         `[data-client-tour="${CLIENT_TOUR_STEPS[walkthroughStep].tab}"]`
       );
-      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       measureTimer = window.setTimeout(() => {
         measureTarget();
         document.getElementById('client-tour-next')?.focus({ preventScroll: true });
@@ -358,6 +368,7 @@ export function ClientDashboard() {
   }, [walkthroughOpen, walkthroughStep, clientTourIdentity]);
 
   const handleSignOut = () => {
+    clearClientTourSession(clientTourIdentity);
     clearAuthUser();
     window.location.href = '/login';
   };

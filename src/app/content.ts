@@ -24,16 +24,7 @@ export type FAQItem = {
 };
 
 export type GalleryItem = {
-  category:
-    | "Electronics"
-    | "Hair"
-    | "Kitchen Appliances"
-    | "Baby Products"
-    | "Phones"
-    | "Vehicles"
-    | "General Goods"
-    | "USB Backpacks"
-    | "TVs";
+  category: "Vehicles & Autos" | "Electronics & Appliances" | "Beauty & Hair";
   title: string;
   media: string;
   mediaType: "image" | "video";
@@ -41,6 +32,7 @@ export type GalleryItem = {
   timeline: string;
   caption: string;
   alt: string;
+  preview?: boolean;
 };
 
 export type SocialLink = {
@@ -145,6 +137,14 @@ export const homeStats = [
   { label: "Source markets", value: "Worldwide (China & Vietnam strongest)" },
   { label: "Shipping modes", value: "Air and Sea" },
   { label: "Google rating", value: "5.0 stars" },
+];
+
+export const ratingHighlights = [
+  "Over 15 years in procurement",
+  "Verified suppliers before payment",
+  "Air and sea freight options",
+  "Door-to-door delivery across Nigeria",
+  "Clear quotations and shipment updates",
 ];
 
 export const orderSteps = [
@@ -417,32 +417,38 @@ export const customsGuide = [
 ];
 
 export const galleryCategories: GalleryItem["category"][] = [
-  "Electronics",
-  "Hair",
-  "Kitchen Appliances",
-  "Baby Products",
-  "Phones",
-  "Vehicles",
-  "General Goods",
-  "USB Backpacks",
-  "TVs",
+  "Vehicles & Autos",
+  "Electronics & Appliances",
+  "Beauty & Hair",
 ];
 
 export const galleryItems: GalleryItem[] = [
   {
-    category: "Electronics",
-    title: "Verified electronics shipment",
+    category: "Vehicles & Autos",
+    title: "Vehicle and auto procurement",
+    media: "/images/projects/vehicles-autos.svg",
+    mediaType: "image",
+    shippedFrom: "China & global supplier network",
+    timeline: "Air and sea freight options",
+    caption:
+      "Cars, motorcycles, commercial vehicles, and parts sourced to your specification. Project photos and videos will be added here.",
+    alt: "BuySmart vehicle and auto procurement category preview",
+    preview: true,
+  },
+  {
+    category: "Electronics & Appliances",
+    title: "65-inch smart TV order",
     media: "/media/Electronic 1.jpeg",
     mediaType: "image",
     shippedFrom: "China",
     timeline: "10 to 15 working days by air",
     caption:
-      "Electronics sourced from China with a shorter air-shipping timeline for faster delivery.",
+      "TCL 65-inch television carton checked and labelled before dispatch from China.",
     alt: "BuySmart electronics shipment sourced from China",
   },
   {
-    category: "Electronics",
-    title: "Consumer electronics import",
+    category: "Electronics & Appliances",
+    title: "Bulk television shipment",
     media: "/media/Electronic 2.jpeg",
     mediaType: "image",
     shippedFrom: "China",
@@ -452,8 +458,8 @@ export const galleryItems: GalleryItem[] = [
     alt: "Consumer electronics import handled by BuySmart",
   },
   {
-    category: "Electronics",
-    title: "Electronics bulk order",
+    category: "Electronics & Appliances",
+    title: "Electronics cargo consolidation",
     media: "/media/Electronic 3.jpeg",
     mediaType: "image",
     shippedFrom: "China",
@@ -463,8 +469,8 @@ export const galleryItems: GalleryItem[] = [
     alt: "Bulk electronics order imported by BuySmart",
   },
   {
-    category: "Electronics",
-    title: "Electronics delivery clip",
+    category: "Electronics & Appliances",
+    title: "Television delivery proof",
     media: "/media/Electronic 4.mp4",
     mediaType: "video",
     shippedFrom: "China",
@@ -474,8 +480,8 @@ export const galleryItems: GalleryItem[] = [
     alt: "Video proof of electronics delivery",
   },
   {
-    category: "Electronics",
-    title: "Electronics order proof",
+    category: "Electronics & Appliances",
+    title: "TV warehouse inspection",
     media: "/media/Electronic Video 1.mp4",
     mediaType: "video",
     shippedFrom: "China",
@@ -485,8 +491,8 @@ export const galleryItems: GalleryItem[] = [
     alt: "Electronics order proof video",
   },
   {
-    category: "Electronics",
-    title: "Electronics arrival update",
+    category: "Electronics & Appliances",
+    title: "Television cargo arrival",
     media: "/media/Electronic Video 2.mp4",
     mediaType: "video",
     shippedFrom: "China",
@@ -496,8 +502,8 @@ export const galleryItems: GalleryItem[] = [
     alt: "Electronics shipment arrival update video",
   },
   {
-    category: "Electronics",
-    title: "Electronics cargo handoff",
+    category: "Electronics & Appliances",
+    title: "Electronics handoff update",
     media: "/media/Electronic Video 3.mp4",
     mediaType: "video",
     shippedFrom: "China",
@@ -507,213 +513,16 @@ export const galleryItems: GalleryItem[] = [
     alt: "Electronics cargo handoff video",
   },
   {
-    category: "Baby Products",
-    title: "Baby clothing order",
-    media: "/media/Goods picture 1.jpeg",
+    category: "Beauty & Hair",
+    title: "Beauty and hair products procurement",
+    media: "/images/projects/beauty-hair.svg",
     mediaType: "image",
-    shippedFrom: "China",
-    timeline: "10 to 15 working days by air",
+    shippedFrom: "China & global supplier network",
+    timeline: "Air and sea freight options",
     caption:
-      "Baby clothing order packed in supplier-ready cartons and shipped from China on an air timeline.",
-    alt: "Baby clothing order prepared for shipping",
-  },
-  {
-    category: "General Goods",
-    title: "General goods packed for export",
-    media: "/media/Goods picture 2.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Mixed general goods prepared for export packing before a lower-cost sea shipment.",
-    alt: "General goods prepared for export packing",
-  },
-  {
-    category: "General Goods",
-    title: "Mixed cargo dispatch proof",
-    media: "/media/Goods picture 3.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Dispatch-ready mixed cargo handled as one consolidated general goods shipment.",
-    alt: "Mixed cargo dispatch proof",
-  },
-  {
-    category: "General Goods",
-    title: "Warehouse consolidation order",
-    media: "/media/Goods picture 4.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Multiple purchases combined into one shipment to reduce freight cost on general goods.",
-    alt: "Warehouse consolidation order in BuySmart gallery",
-  },
-  {
-    category: "General Goods",
-    title: "General goods inspection image",
-    media: "/media/Goods picture 5.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Inspection-stage photo used to verify what was sourced before shipment moved forward.",
-    alt: "General goods inspection image",
-  },
-  {
-    category: "General Goods",
-    title: "Consolidated cargo proof",
-    media: "/media/Goods picture 6.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Consolidated cargo photographed before dispatch as proof of verified shipment handling.",
-    alt: "Consolidated cargo proof",
-  },
-  {
-    category: "General Goods",
-    title: "General goods order proof",
-    media: "/media/Goods picture 7.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "General goods import documented with real project media and expected sea-shipping timing.",
-    alt: "General goods order proof",
-  },
-  {
-    category: "General Goods",
-    title: "Bulk goods shipment",
-    media: "/media/Goods picture 8.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Bulk goods order prepared for a longer but lower-cost shipment route into Nigeria.",
-    alt: "Bulk goods shipment imported by BuySmart",
-  },
-  {
-    category: "General Goods",
-    title: "Mixed goods delivery proof",
-    media: "/media/Goods picture 9.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Real mixed-goods project media showing completed procurement and shipment preparation.",
-    alt: "Mixed goods delivery proof",
-  },
-  {
-    category: "General Goods",
-    title: "Container-ready stock",
-    media: "/media/Goods picture 10.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Container-ready stock prepared for a cost-efficient general goods shipping plan.",
-    alt: "Container-ready general goods stock",
-  },
-  {
-    category: "General Goods",
-    title: "Export packing update",
-    media: "/media/Goods picture 11.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Export packing update shared before shipment so the customer can see progress clearly.",
-    alt: "Export packing update for general goods",
-  },
-  {
-    category: "General Goods",
-    title: "Final cargo packing proof",
-    media: "/media/Goods picture 12.jpeg",
-    mediaType: "image",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Final packing proof from a real cargo order before dispatch and customs processing.",
-    alt: "Final cargo packing proof in BuySmart gallery",
-  },
-  {
-    category: "General Goods",
-    title: "General goods delivery clip",
-    media: "/media/Good 2.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "General goods delivery clip used as proof of completed import handling and customer handoff.",
-    alt: "General goods delivery clip",
-  },
-  {
-    category: "General Goods",
-    title: "General goods customer handoff",
-    media: "/media/Good 6.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Customer handoff proof from a completed general goods shipment managed by BuySmart.",
-    alt: "General goods customer handoff video",
-  },
-  {
-    category: "General Goods",
-    title: "Mixed cargo arrival proof",
-    media: "/media/Goods 1.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Arrival proof clip showing a completed mixed cargo shipment into Nigeria.",
-    alt: "Mixed cargo arrival proof video",
-  },
-  {
-    category: "General Goods",
-    title: "General cargo update",
-    media: "/media/Goods 3.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Project update clip captured during or after delivery of a general cargo shipment.",
-    alt: "General cargo update video",
-  },
-  {
-    category: "General Goods",
-    title: "Freight handoff proof",
-    media: "/media/Goods 4.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Freight handoff media reinforcing that each recent import is documented with real proof.",
-    alt: "Freight handoff proof video",
-  },
-  {
-    category: "General Goods",
-    title: "Shipment completion clip",
-    media: "/media/Goods 5.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Completion clip from a finished general goods order handled from sourcing through delivery.",
-    alt: "Shipment completion clip for general goods",
-  },
-  {
-    category: "General Goods",
-    title: "Recent imports proof video",
-    media: "/media/Goods Video 1.mp4",
-    mediaType: "video",
-    shippedFrom: "China",
-    timeline: "8 to 12 weeks by sea",
-    caption:
-      "Recent imports gallery video used as proof of real client shipments handled by BuySmart.",
-    alt: "Recent imports proof video",
+      "Hair extensions, wigs, styling tools, cosmetics, and salon supplies sourced to your specification. Project photos and videos will be added here.",
+    alt: "BuySmart beauty and hair procurement category preview",
+    preview: true,
   },
 ];
 

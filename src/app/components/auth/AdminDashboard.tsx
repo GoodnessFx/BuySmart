@@ -120,7 +120,7 @@ type AdminTourRect = {
 };
 
 const ADMIN_TIPS_KEY = 'buysmart_admin_tab_tips_dismissed';
-const ADMIN_TOUR_KEY_PREFIX = 'buysmart_admin_walkthrough_completed:';
+const ADMIN_TOUR_KEY_PREFIX = 'buysmart_admin_walkthrough_session:';
 
 const ADMIN_TOUR_STEPS: AdminTourStep[] = [
   {
@@ -172,7 +172,7 @@ function adminTourStorageKey(identity?: string): string {
 
 function hasCompletedAdminTour(identity?: string): boolean {
   try {
-    return window.localStorage.getItem(adminTourStorageKey(identity)) === '1';
+    return window.sessionStorage.getItem(adminTourStorageKey(identity)) === '1';
   } catch {
     return false;
   }
@@ -180,9 +180,17 @@ function hasCompletedAdminTour(identity?: string): boolean {
 
 function markAdminTourComplete(identity?: string): void {
   try {
-    window.localStorage.setItem(adminTourStorageKey(identity), '1');
+    window.sessionStorage.setItem(adminTourStorageKey(identity), '1');
   } catch {
     /* The tour still closes when browser storage is unavailable. */
+  }
+}
+
+function clearAdminTourSession(identity?: string): void {
+  try {
+    window.sessionStorage.removeItem(adminTourStorageKey(identity));
+  } catch {
+    /* The next login can still show the tour when storage is unavailable. */
   }
 }
 
@@ -328,6 +336,7 @@ export function AdminDashboard() {
   };
 
   const startAdminWalkthrough = () => {
+    clearAdminTourSession(adminTourIdentity);
     setWalkthroughStep(0);
     setActiveTab('invoices');
     setTourRect(null);
@@ -460,17 +469,18 @@ export function AdminDashboard() {
         return;
       }
 
-      setTourRect({
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-      });
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const width = Math.min(rect.width, Math.max(0, viewportWidth - 16));
+      const height = Math.min(rect.height, Math.max(0, viewportHeight - 16));
+      const left = Math.max(8, Math.min(rect.left, viewportWidth - width - 8));
+      const top = Math.max(8, Math.min(rect.top, viewportHeight - height - 8));
+      setTourRect({ top, left, width, height });
     };
 
     const revealTarget = () => {
       const target = document.querySelector<HTMLElement>(`[data-admin-tour="${targetKey}"]`);
-      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       measureTimer = window.setTimeout(() => {
         measureTarget();
         document.getElementById('admin-tour-next')?.focus({ preventScroll: true });
@@ -574,6 +584,7 @@ export function AdminDashboard() {
   };
 
   const handleSignOut = () => {
+    clearAdminTourSession(adminTourIdentity);
     clearAuthUser();
     window.location.href = '/login';
   };
@@ -1294,27 +1305,30 @@ Thank you for choosing Buysmart Procurement Limited.`;
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 border-b border-[#ECE8DF] bg-white/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-[#FAFAF8] p-2 border border-[#ECE8DF] flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="h-11 w-11 shrink-0 rounded-2xl bg-[#FAFAF8] p-2 border border-[#ECE8DF] flex items-center justify-center">
               <img src="/brand/logo.png" alt="BuySmart" className="h-full w-full object-contain" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span style={{ fontFamily: "'Sora', sans-serif" }} className="text-lg font-extrabold text-[#111111]">
+                <span style={{ fontFamily: "'Sora', sans-serif" }} className="text-lg font-extrabold text-[#111111] sm:hidden">
+                  BuySmart
+                </span>
+                <span style={{ fontFamily: "'Sora', sans-serif" }} className="hidden text-lg font-extrabold text-[#111111] sm:inline">
                   BuySmart Management Desk
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-[#C9A227]/20 border border-[#C9A227]/40 px-2.5 py-0.5 text-[10px] font-bold text-[#6B5515] uppercase tracking-wider">
                   <Shield className="h-3 w-3" /> Staff &amp; Admin Unified
                 </span>
               </div>
-              <div className="text-xs text-[#66615B]">
+              <div className="hidden text-xs text-[#66615B] sm:block">
                 {user?.name || 'Administrator'} • {user?.staffTitle || 'Management & Operations'}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <div className="relative" ref={notificationsRef}>
               <button
                 type="button"
@@ -1333,7 +1347,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
 
               {/* Notification Dropdown Drawer */}
               {showNotificationsDrawer && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white shadow-2xl border border-[#ECE8DF] p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="fixed left-4 right-4 top-[84px] z-50 w-auto rounded-3xl border border-[#ECE8DF] bg-white p-4 shadow-2xl animate-in fade-in slide-in-from-top-2 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96">
                   <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
                     <div className="flex items-center gap-2">
                       <Bell className="h-4 w-4 text-[#C9A227]" />
@@ -1439,7 +1453,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
                   onClick={() => setShowConsoleGuide(true)}
                   title="Open private console guide"
                   aria-label="Open private console guide"
-                  className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+                  className="hidden p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer md:inline-flex"
                 >
                   <BookOpen className="h-4 w-4" />
                 </button>
@@ -1450,7 +1464,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
               onClick={toggleCurrentTip}
               title={tipVisible(activeTab) ? 'Hide this tab’s tip' : 'Show this tab’s tip'}
               aria-label={tipVisible(activeTab) ? 'Hide this tab’s tip' : 'Show this tab’s tip'}
-              className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+              className="hidden p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer md:inline-flex"
             >
               <HelpCircle className="h-4 w-4" />
             </button>
@@ -1458,17 +1472,17 @@ Thank you for choosing Buysmart Procurement Limited.`;
               type="button"
               onClick={refreshAllData}
               title="Refresh Data"
-              className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+              className="hidden p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer md:inline-flex"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex items-center gap-2 rounded-full border border-[#DED9CF] bg-white px-4 py-2 text-xs font-semibold text-[#111111] shadow-sm transition hover:border-red-300 hover:text-red-600 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-full border border-[#DED9CF] bg-white p-2.5 text-xs font-semibold text-[#111111] shadow-sm transition hover:border-red-300 hover:text-red-600 cursor-pointer sm:px-4 sm:py-2"
             >
               <LogOut className="h-3.5 w-3.5" />
-              <span>Sign Out</span>
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>

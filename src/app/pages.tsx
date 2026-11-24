@@ -57,6 +57,7 @@ import {
   isLagos,
   nigerianStates,
   orderSteps,
+  ratingHighlights,
   prohibitedItems,
   services,
   shippingModes,
@@ -125,6 +126,9 @@ function inferFreightMode(timeline: string) {
 }
 
 function buildProjectInsight(item: (typeof galleryItems)[number]) {
+  if (item.preview) {
+    return `Category preview for ${item.category.toLowerCase()} procurement. BuySmart will add genuine project photos and videos here as they are supplied, so visitors can see the exact goods and shipment proof.`;
+  }
   const proofLabel = item.mediaType === "video" ? "Video proof" : "Photo proof";
   return `${proofLabel} from a real ${item.category.toLowerCase()} order handled by BuySmart. It helps a new customer understand what was sourced, the shipping route used, and the kind of update they can expect before goods arrive in Nigeria.`;
 }
@@ -316,6 +320,39 @@ const buyerKnowledge = [
   },
 ];
 
+function RatingHighlight() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const swapTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setVisible(false);
+      swapTimer.current = window.setTimeout(() => {
+        setActiveIndex((current) => (current + 1) % ratingHighlights.length);
+        setVisible(true);
+      }, 450);
+    }, 4200);
+
+    return () => {
+      window.clearInterval(interval);
+      if (swapTimer.current) window.clearTimeout(swapTimer.current);
+    };
+  }, []);
+
+  return (
+    <div className="mt-1.5 h-5 overflow-hidden">
+      <span
+        className={`block text-xs font-semibold leading-5 text-[#6B5515] transition-all duration-500 ease-out motion-reduce:transition-none ${
+          visible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
+        }`}
+      >
+        {ratingHighlights[activeIndex]}
+      </span>
+    </div>
+  );
+}
+
 export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
@@ -326,7 +363,9 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
   };
 
   const featuredServices = services.slice(0, 3);
-  const featuredProjects = galleryItems.filter((item) => item.mediaType === "image").slice(0, 3);
+  const featuredProjects = galleryCategories.flatMap((category) =>
+    galleryItems.filter((item) => item.category === category).slice(0, 1)
+  );
 
   return (
     <>
@@ -429,7 +468,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
         </Container>
       </section>
 
-      {/* How it works — the whole process on one line, details on its own page */}
+      {/* How it works — a short teaser; the full five-step process lives on its own page */}
       <section className="border-b border-[#EFEAE1] bg-[#FAFAF8] py-10 lg:py-14">
         <Container>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -442,16 +481,6 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
             <ReadMoreLink href="/how-it-works" label="Read the full process" onNavigate={onNavigate} />
           </div>
 
-          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {orderSteps.map((step, index) => (
-              <div key={step.title} className={`rounded-2xl border bg-white p-4 ${cardBorder}`}>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white" style={{ backgroundColor: gold }}>
-                  {index + 1}
-                </div>
-                <p className="mt-3 text-[13px] font-semibold leading-5 text-[#111111]">{step.heading}</p>
-              </div>
-            ))}
-          </div>
         </Container>
       </section>
 
@@ -497,7 +526,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
             <div className="max-w-xl">
               <SectionTag>Recent projects</SectionTag>
               <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-                Real orders, <span style={{ color: gold }}>real proof.</span>
+                Three categories. <span style={{ color: gold }}>One standard.</span>
               </h2>
             </div>
             <ReadMoreLink href="/recent-projects" label={`View all ${galleryItems.length} projects`} onNavigate={onNavigate} />
@@ -521,6 +550,11 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
                   <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#111111] shadow-sm backdrop-blur">
                     {item.category}
                   </span>
+                  {item.preview ? (
+                    <span className="absolute bottom-3 left-3 rounded-full bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white backdrop-blur">
+                      Media coming soon
+                    </span>
+                  ) : null}
                 </div>
                 <div className="p-5">
                   <h3 className="text-base font-bold leading-snug tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -631,7 +665,8 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
                   ))}
                 </span>
               </div>
-              <div className="mt-1 text-xs font-medium text-[#7C746C]">Verified Google reviews</div>
+              <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8A6D14]">Verified Google reviews</div>
+              <RatingHighlight />
             </div>
             <div className="hidden h-12 w-px bg-[#E0D6BE] sm:block" />
             <div className="flex items-start gap-3">
@@ -1601,7 +1636,7 @@ export function ProjectsPage() {
               Every order, <span style={{ color: gold }}>documented.</span>
             </h1>
             <p className="mt-4 text-[17px] leading-relaxed text-[#4A4A4A]">
-              Real photos and clips from BuySmart shipments. Tap any image to view it full size, or open the details for the route and timeline.
+              Explore three procurement categories with real shipment media where available. Vehicle and beauty project photos and videos will be added as they are supplied.
             </p>
           </div>
 
@@ -1658,7 +1693,7 @@ export function ProjectsPage() {
                       </span>
                       <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-black/65 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur transition group-hover:bg-black/80">
                         {item.mediaType === "video" ? <Camera className="h-3.5 w-3.5" /> : <ImageIcon className="h-3.5 w-3.5" />}
-                        {item.mediaType === "video" ? "Play clip" : "View photo"}
+                        {item.preview ? "Category preview" : item.mediaType === "video" ? "Play clip" : "View photo"}
                       </span>
                     </button>
 
@@ -1685,7 +1720,7 @@ export function ProjectsPage() {
                           <p>{buildProjectInsight(item)}</p>
                           <div><span className="font-semibold text-[#111111]">Origin:</span> {item.shippedFrom}</div>
                           <div><span className="font-semibold text-[#111111]">Timeline:</span> {item.timeline}</div>
-                          <div><span className="font-semibold text-[#111111]">Proof:</span> {item.mediaType === "video" ? "Video from the shipment or handoff stage" : "Image from the shipment or inspection stage"}</div>
+                          <div><span className="font-semibold text-[#111111]">Proof:</span> {item.preview ? "Project media coming soon" : item.mediaType === "video" ? "Video from the shipment or handoff stage" : "Image from the shipment or inspection stage"}</div>
                         </div>
                       ) : null}
                     </div>
@@ -1722,7 +1757,7 @@ export function ProjectsPage() {
               )}
             </div>
             <div className="mt-3 rounded-2xl border border-white/15 bg-white/10 p-4 text-white backdrop-blur">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#C9A227]">{lightbox.category}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#C9A227]">{lightbox.preview ? "Category preview" : lightbox.category}</div>
               <div className="mt-1 text-base font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>{lightbox.title}</div>
               <p className="mt-1.5 text-sm leading-6 text-white/80">{lightbox.caption}</p>
             </div>
