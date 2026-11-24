@@ -1383,20 +1383,10 @@ export function CtaBanner() {
   );
 }
 
-/** Only the destinations a visitor actually needs — the full sitemap lives in the menu. */
-const footerLinks = [
-  { label: "Services", href: "/services" },
-  { label: "How it works", href: "/how-it-works" },
-  { label: "Recent projects", href: "/recent-projects" },
-  { label: "Who it's for", href: "/who-its-for" },
-  { label: "Shipping & rates", href: "/shipping-information" },
-  { label: "Contact us", href: "/contact" },
-];
-
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
     <footer className="border-t border-white/10 bg-[#111111] py-10 text-white">
-      <Container className="grid gap-8 md:grid-cols-[1.2fr_0.8fr_1fr]">
+      <Container className="grid gap-10 md:grid-cols-[1.2fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
             <Logo />
@@ -1416,25 +1406,6 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
             <SocialLinks />
           </div>
         </div>
-
-        <nav aria-label="Footer">
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">Explore</div>
-          <div className="mt-3 grid gap-2">
-            {footerLinks.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onNavigate(item.href);
-                }}
-                className="text-sm font-medium text-white transition hover:text-[#C9A227]"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </nav>
 
         <div>
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">Reach us</div>

@@ -34,6 +34,11 @@ declare global {
 
 let scriptLoadingPromise: Promise<boolean> | null = null;
 
+/** Keep the integration in place while BuySmart waits for its Paystack API key. */
+export const ONLINE_PAYMENTS_UNDER_MAINTENANCE = true;
+export const ONLINE_PAYMENT_MAINTENANCE_MESSAGE =
+  'Online payment is currently under maintenance. Please use the official OPay bank transfer details.';
+
 export function loadPaystackScript(): Promise<boolean> {
   if (typeof window === 'undefined') return Promise.resolve(false);
   if (window.PaystackPop) return Promise.resolve(true);
@@ -127,6 +132,14 @@ export async function initiatePaystackCheckout({
   onError,
   customKey,
 }: PaystackCheckoutParams): Promise<void> {
+  if (ONLINE_PAYMENTS_UNDER_MAINTENANCE) {
+    if (onError) {
+      onError(new Error(ONLINE_PAYMENT_MAINTENANCE_MESSAGE));
+      return;
+    }
+    throw new Error(ONLINE_PAYMENT_MAINTENANCE_MESSAGE);
+  }
+
   const config = getPaystackConfig();
   const publicKey = (customKey || config.publicKey || '').trim();
 

@@ -21,6 +21,8 @@ import {
   ArrowRight,
   Eye,
   AlertCircle,
+  AlertTriangle,
+  Copy,
   Phone,
   HelpCircle,
   X,
@@ -34,7 +36,6 @@ import {
   Clock3,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
-import { initiatePaystackCheckout } from '../../lib/paystack';
 import { ModernTrackingCard } from '../shipments/ModernTrackingCard';
 import { COMPANY_BANK_ACCOUNTS } from '../../lib/bank';
 import {
@@ -61,23 +62,41 @@ import {
 
 type ClientTab = 'shipments' | 'invoices' | 'profile' | 'quote' | 'estimator' | 'support';
 
-const CLIENT_GUIDE_KEY = 'buysmart_client_guide_hidden';
+const CLIENT_TIPS_KEY = 'buysmart_client_tab_tips_dismissed';
 
-/** Plain-language map of every tab so a first-time client always knows what to do next. */
-const clientTabGuide: { tab: ClientTab; icon: typeof Truck; title: string; body: string }[] = [
-  { tab: 'shipments', icon: Truck, title: 'My Shipments', body: 'Watch every parcel move — factory pickup, freight, customs, and Lagos handoff, updated by our operations desk.' },
-  { tab: 'invoices', icon: FileText, title: 'Invoices & Receipts', body: 'Open itemized invoices, download official PDF receipts, and pay only to the verified BuySmart account shown.' },
-  { tab: 'quote', icon: MessageCircle, title: 'Request a Quote', body: 'Tell us the product, quantity, and shipping method. The admin desk replies with factory pricing and an invoice.' },
-  { tab: 'estimator', icon: Calculator, title: 'Cost Estimator', body: 'Enter carton size and weight to see chargeable weight and a live air/sea freight range before you order.' },
-  { tab: 'profile', icon: User, title: 'Profile & Settings', body: 'Keep your delivery address, WhatsApp number, and business details current so cargo reaches you without delays.' },
-  { tab: 'support', icon: Phone, title: 'Account Officer', body: 'Reach your assigned officer directly on WhatsApp or live chat for anything the portal does not cover.' },
-];
+function readDismissedTips(key: string): Record<string, boolean> {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(key) || '{}');
+    return stored && typeof stored === 'object' ? stored : {};
+  } catch {
+    return {};
+  }
+}
 
-function TabHint({ children }: { children: ReactNode }) {
+function TabHint({
+  visible,
+  onDismiss,
+  children,
+}: {
+  visible: boolean;
+  onDismiss: () => void;
+  children: ReactNode;
+}) {
+  if (!visible) return null;
+
   return (
-    <div className="flex items-start gap-2.5 rounded-2xl border border-[#C9A227]/25 bg-[#FBF6E8] px-4 py-3 text-xs leading-5 text-[#6B5515]">
+    <div className="flex items-start gap-3 rounded-xl border border-[#C9A227]/25 bg-[#FBF6E8] px-4 py-3 text-xs leading-5 text-[#6B5515]">
       <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A227]" />
-      <span>{children}</span>
+      <span className="min-w-0 flex-1">{children}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss this tip"
+        title="Dismiss this tip"
+        className="shrink-0 rounded-md p-1 text-[#8B7634] hover:bg-[#C9A227]/10 hover:text-[#111111] cursor-pointer"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -85,13 +104,32 @@ function TabHint({ children }: { children: ReactNode }) {
 export function ClientDashboard() {
   const [user, setUser] = useState(getAuthUser());
   const [activeTab, setActiveTab] = useState<ClientTab>('shipments');
-  const [showGuide, setShowGuide] = useState(() => {
-    try {
-      return window.localStorage.getItem(CLIENT_GUIDE_KEY) !== '1';
-    } catch {
-      return true;
+  const [dismissedTips, setDismissedTips] = useState<Record<string, boolean>>(() =>
+    readDismissedTips(CLIENT_TIPS_KEY)
+  );
+  const [reopenedTips, setReopenedTips] = useState<Record<string, boolean>>({});
+  const tipVisible = (tab: ClientTab) => reopenedTips[tab] === true || dismissedTips[tab] !== true;
+
+  const dismissTip = (tab: ClientTab) => {
+    setReopenedTips((current) => ({ ...current, [tab]: false }));
+    setDismissedTips((current) => {
+      const updated = { ...current, [tab]: true };
+      try {
+        window.localStorage.setItem(CLIENT_TIPS_KEY, JSON.stringify(updated));
+      } catch {
+        /* Dismissal still works when browser storage is unavailable. */
+      }
+      return updated;
+    });
+  };
+
+  const toggleCurrentTip = () => {
+    if (tipVisible(activeTab)) {
+      dismissTip(activeTab);
+    } else {
+      setReopenedTips((current) => ({ ...current, [activeTab]: true }));
     }
-  });
+  };
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [shipments, setShipments] = useState<ShipmentItem[]>([]);
@@ -218,27 +256,50 @@ export function ClientDashboard() {
   const ratePerKg = estMethod === 'air' ? rates.airFreightRatePerKg : rates.seaFreightRatePerKg;
   const estimatedCost = Math.round(chargeableWeight * ratePerKg);
 
-  // Filter items for current logged-in client (or fallback to all if generic client)
-  const clientShipments = shipments.filter(
-    (s) =>
-      !user?.name ||
-      s.clientName.toLowerCase().includes(user.name.toLowerCase()) ||
-      (user.email && s.clientEmail && s.clientEmail.toLowerCase() === user.email.toLowerCase())
-  );
-  const displayShipments = clientShipments.length > 0 ? clientShipments : shipments;
+  // A signed-in client only sees records explicitly linked to their account.
+  const normalize = (value?: string) => (value || '').trim().toLowerCase();
+  const clientEmail = normalize(user?.email || profile?.email);
+  const clientName = normalize(user?.name || profile?.name);
+  const clientId = profile?.id || user?.id;
+  const clientCode = profile?.clientCode || user?.clientCode;
+  const ownedInvoices = invoices.filter((inv) => {
+    if (clientId && inv.clientId === clientId) return true;
+    if (clientEmail && normalize(inv.clientEmail) === clientEmail) return true;
+    if (clientName && normalize(inv.clientName) === clientName) return true;
+    const relatedClient = findClientByEmail(inv.clientEmail);
+    return Boolean(clientCode && relatedClient?.clientCode === clientCode);
+  });
 
-  const clientInvoices = invoices.filter(
-    (i) =>
-      !user?.name ||
-      i.clientName.toLowerCase().includes(user.name.toLowerCase()) ||
-      (user.email && i.clientEmail && i.clientEmail.toLowerCase() === user.email.toLowerCase())
-  );
-  const displayInvoices = clientInvoices.length > 0 ? clientInvoices : invoices;
+  const displayShipments = shipments.filter((shipment) => {
+    if (clientId && shipment.assignedClientId === clientId) return true;
+    if (clientCode && shipment.assignedClientCode === clientCode) return true;
+    if (clientEmail && normalize(shipment.clientEmail) === clientEmail) return true;
+    return Boolean(clientName && normalize(shipment.clientName) === clientName);
+  });
+  const displayInvoices = ownedInvoices;
+  const displayReceipts = receipts.filter((rec) => {
+    if (clientEmail && normalize(rec.clientEmail) === clientEmail) return true;
+    if (clientName && normalize(rec.clientName) === clientName) return true;
+    return ownedInvoices.some(
+      (inv) => normalize(inv.invoiceNumber) === normalize(rec.invoiceNumber)
+    );
+  });
 
-  const clientReceipts = receipts.filter(
-    (r) => !user?.name || r.clientName.toLowerCase().includes(user.name.toLowerCase())
-  );
-  const displayReceipts = clientReceipts.length > 0 ? clientReceipts : receipts;
+  const handleCopyAccount = async (accountNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(accountNumber);
+    } catch {
+      /* The account number remains visible when clipboard access is unavailable. */
+    }
+  };
+
+  const handleConfirmTransfer = () => {
+    if (!selectedInvoice) return;
+    const balance = Math.max(0, selectedInvoice.total - (selectedInvoice.amountPaid || 0));
+    const account = COMPANY_BANK_ACCOUNTS[0];
+    const message = `Hello BuySmart Procurement Limited, I have made a bank transfer for Invoice #${selectedInvoice.invoiceNumber}.\n\nClient: ${selectedInvoice.clientName}\nAmount: ${formatNaira(balance)}\nBank: ${account.bankName}\nAccount: ${account.accountNumber}\nAccount name: ${account.accountName}\n\nPlease confirm my payment and issue an official receipt.`;
+    window.open(`https://wa.me/2348100130714?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   // Handle quote submit -> delivered straight to Admin Portal!
   const handleSubmitQuote = (e: React.FormEvent) => {
@@ -265,6 +326,11 @@ export function ClientDashboard() {
       `Your quote request for "${quoteItem}" has been submitted directly to BuySmart Admin Desk! An officer will review and issue an invoice shortly.`
     );
   };
+
+  const selectedInvoiceBalance = selectedInvoice
+    ? Math.max(0, selectedInvoice.total - (selectedInvoice.amountPaid || 0))
+    : 0;
+  const selectedInvoiceIsPaid = selectedInvoice?.status === 'Paid' || selectedInvoiceBalance <= 0;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#111111] antialiased">
@@ -393,7 +459,7 @@ export function ClientDashboard() {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Welcome Banner */}
-        <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C9A227]/15 text-[#6B5515] text-xs font-bold mb-2">
               <User className="h-3.5 w-3.5" />
@@ -410,11 +476,11 @@ export function ClientDashboard() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setShowGuide((value) => !value)}
+              onClick={toggleCurrentTip}
               className="inline-flex items-center gap-2 rounded-2xl border border-[#DED9CF] bg-white px-5 py-3 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
             >
               <HelpCircle className="h-4 w-4 text-[#C9A227]" />
-              <span>{showGuide ? 'Hide guide' : 'Portal guide'}</span>
+              <span>{tipVisible(activeTab) ? 'Hide this tip' : 'Show this tip'}</span>
             </button>
             <button
               type="button"
@@ -426,53 +492,6 @@ export function ClientDashboard() {
             </button>
           </div>
         </div>
-
-        {/* First-visit guide: what every tab does, with one-tap jumps */}
-        {showGuide && (
-          <div className="rounded-3xl border border-[#C9A227]/30 bg-[#FBF6E8] p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B5515]">
-                  <HelpCircle className="h-4 w-4 text-[#C9A227]" /> New here? How this portal works
-                </div>
-                <p className="mt-1.5 text-xs sm:text-sm text-[#6B5515]/90">
-                  Six tabs, one workspace. Tap any card to jump straight to that feature — you can hide this guide anytime.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Hide portal guide"
-                onClick={() => {
-                  setShowGuide(false);
-                  try { window.localStorage.setItem(CLIENT_GUIDE_KEY, '1'); } catch { /* ignore */ }
-                }}
-                className="shrink-0 rounded-full border border-[#C9A227]/30 bg-white p-2 text-[#6B5515] hover:text-[#111111] cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {clientTabGuide.map((item) => (
-                <button
-                  key={item.tab}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(item.tab);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="group rounded-2xl border border-[#E5E2DA] bg-white p-4 text-left transition hover:border-[#C9A227] cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#111111]">
-                    <item.icon className="h-4 w-4 text-[#C9A227]" />
-                    {item.title}
-                    <ArrowRight className="ml-auto h-3.5 w-3.5 text-[#C9A227] opacity-0 transition group-hover:opacity-100" />
-                  </div>
-                  <p className="mt-1.5 text-[11px] leading-4.5 text-[#66615B]">{item.body}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* TAB 1: SHIPMENTS WITH CLEAN TRACKING PROGRESS */}
         {activeTab === 'shipments' && (
@@ -486,8 +505,8 @@ export function ClientDashboard() {
               </div>
             </div>
 
-            <TabHint>
-              Each card below is one parcel. The progress bar shows its latest milestone; tap a card for the full timeline and tracking ID you can share.
+            <TabHint visible={tipVisible('shipments')} onDismiss={() => dismissTip('shipments')}>
+              Open a shipment to see its latest milestone and tracking ID. If something looks wrong, message your account officer with that ID.
             </TabHint>
 
             <div className="grid grid-cols-1 gap-6">
@@ -501,10 +520,10 @@ export function ClientDashboard() {
         {/* TAB 2: INVOICES & OFFICIAL RECEIPTS */}
         {activeTab === 'invoices' && (
           <div className="space-y-8">
-            <TabHint>
-              Invoices are what you owe; receipts prove what you paid. Use “View” to open either, then download the official PDF or pay to the verified account shown inside.
+            <TabHint visible={tipVisible('invoices')} onDismiss={() => dismissTip('invoices')}>
+              Open an invoice to view or download it. Online payment is under maintenance, so transfer only to the OPay account shown, then send your payment confirmation on WhatsApp.
             </TabHint>
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6">
               <div className="flex items-center justify-between pb-6 border-b border-[#ECE8DF]">
                 <div>
                   <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
@@ -532,7 +551,9 @@ export function ClientDashboard() {
                       <tr key={inv.id} className="hover:bg-[#FAFAF8] transition">
                         <td className="py-4 px-3 font-bold text-[#111111]">{inv.invoiceNumber}</td>
                         <td className="py-4 px-3 text-[#66615B]">{inv.createdAt}</td>
-                        <td className="py-4 px-3 font-extrabold text-[#111111]">{formatNaira(inv.total)}</td>
+                        <td className="py-4 px-3 font-extrabold text-[#111111]">
+                          {formatNaira(Math.max(0, inv.total - (inv.amountPaid || 0)))}
+                        </td>
                         <td className="py-4 px-3">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${inv.status === 'Paid'
@@ -563,7 +584,7 @@ export function ClientDashboard() {
             </div>
 
             {/* Official Receipts */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6">
               <div className="flex items-center justify-between pb-6 border-b border-[#ECE8DF]">
                 <div>
                   <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
@@ -612,7 +633,7 @@ export function ClientDashboard() {
 
         {/* TAB 3: REQUEST A QUOTE (DELIVERED DIRECTLY TO BUYSMART ADMIN) */}
         {activeTab === 'quote' && (
-          <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-2xl mx-auto space-y-6">
+          <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 max-w-2xl mx-auto space-y-6">
             <div>
               <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
                 Request a Custom Procurement Quote
@@ -622,8 +643,8 @@ export function ClientDashboard() {
               </p>
             </div>
 
-            <TabHint>
-              Fill the four fields below and submit — no payment now. The desk reviews your request and sends an invoice to your Invoices tab and WhatsApp.
+            <TabHint visible={tipVisible('quote')} onDismiss={() => dismissTip('quote')}>
+              Add the product link or description, quantity and shipping preference, then submit. The desk reviews it and sends your invoice; no payment is taken here.
             </TabHint>
 
             {quoteSubmitted ? (
@@ -719,11 +740,11 @@ export function ClientDashboard() {
         {/* TAB 2.5: PROFILE & ACCOUNT SETTINGS */}
         {activeTab === 'profile' && (
           <div className="max-w-4xl mx-auto space-y-6">
-            <TabHint>
-              These details drive your deliveries and invoices. Update your address or WhatsApp number here, then press Save — changes apply to future orders immediately.
+            <TabHint visible={tipVisible('profile')} onDismiss={() => dismissTip('profile')}>
+              Check your WhatsApp number and delivery address, make any changes, then press Save Profile so the desk can reach you and deliver correctly.
             </TabHint>
             {/* Profile Header Card */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#ECE8DF]">
                 <div className="flex items-center gap-4">
                   <div className="h-16 w-16 rounded-2xl bg-[#111111] text-[#C9A227] flex items-center justify-center text-xl font-black shadow-md">
@@ -926,7 +947,7 @@ export function ClientDashboard() {
             </div>
 
             {/* Invoices Sent to You by Admin Overview */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF]">
                 <div>
                   <h3 style={{ fontFamily: "'Sora', sans-serif" }} className="text-base font-extrabold text-[#111111]">
@@ -974,7 +995,7 @@ export function ClientDashboard() {
 
         {/* TAB 4: SHIPPING ESTIMATOR */}
         {activeTab === 'estimator' && (
-          <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-2xl mx-auto space-y-6">
+          <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 max-w-2xl mx-auto space-y-6">
             <div>
               <div className="flex items-center justify-between gap-2">
                 <h2 style={{ fontFamily: "'Sora', sans-serif" }} className="text-xl font-extrabold text-[#111111]">
@@ -990,8 +1011,8 @@ export function ClientDashboard() {
               </p>
             </div>
 
-            <TabHint>
-              Measure your carton in centimetres and weigh it in kilograms. The calculator charges the greater of actual weight and volumetric weight — bulky, light boxes cost more.
+            <TabHint visible={tipVisible('estimator')} onDismiss={() => dismissTip('estimator')}>
+              Enter carton dimensions in centimetres and weight in kilograms, then compare air and sea. Use the estimate for planning; your final quote comes from the desk.
             </TabHint>
 
             {/* Mode Switcher */}
@@ -1087,9 +1108,9 @@ export function ClientDashboard() {
 
         {/* TAB 5: LIVE SUPPORT DESK & ASSIGNED OFFICER */}
         {activeTab === 'support' && (
-          <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm max-w-xl mx-auto text-center space-y-6">
-            <TabHint>
-              Stuck on anything? Your assigned account officer answers on WhatsApp during business hours — use the buttons below to start the conversation.
+          <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 max-w-xl mx-auto text-center space-y-6">
+            <TabHint visible={tipVisible('support')} onDismiss={() => dismissTip('support')}>
+              Message your account officer on WhatsApp with your invoice or tracking number, or open live chat for a quick question.
             </TabHint>
             <div className="h-16 w-16 rounded-full bg-[#111111] text-[#C9A227] flex items-center justify-center mx-auto shadow-md">
               <MessageCircle className="h-8 w-8" />
@@ -1216,7 +1237,9 @@ export function ClientDashboard() {
                   <span
                     className={`inline-block rounded-md px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider ${selectedInvoice.status === 'Paid'
                         ? 'bg-green-100 text-green-800'
-                        : 'bg-amber-100 text-amber-800'
+                        : selectedInvoice.status === 'Partial'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-amber-100 text-amber-800'
                       }`}
                   >
                     {selectedInvoice.status}
@@ -1247,33 +1270,29 @@ export function ClientDashboard() {
               )}
 
               {/* Redesigned Total & Settlement Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-[#161616] via-[#222222] to-[#161616] text-white border border-[#C9A227]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-xl bg-[#161616] text-white border border-[#C9A227]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-wider text-[#C9A227]">
                     <CreditCard className="h-3.5 w-3.5" />
                     <span>Total Outstanding Balance</span>
                   </div>
-                  <div className="text-2xl font-black text-white mt-0.5">{formatNaira(selectedInvoice.total)}</div>
+                  <div className="text-2xl font-black text-white mt-0.5">{formatNaira(selectedInvoiceBalance)}</div>
+                  {(selectedInvoice.amountPaid || 0) > 0 && !selectedInvoiceIsPaid && (
+                    <div className="mt-1 text-[10px] text-white/65">
+                      Invoice total {formatNaira(selectedInvoice.total)} • Already paid{' '}
+                      {formatNaira(selectedInvoice.amountPaid || 0)}
+                    </div>
+                  )}
                 </div>
 
-                {selectedInvoice.status !== 'Paid' ? (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await initiatePaystackCheckout({
-                        invoice: selectedInvoice,
-                        onSuccess: (newReceipt, updatedInv) => {
-                          setSelectedInvoice(updatedInv);
-                          setInvoices((prev) => prev.map((i) => (i.id === updatedInv.id ? updatedInv : i)));
-                          setReceipts((prev) => [newReceipt, ...prev]);
-                          alert('Payment confirmed via Paystack! Official receipt has been added to your portal.');
-                        },
-                      });
-                    }}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#C9A227] to-[#DFB738] py-2.5 px-4 text-xs font-bold text-[#111111] hover:opacity-95 shadow-md cursor-pointer shrink-0"
-                  >
-                    <span>Pay with Paystack</span>
-                  </button>
+                {!selectedInvoiceIsPaid ? (
+                  <div className="max-w-[220px] text-left">
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#E7C766]">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Online payment under maintenance
+                    </div>
+                    <p className="mt-1 text-[10px] leading-4 text-white/65">Use the official OPay transfer account below.</p>
+                  </div>
                 ) : (
                   <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-900/60 text-green-300 text-xs font-bold border border-green-500/30">
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -1282,16 +1301,53 @@ export function ClientDashboard() {
                 )}
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-1 text-[11px] text-[#66615B]">
-                <div className="font-bold text-[#111111]">Direct Bank Transfer Payment:</div>
-                {COMPANY_BANK_ACCOUNTS.map((account) => (
-                  <div key={account.accountNumber}>
-                    {account.bankName} • Acct:{' '}
-                    <span className="font-mono font-bold text-[#C9A227]">{account.accountNumber}</span> •{' '}
-                    {account.accountName}
+              {selectedInvoiceIsPaid ? (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-700 mx-auto" />
+                  <div className="mt-1.5 text-xs font-extrabold text-green-900">Payment confirmed in full</div>
+                  <p className="mt-1 text-[10px] leading-4 text-green-800">
+                    No further transfer is required. Your official receipt is available in the Payment Receipts section.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] space-y-2 text-[11px] text-[#66615B]">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-bold text-[#111111]">Pay by direct bank transfer</span>
+                      <span className="font-bold text-[#6B5515]">OPay available</span>
+                    </div>
+                    {COMPANY_BANK_ACCOUNTS.map((account) => (
+                      <div key={account.accountNumber} className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          {account.bankName} • Acct:{' '}
+                          <span className="font-mono font-bold text-[#111111]">{account.accountNumber}</span> •{' '}
+                          {account.accountName}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyAccount(account.accountNumber)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#DED9CF] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                        >
+                          <Copy className="h-3 w-3 text-[#C9A227]" />
+                          Copy account
+                        </button>
+                      </div>
+                    ))}
+                    <p className="pt-1 text-[10px] leading-4 text-[#8C827A]">
+                      Transfer only the balance shown above. Management issues your receipt after confirming settlement.
+                    </p>
                   </div>
-                ))}
-              </div>
+
+                  <button
+                    type="button"
+                    onClick={handleConfirmTransfer}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 px-4 text-xs font-bold text-white hover:opacity-95 cursor-pointer"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Confirm Transfer via WhatsApp
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

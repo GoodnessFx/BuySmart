@@ -47,7 +47,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
-import { buildPublicInvoiceLink } from '../../lib/invoice-link';
+import { buildPublicInvoiceLink, buildPublicReceiptLink } from '../../lib/invoice-link';
 import { COMPANY_BANK_ACCOUNTS, PRIMARY_BANK_ACCOUNT, bankAccountLine } from '../../lib/bank';
 import {
   getAuthUser,
@@ -103,23 +103,41 @@ const LINE_LABELS: Record<LineType, string> = {
 
 type AdminTab = 'invoices' | 'receipts' | 'shipments' | 'clients' | 'rates' | 'reports';
 
-const ADMIN_GUIDE_KEY = 'buysmart_admin_guide_hidden';
+const ADMIN_TIPS_KEY = 'buysmart_admin_tab_tips_dismissed';
 
-/** Desk-by-desk map so management always knows which console handles what. */
-const adminTabGuide: { tab: AdminTab; icon: typeof FileText; title: string; body: string }[] = [
-  { tab: 'invoices', icon: FileText, title: 'Invoices Desk', body: 'Create numbered customer invoices, pick the client, add line items, then share the secure payment link or PDF.' },
-  { tab: 'receipts', icon: ReceiptIcon, title: 'Official Receipts', body: 'Record confirmed payments and generate stamped receipts clients can download from their portal.' },
-  { tab: 'shipments', icon: Truck, title: 'Shipments & Milestones', body: 'Register parcels and push milestone updates — clients see them live on their tracking cards.' },
-  { tab: 'clients', icon: Users, title: 'Clients & Folders', body: 'Every registered client gets a folder: their invoices, receipts, and contact ledger in one place.' },
-  { tab: 'rates', icon: Calculator, title: 'Rates & Calculator', body: 'Set the air/sea rates clients see in their estimator, and sanity-check chargeable weight before quoting.' },
-  { tab: 'reports', icon: TrendingUp, title: 'Financial Summary', body: 'Totals billed, settled, and outstanding across all clients — the desk’s quick health check.' },
-];
+function readDismissedTips(key: string): Record<string, boolean> {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(key) || '{}');
+    return stored && typeof stored === 'object' ? stored : {};
+  } catch {
+    return {};
+  }
+}
 
-function AdminTabHint({ children }: { children: ReactNode }) {
+function AdminTabHint({
+  visible,
+  onDismiss,
+  children,
+}: {
+  visible: boolean;
+  onDismiss: () => void;
+  children: ReactNode;
+}) {
+  if (!visible) return null;
+
   return (
-    <div className="flex items-start gap-2.5 rounded-2xl border border-[#C9A227]/25 bg-[#FBF6E8] px-4 py-3 text-xs leading-5 text-[#6B5515]">
+    <div className="flex items-start gap-3 rounded-xl border border-[#C9A227]/25 bg-[#FBF6E8] px-4 py-3 text-xs leading-5 text-[#6B5515]">
       <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A227]" />
-      <span>{children}</span>
+      <span className="min-w-0 flex-1">{children}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss this tip"
+        title="Dismiss this tip"
+        className="shrink-0 rounded-md p-1 text-[#8B7634] hover:bg-[#C9A227]/10 hover:text-[#111111] cursor-pointer"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -175,29 +193,11 @@ function createBlankInvoice(existingNumbers: string[] = []): InvoiceRecord {
   };
 }
 
-export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
-    const [showAdminGuide, setShowAdminGuide] = useState(() => {
-      try {
-        return window.localStorage.getItem(ADMIN_GUIDE_KEY) !== '1';
-      } catch {
-        return true;
-      }
-    });
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
-  const [clients, setClients] = useState<ClientProfile[]>([]);
-  const [shipments, setShipments] = useState<ShipmentItem[]>([]);
-  const [user, setUser] = useState(getAuthUser());
-
-  // Invoice Form State — starts empty so only real business data is entered
-  const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>(createBlankInvoice());
-  const invoiceGeneratorRef = useRef<HTMLDivElement | null>(null);
-
-  // Receipt Form State
-  const [receiptForm, setReceiptForm] = useState<ReceiptRecord>({
+/** A fresh receipt numbered after the records already on file. */
+function createBlankReceipt(existingNumbers: string[] = []): ReceiptRecord {
+  return {
     id: '',
-    receiptNumber: nextDocumentNumber([], receiptNumberPrefix),
+    receiptNumber: nextDocumentNumber(existingNumbers, receiptNumberPrefix),
     invoiceNumber: '',
     clientName: '',
     clientPhone: '',
@@ -214,7 +214,51 @@ export function AdminDashboard() {
     status: 'Confirmed',
     notes: 'Official digital receipt issued by BuySmart Management.',
     createdAt: new Date().toISOString().slice(0, 10),
-  });
+  };
+}
+
+export function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<AdminTab>('invoices');
+  const [dismissedTips, setDismissedTips] = useState<Record<string, boolean>>(() =>
+    readDismissedTips(ADMIN_TIPS_KEY)
+  );
+  const [reopenedTips, setReopenedTips] = useState<Record<string, boolean>>({});
+  const tipVisible = (tab: AdminTab) => reopenedTips[tab] === true || dismissedTips[tab] !== true;
+
+  const dismissTip = (tab: AdminTab) => {
+    setReopenedTips((current) => ({ ...current, [tab]: false }));
+    setDismissedTips((current) => {
+      const updated = { ...current, [tab]: true };
+      try {
+        window.localStorage.setItem(ADMIN_TIPS_KEY, JSON.stringify(updated));
+      } catch {
+        /* Dismissal still works when browser storage is unavailable. */
+      }
+      return updated;
+    });
+  };
+
+  const toggleCurrentTip = () => {
+    if (tipVisible(activeTab)) {
+      dismissTip(activeTab);
+    } else {
+      setReopenedTips((current) => ({ ...current, [activeTab]: true }));
+    }
+  };
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
+  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [shipments, setShipments] = useState<ShipmentItem[]>([]);
+  const [user, setUser] = useState(getAuthUser());
+
+  // Invoice Form State — starts empty so only real business data is entered
+  const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>(createBlankInvoice());
+  const invoiceGeneratorRef = useRef<HTMLDivElement | null>(null);
+
+  // Receipt Form State
+  const [receiptForm, setReceiptForm] = useState<ReceiptRecord>(() =>
+    createBlankReceipt(getStoredReceipts().map((receipt) => receipt.receiptNumber))
+  );
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -226,6 +270,7 @@ export function AdminDashboard() {
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceRecord | null>(null);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptRecord | null>(null);
   const [sendInvoiceTarget, setSendInvoiceTarget] = useState<InvoiceRecord | null>(null);
+  const [sendReceiptTarget, setSendReceiptTarget] = useState<ReceiptRecord | null>(null);
   const [selectedClientFolder, setSelectedClientFolder] = useState<ClientProfile | null>(null);
   const [updatingShipment, setUpdatingShipment] = useState<ShipmentItem | null>(null);
   const [newShipmentStatus, setNewShipmentStatus] = useState<ShipmentItem['status']>('Order approved');
@@ -338,6 +383,14 @@ export function AdminDashboard() {
             }
       );
     }
+    setReceiptForm((prev) =>
+      prev.id
+        ? prev
+        : {
+            ...prev,
+            receiptNumber: nextDocumentNumber(recs.map((receipt) => receipt.receiptNumber), receiptNumberPrefix),
+          }
+    );
   };
 
   const notifyTimerRef = useRef<number | null>(null);
@@ -540,24 +593,77 @@ export function AdminDashboard() {
   };
 
   const handleSaveCurrentReceipt = () => {
-    if (!receiptForm.clientName.trim() || !receiptForm.amountPaid) {
-      showNotify('Please enter client name and amount paid.', 'error');
+    if (!receiptForm.clientName.trim() || Number(receiptForm.amountPaid) <= 0) {
+      showNotify('Please enter the client name and an amount paid greater than zero.', 'error');
       return;
     }
+
     const words = numberToWordsNaira(receiptForm.amountPaid);
+    const invoiceNumber = receiptForm.invoiceNumber.trim();
+    const relatedInvoice = invoices.find(
+      (inv) => inv.invoiceNumber.toLowerCase() === invoiceNumber.toLowerCase()
+    );
+    const balanceRemaining = relatedInvoice
+      ? Math.max(0, relatedInvoice.total - relatedInvoice.amountPaid - receiptForm.amountPaid)
+      : receiptForm.balanceRemaining;
+
+    // Never overwrite another receipt: a new record always gets a free number.
+    let receiptNumber =
+      receiptForm.receiptNumber.trim() ||
+      nextDocumentNumber(receipts.map((receipt) => receipt.receiptNumber), receiptNumberPrefix);
+    const numberTaken = receipts.some(
+      (receipt) =>
+        receipt.receiptNumber.toLowerCase() === receiptNumber.toLowerCase() && receipt.id !== receiptForm.id
+    );
+    if (numberTaken) {
+      receiptNumber = nextDocumentNumber(receipts.map((receipt) => receipt.receiptNumber), receiptNumberPrefix);
+    }
+
     const recordToSave: ReceiptRecord = {
       ...receiptForm,
       id: receiptForm.id || 'rec-' + Date.now().toString(),
+      receiptNumber,
+      invoiceNumber,
       amountInWords: words,
+      balanceRemaining,
     };
+
+    if (relatedInvoice && recordToSave.status === 'Confirmed') {
+      const previousReceipts = receipts.filter(
+        (receipt) =>
+          receipt.id !== recordToSave.id &&
+          receipt.invoiceNumber.toLowerCase() === relatedInvoice.invoiceNumber.toLowerCase() &&
+          receipt.status === 'Confirmed'
+      );
+      const confirmedPayments = previousReceipts.reduce(
+        (sum, receipt) => sum + Number(receipt.amountPaid || 0),
+        0
+      );
+      const amountPaid = Math.min(relatedInvoice.total, confirmedPayments + recordToSave.amountPaid);
+      const updatedInvoice: InvoiceRecord = {
+        ...relatedInvoice,
+        amountPaid,
+        status: amountPaid >= relatedInvoice.total ? 'Paid' : amountPaid > 0 ? 'Partial' : relatedInvoice.status,
+      };
+      updatedInvoice.paymentLink = buildPublicInvoiceLink(updatedInvoice);
+      setInvoices(saveInvoice(updatedInvoice));
+      recordToSave.balanceRemaining = Math.max(0, relatedInvoice.total - amountPaid);
+    }
+
     const updated = saveReceipt(recordToSave);
     setReceipts(updated);
-    showNotify(`Official Receipt #${recordToSave.receiptNumber} saved successfully!`);
+    setReceiptForm(createBlankReceipt(updated.map((receipt) => receipt.receiptNumber)));
+    setSendReceiptTarget(recordToSave);
+    showNotify(`Official Receipt #${recordToSave.receiptNumber} saved and ready to share.`);
   };
 
   const handleQuickReceiptFromInvoice = (inv: InvoiceRecord) => {
+    const amt = Math.max(0, inv.total - (inv.amountPaid || 0));
+    if (amt <= 0) {
+      showNotify(`Invoice #${inv.invoiceNumber} is already settled. Use its existing receipt instead.`, 'error');
+      return;
+    }
     const nextRecNum = nextDocumentNumber(receipts.map((r) => r.receiptNumber), receiptNumberPrefix);
-    const amt = inv.total;
     const rec: ReceiptRecord = {
       id: 'rec-' + Date.now().toString(),
       receiptNumber: nextRecNum,
@@ -778,16 +884,26 @@ export function AdminDashboard() {
   // WhatsApp Message Link (opens the portable invoice page on any device)
   const getWhatsAppMessage = (inv: InvoiceRecord) => {
     const link = buildPublicInvoiceLink(inv);
-    return `Hi, ${inv.clientName},
-You have an outstanding amount of
-${formatNaira(inv.total)}
-for the invoice - ${inv.invoiceNumber} from Buysmart Procurement Limited.
+    const balance = Math.max(0, inv.total - (inv.amountPaid || 0));
+    const paymentNote =
+      balance > 0
+        ? `Online payment is under maintenance. Pay the balance by direct transfer to:
+${bankAccountLine()}
 
-View and pay your invoice at -
+After transferring, send your payment confirmation on WhatsApp.`
+        : 'Payment has been confirmed in full. Please keep the official receipt for your records.';
+    return `Hi, ${inv.clientName},
+Here is your invoice ${inv.invoiceNumber} from Buysmart Procurement Limited.
+
+Total: ${formatNaira(inv.total)}
+Amount paid: ${formatNaira(inv.amountPaid || 0)}
+Balance: ${formatNaira(balance)}
+Status: ${inv.status}
+
+View your invoice at -
 ${link}
 
-Or pay by direct transfer:
-${bankAccountLine()}
+${paymentNote}
 
 • The Buysmart Procurement Limited Team`;
   };
@@ -807,6 +923,41 @@ ${bankAccountLine()}
     const link = buildPublicInvoiceLink(inv);
     navigator.clipboard.writeText(link);
     showNotify('Invoice link copied to clipboard!');
+  };
+
+  const getReceiptWhatsAppMessage = (rec: ReceiptRecord) => {
+    const relatedInvoice = invoices.find(
+      (inv) => inv.invoiceNumber.toLowerCase() === rec.invoiceNumber.toLowerCase()
+    );
+    const link = buildPublicReceiptLink(rec, relatedInvoice);
+    return `Hi, ${rec.clientName},
+
+Your official BuySmart payment receipt is ready.
+Receipt: ${rec.receiptNumber}
+Invoice: ${rec.invoiceNumber}
+Amount confirmed: ${formatNaira(rec.amountPaid)}
+Payment date: ${rec.paymentDate}
+
+View and download your receipt at -
+${link}
+
+Thank you for choosing Buysmart Procurement Limited.`;
+  };
+
+  const handleOpenReceiptWhatsAppShare = (rec: ReceiptRecord) => {
+    const rawPhone = (rec.clientPhone || '').replace(/[^0-9]/g, '');
+    const intlPhone = rawPhone.startsWith('0') ? '234' + rawPhone.slice(1) : rawPhone;
+    const message = getReceiptWhatsAppMessage(rec);
+    const url = `https://wa.me/${intlPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleCopyReceiptShareLink = (rec: ReceiptRecord) => {
+    const relatedInvoice = invoices.find(
+      (inv) => inv.invoiceNumber.toLowerCase() === rec.invoiceNumber.toLowerCase()
+    );
+    navigator.clipboard.writeText(buildPublicReceiptLink(rec, relatedInvoice));
+    showNotify('Receipt link copied. It can be opened on any device.');
   };
 
   // Filtered Invoices
@@ -841,6 +992,12 @@ ${bankAccountLine()}
       (s.clientPhone || '').includes(query)
     );
   });
+
+  const sendInvoiceBalance = sendInvoiceTarget
+    ? Math.max(0, sendInvoiceTarget.total - (sendInvoiceTarget.amountPaid || 0))
+    : 0;
+  const sendInvoiceIsPaid =
+    sendInvoiceTarget?.status === 'Paid' || (Boolean(sendInvoiceTarget) && sendInvoiceBalance <= 0);
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#111111] antialiased">
@@ -985,8 +1142,9 @@ ${bankAccountLine()}
 
             <button
               type="button"
-              onClick={() => setShowAdminGuide((value) => !value)}
-              title={showAdminGuide ? 'Hide desk guide' : 'Show desk guide'}
+              onClick={toggleCurrentTip}
+              title={tipVisible(activeTab) ? 'Hide this tab’s tip' : 'Show this tab’s tip'}
+              aria-label={tipVisible(activeTab) ? 'Hide this tab’s tip' : 'Show this tab’s tip'}
               className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
             >
               <HelpCircle className="h-4 w-4" />
@@ -1072,60 +1230,13 @@ ${bankAccountLine()}
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* First-visit desk guide: what each console does, with one-tap jumps */}
-        {showAdminGuide && (
-          <div className="mb-8 rounded-3xl border border-[#C9A227]/30 bg-[#FBF6E8] p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B5515]">
-                  <HelpCircle className="h-4 w-4 text-[#C9A227]" /> How the management console works
-                </div>
-                <p className="mt-1.5 text-xs sm:text-sm text-[#6B5515]/90">
-                  Six desks, one console. Tap a card to jump to that desk — hide this guide anytime with the × or the ? button in the header.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Hide desk guide"
-                onClick={() => {
-                  setShowAdminGuide(false);
-                  try { window.localStorage.setItem(ADMIN_GUIDE_KEY, '1'); } catch { /* ignore */ }
-                }}
-                className="shrink-0 rounded-full border border-[#C9A227]/30 bg-white p-2 text-[#6B5515] hover:text-[#111111] cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {adminTabGuide.map((item) => (
-                <button
-                  key={item.tab}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(item.tab);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="group rounded-2xl border border-[#E5E2DA] bg-white p-4 text-left transition hover:border-[#C9A227] cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#111111]">
-                    <item.icon className="h-4 w-4 text-[#C9A227]" />
-                    {item.title}
-                    <ArrowRight className="ml-auto h-3.5 w-3.5 text-[#C9A227] opacity-0 transition group-hover:opacity-100" />
-                  </div>
-                  <p className="mt-1.5 text-[11px] leading-4.5 text-[#66615B]">{item.body}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ========================================================= */}
         {/* TAB 1: INVOICES DESK & GENERATOR */}
         {/* ========================================================= */}
         {activeTab === 'invoices' && (
           <div className="space-y-8">
-            <AdminTabHint>
-              Pick the customer first, add goods/freight/customs lines, then create the invoice — it is filed in that client’s folder and the share link carries the verified OPay account.
+            <AdminTabHint visible={tipVisible('invoices')} onDismiss={() => dismissTip('invoices')}>
+              1. Choose or add the client. 2. Add each charge. 3. Create the invoice, then use WhatsApp or copy the link. Recipients can view it on any device and pay by OPay transfer; online checkout is under maintenance.
             </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -1156,7 +1267,7 @@ ${bankAccountLine()}
             </div>
 
             {/* Invoices List Table */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8C827A]" />
@@ -1310,7 +1421,7 @@ ${bankAccountLine()}
             {/* Invoice Generator Form */}
             <div
               ref={invoiceGeneratorRef}
-              className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-28"
+              className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-6 scroll-mt-28"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#ECE8DF]">
                 <div>
@@ -1586,8 +1697,8 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'receipts' && (
           <div className="space-y-8">
-            <AdminTabHint>
-              Record a payment only after it is confirmed in the bank account. The receipt number continues the BSP-REC sequence and appears in the client’s portal instantly.
+            <AdminTabHint visible={tipVisible('receipts')} onDismiss={() => dismissTip('receipts')}>
+              1. Confirm the transfer in your bank account. 2. Enter the client, amount and reference. 3. Save the receipt, then use Copy link or WhatsApp in the archive to send it to anyone.
             </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -1610,7 +1721,7 @@ ${bankAccountLine()}
             </div>
 
             {/* Issued Receipts Table */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5">
               <h2 className="text-sm font-bold text-[#111111] mb-4">Issued Receipts Archive</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
@@ -1646,7 +1757,27 @@ ${bankAccountLine()}
                             </button>
                             <button
                               type="button"
+                              onClick={() => handleCopyReceiptShareLink(rec)}
+                              title="Copy portable receipt link"
+                              aria-label="Copy portable receipt link"
+                              className="p-2 rounded-xl bg-[#FAFAF8] border border-[#DED9CF] text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSendReceiptTarget(rec)}
+                              title="Send receipt via WhatsApp"
+                              aria-label="Send receipt via WhatsApp"
+                              className="p-2 rounded-xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 cursor-pointer"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => handleDownloadReceiptPDF(rec)}
+                              title="Download receipt PDF"
+                              aria-label="Download receipt PDF"
                               className="p-2 rounded-xl bg-[#C9A227]/15 text-[#6B5515] hover:bg-[#C9A227]/25 cursor-pointer"
                             >
                               <Download className="h-3.5 w-3.5" />
@@ -1661,7 +1792,7 @@ ${bankAccountLine()}
             </div>
 
             {/* Receipt Generator Form */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-6">
               <h2 className="text-base font-bold text-[#111111] pb-3 border-b border-[#ECE8DF]">
                 Issue New Official Payment Receipt
               </h2>
@@ -1714,8 +1845,8 @@ ${bankAccountLine()}
                     }
                     className={inputStyle}
                   >
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Paystack">Paystack Gateway</option>
+                    <option value="Bank Transfer">Bank Transfer (OPay)</option>
+                    <option value="Paystack" disabled>Paystack Gateway (under maintenance)</option>
                     <option value="Flutterwave">Flutterwave</option>
                     <option value="POS">POS Terminal</option>
                     <option value="Cash">Cash Deposit</option>
@@ -1750,8 +1881,8 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'shipments' && (
           <div className="space-y-8">
-            <AdminTabHint>
-              Each milestone you save here updates the client’s live tracking card and the public /track page — keep statuses current so clients never have to ask.
+            <AdminTabHint visible={tipVisible('shipments')} onDismiss={() => dismissTip('shipments')}>
+              Select Update on the correct shipment, choose its latest milestone and add the current location, then save. The client tracking card updates immediately.
             </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -1822,7 +1953,7 @@ ${bankAccountLine()}
               {filteredShipments.map((ship) => (
                 <div
                   key={ship.id}
-                  className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm hover:border-[#C9A227]/40 transition space-y-4"
+                  className="rounded-2xl border border-[#ECE8DF] bg-white p-5 hover:border-[#C9A227]/40 transition space-y-4"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#ECE8DF]">
                     <div className="flex items-center gap-3">
@@ -1919,8 +2050,8 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'clients' && (
           <div className="space-y-8">
-            <AdminTabHint>
-              Open a client folder to see everything filed under them — invoices, receipts, and contact details. New portal signups also raise alerts in the bell inbox.
+            <AdminTabHint visible={tipVisible('clients')} onDismiss={() => dismissTip('clients')}>
+              Search for the client, open their folder, then choose Create Invoice or Issue Receipt. Use Edit profile if their contact or delivery details change.
             </AdminTabHint>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -1999,7 +2130,7 @@ ${bankAccountLine()}
                 return (
                   <div
                     key={c.id}
-                    className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm hover:border-[#C9A227] transition space-y-4"
+                    className="rounded-2xl border border-[#ECE8DF] bg-white p-5 hover:border-[#C9A227] transition space-y-4"
                   >
                     <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
                       <div className="flex items-center gap-3">
@@ -2079,8 +2210,8 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'rates' && (
           <div className="space-y-8 max-w-4xl">
-            <AdminTabHint>
-              Rates saved here feed every client’s estimator and the public cost calculator. Update them whenever freight costs move, then verify with the calculator below.
+            <AdminTabHint visible={tipVisible('rates')} onDismiss={() => dismissTip('rates')}>
+              Update the current air or sea rates and documentation charges, save once, then test a sample carton in the calculator below before quoting a client.
             </AdminTabHint>
             <div>
               <div className="flex items-center gap-2">
@@ -2098,7 +2229,7 @@ ${bankAccountLine()}
 
             <form onSubmit={handleSaveRates} className="space-y-6">
               {/* Air Cargo Tariffs */}
-              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-4">
                 <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
                   <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
                     <Plane className="h-5 w-5" />
@@ -2145,7 +2276,7 @@ ${bankAccountLine()}
               </div>
 
               {/* Sea Cargo Tariffs */}
-              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-4">
                 <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
                   <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
                     <Ship className="h-5 w-5" />
@@ -2192,7 +2323,7 @@ ${bankAccountLine()}
               </div>
 
               {/* Exchange Benchmark & Handling Fees */}
-              <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-4">
                 <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
                   <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
                     <Calculator className="h-5 w-5" />
@@ -2255,7 +2386,7 @@ ${bankAccountLine()}
             </form>
 
             {/* Tawk.to Live Desk Integration Setup */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
                 <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
                   <MessageSquare className="h-5 w-5" />
@@ -2312,14 +2443,14 @@ ${bankAccountLine()}
             </div>
 
             {/* Paystack Payment Gateway Setup */}
-            <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 sm:p-8 shadow-sm space-y-4">
+            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-3 pb-3 border-b border-[#ECE8DF]">
                 <div className="p-2.5 rounded-2xl bg-[#FAFAF8] border border-[#ECE8DF] text-[#C9A227]">
                   <CreditCard className="h-5 w-5" />
                 </div>
                 <div>
                   <h2 className="text-sm font-extrabold text-[#111111]">Paystack Payment Gateway Configuration</h2>
-                  <p className="text-xs text-[#8C827A]">Set your public API key for 1-click checkout on invoices and client portals</p>
+                  <p className="text-xs text-[#8C827A]">Online payment is under maintenance until the Paystack API key is supplied. Clients can pay by OPay transfer.</p>
                 </div>
               </div>
 
@@ -2358,7 +2489,7 @@ ${bankAccountLine()}
                   type="button"
                   onClick={() => {
                     savePaystackConfig(paystackConfig);
-                    showNotify('Paystack Gateway settings saved successfully!');
+                    showNotify('Paystack settings saved. Online payment remains under maintenance until the API key is supplied.');
                   }}
                   className="inline-flex items-center gap-2 rounded-2xl bg-[#111111] py-3 px-6 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
                 >
@@ -2375,8 +2506,8 @@ ${bankAccountLine()}
         {/* ========================================================= */}
         {activeTab === 'reports' && (
           <div className="space-y-8">
-            <AdminTabHint>
-              These totals are computed from the invoices and receipts you have created — billed vs settled vs outstanding, per client and overall.
+            <AdminTabHint visible={tipVisible('reports')} onDismiss={() => dismissTip('reports')}>
+              Compare total invoiced, confirmed receipts and outstanding receivables. Use the consignment ledger below to follow up on cargo still in transit.
             </AdminTabHint>
             <div>
               <h1 style={{ fontFamily: "'Sora', sans-serif" }} className="text-2xl font-extrabold text-[#111111]">
@@ -2428,7 +2559,7 @@ ${bankAccountLine()}
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                       {stockCards.map((card) => (
-                        <div key={card.label} className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+                        <div key={card.label} className="rounded-2xl border border-[#ECE8DF] bg-white p-5">
                           <span className="text-xs font-bold uppercase text-[#8C827A]">{card.label}</span>
                           <div className={`mt-2 text-2xl font-extrabold ${card.tone}`}>{card.value}</div>
                           <span className="text-[11px] text-[#8C827A]">{card.note}</span>
@@ -2443,7 +2574,7 @@ ${bankAccountLine()}
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                       {financeCards.map((card) => (
-                        <div key={card.label} className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+                        <div key={card.label} className="rounded-2xl border border-[#ECE8DF] bg-white p-5">
                           <span className="text-xs font-bold uppercase text-[#8C827A]">{card.label}</span>
                           <div className={`mt-2 text-2xl font-extrabold ${card.tone}`}>{formatNaira(card.value)}</div>
                           <span className="text-[11px] text-[#8C827A]">{card.note}</span>
@@ -2452,7 +2583,7 @@ ${bankAccountLine()}
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-[#ECE8DF] bg-white p-6 shadow-sm">
+                  <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5">
                     <div className="flex items-center justify-between pb-3 border-b border-[#ECE8DF]">
                       <span className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
                         Stock Ledger By Consignment
@@ -2517,24 +2648,31 @@ ${bankAccountLine()}
             </div>
 
             {/* Notification Card Matching the Uploaded User Image */}
-            <div className="my-6 rounded-2xl bg-white text-[#111111] p-6 shadow-lg border border-white/40 relative overflow-hidden">
-              <div className="flex justify-end">
-                <span className="rounded-md bg-[#E8804C] px-3 py-1 text-[11px] font-extrabold text-white uppercase tracking-wider">
-                  UNPAID
+            <div className="my-6 rounded-xl bg-white text-[#111111] p-5 border border-white/40">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-bold text-[#66615B]">Invoice {sendInvoiceTarget.invoiceNumber}</span>
+                <span className={`rounded-md px-3 py-1 text-[11px] font-extrabold text-white uppercase tracking-wider ${sendInvoiceTarget.status === 'Paid' ? 'bg-green-700' : 'bg-[#E8804C]'}`}>
+                  {sendInvoiceTarget.status}
                 </span>
               </div>
 
               <div className="text-center py-4 space-y-2">
                 <p className="text-sm font-semibold text-[#4A4A4A]">Hi, {sendInvoiceTarget.clientName}</p>
-                <p className="text-xs text-[#66615B]">You have an outstanding amount of</p>
+                <p className="text-xs text-[#66615B]">
+                  {sendInvoiceIsPaid ? 'Payment confirmed in full' : 'You have an outstanding balance of'}
+                </p>
                 <div
                   style={{ fontFamily: "'Sora', sans-serif" }}
                   className="text-2xl sm:text-3xl font-extrabold text-[#111111]"
                 >
-                  {formatNaira(sendInvoiceTarget.total)}
+                  {formatNaira(sendInvoiceIsPaid ? sendInvoiceTarget.total : sendInvoiceBalance)}
                 </div>
                 <p className="text-xs text-[#66615B]">
-                  for an invoice from <span className="font-semibold">Buysmart Procurement Limited</span>
+                  for invoice {sendInvoiceTarget.invoiceNumber} from{' '}
+                  <span className="font-semibold">Buysmart Procurement Limited</span>
+                  {!sendInvoiceIsPaid && (sendInvoiceTarget.amountPaid || 0) > 0 && (
+                    <> • Already paid {formatNaira(sendInvoiceTarget.amountPaid || 0)}</>
+                  )}
                 </p>
               </div>
 
@@ -2553,7 +2691,14 @@ ${bankAccountLine()}
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <p className="mt-4 text-[11px] leading-5 text-white/70">
+              Anyone with the link can open this invoice on another device.{' '}
+              {sendInvoiceIsPaid
+                ? 'Payment is confirmed in full; no further transfer is required.'
+                : 'Online payment is under maintenance; the official OPay transfer account is included.'}
+            </p>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleOpenWhatsAppShare(sendInvoiceTarget)}
@@ -2570,6 +2715,73 @@ ${bankAccountLine()}
               >
                 <Copy className="h-4 w-4 text-[#C9A227]" />
                 <span>Copy Shareable Link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sendReceiptTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-lg rounded-2xl bg-[#0F382A] p-5 sm:p-6 text-white border border-white/20">
+            <div className="flex items-center justify-between pb-4 border-b border-white/20">
+              <div className="flex items-center gap-2">
+                <ReceiptIcon className="h-5 w-5 text-[#C9A227]" />
+                <span className="font-bold text-sm">Send Official Receipt</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSendReceiptTarget(null)}
+                aria-label="Close receipt sharing"
+                className="p-1 rounded-lg text-white/70 hover:text-white cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="my-5 rounded-xl bg-white p-5 text-[#111111]">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-bold text-[#66615B]">Receipt {sendReceiptTarget.receiptNumber}</span>
+                <span
+                  className={`rounded-md px-3 py-1 text-[11px] font-extrabold text-white uppercase ${
+                    sendReceiptTarget.status === 'Confirmed' ? 'bg-green-700' : 'bg-amber-600'
+                  }`}
+                >
+                  {sendReceiptTarget.status}
+                </span>
+              </div>
+              <div className="mt-4">
+                <div className="text-xs text-[#66615B]">Received from {sendReceiptTarget.clientName}</div>
+                <div className="mt-1 text-2xl font-extrabold">{formatNaira(sendReceiptTarget.amountPaid)}</div>
+                <div className="mt-1 text-[11px] text-[#66615B]">Invoice {sendReceiptTarget.invoiceNumber} • {sendReceiptTarget.paymentDate}</div>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-black/25 border border-white/10 p-4">
+              <p className="text-[11px] font-bold text-[#C9A227]">Message preview</p>
+              <p className="mt-2 whitespace-pre-line text-[11px] leading-5 text-white/85">
+                {getReceiptWhatsAppMessage(sendReceiptTarget)}
+              </p>
+            </div>
+
+            <p className="mt-4 text-[11px] leading-5 text-white/70">The recipient can view and download the official receipt from any device, even if they do not have a BuySmart login.</p>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleOpenReceiptWhatsAppShare(sendReceiptTarget)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-xs font-bold text-white hover:opacity-95 cursor-pointer"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Send via WhatsApp</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyReceiptShareLink(sendReceiptTarget)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-bold text-white hover:bg-white/15 cursor-pointer"
+              >
+                <Copy className="h-4 w-4 text-[#C9A227]" />
+                <span>Copy Receipt Link</span>
               </button>
             </div>
           </div>
@@ -3483,8 +3695,10 @@ ${bankAccountLine()}
 
               <div className="flex justify-end pt-4 border-t border-[#ECE8DF]">
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-[#161616] via-[#222222] to-[#161616] text-white border border-[#C9A227]/40 shadow-sm text-right min-w-[260px]">
-                  <span className="text-[10px] uppercase tracking-wider text-[#C9A227] font-bold block">Total Amount Due</span>
-                  <div className="text-2xl font-black text-white mt-0.5">{formatNaira(previewInvoice.total)}</div>
+                  <span className="text-[10px] uppercase tracking-wider text-[#C9A227] font-bold block">Total Outstanding Balance</span>
+                  <div className="text-2xl font-black text-white mt-0.5">
+                    {formatNaira(Math.max(0, previewInvoice.total - (previewInvoice.amountPaid || 0)))}
+                  </div>
                 </div>
               </div>
 
@@ -3507,13 +3721,24 @@ ${bankAccountLine()}
           <div className="w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-10 shadow-2xl border border-[#ECE8DF] relative overflow-hidden">
             <div className="flex items-center justify-between pb-4 border-b border-[#ECE8DF]">
               <span className="font-extrabold text-sm text-green-700">★ OFFICIAL RECEIPT OF PAYMENT</span>
-              <button
-                type="button"
-                onClick={() => setPreviewReceipt(null)}
-                className="text-[#8C827A] hover:text-[#111111]"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopyReceiptShareLink(previewReceipt)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#DED9CF] px-3 py-1.5 text-[11px] font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                >
+                  <Copy className="h-3.5 w-3.5 text-[#C9A227]" />
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewReceipt(null)}
+                  aria-label="Close receipt preview"
+                  className="text-[#8C827A] hover:text-[#111111] cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="py-6 space-y-4 text-xs">
@@ -3542,6 +3767,28 @@ ${bankAccountLine()}
                   Channel: <span className="font-semibold text-[#111111]">{previewReceipt.paymentMethod}</span> (Ref:{' '}
                   {previewReceipt.referenceNumber})
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadReceiptPDF(previewReceipt)}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111111] px-4 py-3 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                >
+                  <Download className="h-4 w-4 text-[#C9A227]" />
+                  Download PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSendReceiptTarget(previewReceipt);
+                    setPreviewReceipt(null);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DED9CF] px-4 py-3 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+                >
+                  <MessageSquare className="h-4 w-4 text-green-600" />
+                  Send Receipt
+                </button>
               </div>
 
               {/* Official Seal Badge */}

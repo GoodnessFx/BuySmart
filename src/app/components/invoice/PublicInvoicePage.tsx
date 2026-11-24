@@ -4,28 +4,22 @@ import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Download,
-  Share2,
   CheckCircle2,
   AlertCircle,
   Copy,
   Building2,
   ArrowRight,
-  Phone,
   MessageSquare,
   Shield,
   CreditCard,
-  Package,
-  User,
   LogIn,
   Check,
   Receipt as ReceiptIcon,
-  ExternalLink,
-  Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   findInvoiceByNumber,
   findReceiptByNumber,
-  getStoredInvoices,
   getStoredReceipts,
   getAuthUser,
   formatNaira,
@@ -34,8 +28,7 @@ import {
   type LineType,
 } from '../../lib/auth';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
-import { initiatePaystackCheckout } from '../../lib/paystack';
-import { buildInvoiceLink, readLinkLocation } from '../../lib/invoice-link';
+import { buildPublicInvoiceLink, buildPublicReceiptLink, readLinkLocation } from '../../lib/invoice-link';
 import { COMPANY_BANK_ACCOUNTS } from '../../lib/bank';
 
 const LINE_LABELS: Record<LineType, string> = {
@@ -53,8 +46,6 @@ export function PublicInvoicePage() {
   const [activeView, setActiveView] = useState<'invoice' | 'receipt'>('invoice');
   const [copied, setCopied] = useState(false);
   const [copiedAccount, setCopiedAccount] = useState('');
-  const [isPaying, setIsPaying] = useState(false);
-  const [paySuccess, setPaySuccess] = useState(false);
   const [lookupState, setLookupState] = useState<'loading' | 'ready' | 'not-found'>('loading');
   const [lookupNumber, setLookupNumber] = useState('');
   const [lookupError, setLookupError] = useState('');
@@ -62,14 +53,13 @@ export function PublicInvoicePage() {
   const currentUser = getAuthUser();
 
   const showInvoice = (found: InvoiceRecord, preferReceipt = false) => {
+    const matchingReceipt =
+      getStoredReceipts().find(
+        (record) => record.invoiceNumber.toLowerCase() === found.invoiceNumber.toLowerCase()
+      ) || null;
     setInvoice(found);
-    const matchingReceipt = getStoredReceipts().find(
-      (r) => r.invoiceNumber.toLowerCase() === found.invoiceNumber.toLowerCase()
-    );
-    if (matchingReceipt) {
-      setReceipt(matchingReceipt);
-      setActiveView(preferReceipt ? 'receipt' : 'invoice');
-    }
+    setReceipt(matchingReceipt);
+    setActiveView(matchingReceipt && preferReceipt ? 'receipt' : 'invoice');
     setLookupNumber(found.invoiceNumber);
     setLookupState('ready');
   };
@@ -84,11 +74,11 @@ export function PublicInvoicePage() {
       setLookupState('loading');
 
       if (link.receiptNumber) {
-        const foundReceipt = findReceiptByNumber(link.receiptNumber);
+        const foundReceipt = link.receiptSnapshot || findReceiptByNumber(link.receiptNumber);
         if (foundReceipt) {
           setReceipt(foundReceipt);
           setActiveView('receipt');
-          const relatedInv = findInvoiceByNumber(foundReceipt.invoiceNumber);
+          const relatedInv = link.snapshot || findInvoiceByNumber(foundReceipt.invoiceNumber);
           if (relatedInv) setInvoice(relatedInv);
           setLookupNumber(foundReceipt.invoiceNumber);
           setLookupState('ready');
@@ -96,6 +86,14 @@ export function PublicInvoicePage() {
         }
       }
 
+      // The share link carries its own invoice snapshot, so it renders on any device
+      // and always shows the exact document that was shared.
+      if (link.snapshot) {
+        showInvoice(link.snapshot, false);
+        return;
+      }
+
+      // Older number-only links still work when the record exists on this device.
       if (link.invoiceNumber) {
         const stored = findInvoiceByNumber(link.invoiceNumber);
         if (stored) {
@@ -104,21 +102,7 @@ export function PublicInvoicePage() {
         }
       }
 
-      // The share link carries its own invoice snapshot, so it renders on any device
-      // even when no record exists in this browser's storage.
-      if (link.snapshot) {
-        showInvoice(link.snapshot, false);
-        return;
-      }
-
-      if (!link.invoiceNumber) {
-        const all = getStoredInvoices();
-        if (all.length > 0) {
-          showInvoice(all[0], false);
-          return;
-        }
-      }
-
+      // Never reveal an arbitrary locally stored invoice to an unauthenticated visitor.
       setLookupNumber(link.invoiceNumber || '');
       setLookupState('not-found');
     };
@@ -136,10 +120,10 @@ export function PublicInvoicePage() {
 
     const foundReceipt = findReceiptByNumber(target);
     if (foundReceipt) {
+      const relatedInv = findInvoiceByNumber(foundReceipt.invoiceNumber);
+      setInvoice(relatedInv || null);
       setReceipt(foundReceipt);
       setActiveView('receipt');
-      const relatedInv = findInvoiceByNumber(foundReceipt.invoiceNumber);
-      if (relatedInv) setInvoice(relatedInv);
       setLookupState('ready');
       return;
     }
@@ -155,8 +139,17 @@ export function PublicInvoicePage() {
     );
   };
 
+  const invoicesForReceipt = (record: ReceiptRecord | null) =>
+    record?.invoiceNumber ? findInvoiceByNumber(record.invoiceNumber) : undefined;
+
   const handleCopyLink = async () => {
-    const portableLink = invoice ? buildInvoiceLink(invoice) : window.location.href;
+    const relatedInvoice = invoice || invoicesForReceipt(receipt);
+    const portableLink =
+      activeView === 'receipt' && receipt
+        ? buildPublicReceiptLink(receipt, relatedInvoice || undefined)
+        : invoice
+          ? buildPublicInvoiceLink(invoice)
+          : window.location.href;
     try {
       await navigator.clipboard.writeText(portableLink);
     } catch {}
@@ -174,41 +167,16 @@ export function PublicInvoicePage() {
 
   const handleWhatsAppConfirm = () => {
     if (!invoice) return;
-    const msg = `Hello BuySmart Procurement Limited, I am verifying payment settlement for Invoice #${invoice.invoiceNumber} (${formatNaira(
-      invoice.total
-    )}) for ${invoice.clientName}.`;
-    window.open(`https://wa.me/2348100130714?text=${encodeURIComponent(msg)}`, '_blank');
-  };
+    const balance = Math.max(0, invoice.total - (invoice.amountPaid || 0));
+    const msg = `Hello BuySmart Procurement Limited, I have made a bank transfer for Invoice #${invoice.invoiceNumber}.
 
-  const handlePaystackPay = async () => {
-    if (!invoice) return;
-    setIsPaying(true);
-    try {
-      await initiatePaystackCheckout({
-        invoice,
-        onSuccess: (newReceipt, updatedInv) => {
-          setIsPaying(false);
-          setInvoice(updatedInv);
-          setReceipt(newReceipt);
-          setPaySuccess(true);
-          setActiveView('receipt');
-        },
-        onClose: () => {
-          setIsPaying(false);
-        },
-        onError: (err) => {
-          setIsPaying(false);
-          alert('Paystack notice: ' + err.message);
-        },
-      });
-    } catch (err) {
-      setIsPaying(false);
-      alert(
-        'Online payment is not available yet: ' +
-          ((err as Error)?.message || 'the Paystack public key has not been configured.') +
-          '\n\nPlease use the official bank accounts below or contact BuySmart Management.'
-      );
-    }
+Client: ${invoice.clientName}
+Invoice total: ${formatNaira(invoice.total)}
+Amount already paid: ${formatNaira(invoice.amountPaid || 0)}
+Balance transferred: ${formatNaira(balance)}
+
+Please confirm settlement and issue my official receipt.`;
+    window.open(`https://wa.me/2348100130714?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   if (lookupState === 'loading' && !invoice && !receipt) {
@@ -227,7 +195,7 @@ export function PublicInvoicePage() {
   if (lookupState === 'not-found' && !invoice && !receipt) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-3xl bg-white border border-[#ECE8DF] p-7 shadow-sm space-y-5">
+        <div className="w-full max-w-md rounded-2xl bg-white border border-[#ECE8DF] p-6 space-y-5">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-[#111111] p-2 border border-[#C9A227]/40 flex items-center justify-center shrink-0">
               <img src="/brand/logo.png" alt="BuySmart" className="h-full w-full object-contain" />
@@ -297,7 +265,14 @@ export function PublicInvoicePage() {
     );
   }
 
-  const isPaid = invoice?.status === 'Paid';
+  const outstandingBalance = Math.max(0, (invoice?.total || 0) - (invoice?.amountPaid || 0));
+  const isPaid = invoice?.status === 'Paid' || (Boolean(invoice) && outstandingBalance <= 0);
+  const hasPartialPayment = !isPaid && (invoice?.amountPaid || 0) > 0;
+  const invoiceStatusLabel = isPaid
+    ? 'PAID & CONFIRMED'
+    : hasPartialPayment
+      ? 'PARTIAL PAYMENT • BALANCE DUE'
+      : 'UNPAID • AWAITING SETTLEMENT';
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#111111] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 antialiased relative">
@@ -325,7 +300,7 @@ export function PublicInvoicePage() {
               className="inline-flex items-center gap-1.5 rounded-full border border-[#DED9CF] bg-white px-3.5 py-2 text-xs font-semibold text-[#4A4A4A] hover:border-[#C9A227] transition cursor-pointer shadow-2xs"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-[#C9A227]" />}
-              <span>{copied ? 'Link Copied!' : 'Share Link'}</span>
+              <span>{copied ? 'Link Copied!' : activeView === 'receipt' ? 'Share Receipt' : 'Share Invoice'}</span>
             </button>
 
             {invoice && (
@@ -353,7 +328,7 @@ export function PublicInvoicePage() {
         </div>
 
         {/* Client Portal Connection Banner (Prompt Login or Register if Guest) */}
-        <div className="rounded-2xl border border-[#ECE8DF] bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="rounded-xl border border-[#ECE8DF] bg-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] flex items-center justify-center text-[#C9A227] shrink-0">
               <Shield className="h-4 w-4" />
@@ -428,22 +403,11 @@ export function PublicInvoicePage() {
           </div>
         )}
 
-        {/* Success Banner after Paystack payment */}
-        {paySuccess && (
-          <div className="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-900 flex items-center gap-3">
-            <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" />
-            <div className="text-xs">
-              <div className="font-extrabold text-sm text-green-900">Payment Successfully Confirmed!</div>
-              <div>Your invoice has been settled via Paystack and your official receipt has been issued below.</div>
-            </div>
-          </div>
-        )}
-
         {/* ======================================================== */}
         {/* VIEW 1: COMMERCIAL INVOICE */}
         {/* ======================================================== */}
         {activeView === 'invoice' && invoice && (
-          <div className="rounded-3xl bg-white border border-[#ECE8DF] p-6 sm:p-10 shadow-sm space-y-8 relative overflow-hidden">
+          <div className="rounded-2xl bg-white border border-[#ECE8DF] p-5 sm:p-8 space-y-7 relative overflow-hidden">
             {/* Subtle Corporate Watermark */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center select-none overflow-hidden opacity-[0.035]">
               <div className="text-center rotate-[-25deg] transform">
@@ -478,10 +442,14 @@ export function PublicInvoicePage() {
               <div className="text-left sm:text-right">
                 <span
                   className={`inline-block rounded-md px-3.5 py-1 text-xs font-black uppercase tracking-wider ${
-                    isPaid ? 'bg-green-600 text-white' : 'bg-[#E8804C] text-white'
+                    isPaid
+                      ? 'bg-green-600 text-white'
+                      : hasPartialPayment
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-[#E8804C] text-white'
                   }`}
                 >
-                  {isPaid ? 'PAID & CONFIRMED' : 'UNPAID • AWAITING SETTLEMENT'}
+                  {invoiceStatusLabel}
                 </span>
                 <div className="font-mono font-bold text-sm text-[#111111] mt-2">
                   #{invoice.invoiceNumber}
@@ -577,7 +545,7 @@ export function PublicInvoicePage() {
               </div>
 
               {/* Total Box */}
-              <div className="p-5 rounded-2xl bg-gradient-to-r from-[#161616] via-[#222222] to-[#161616] text-white border border-[#C9A227]/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-5 rounded-xl bg-[#161616] text-white border border-[#C9A227]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-[#C9A227]">
                     <CreditCard className="h-3.5 w-3.5" />
@@ -587,91 +555,107 @@ export function PublicInvoicePage() {
                     style={{ fontFamily: "'Sora', sans-serif" }}
                     className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight"
                   >
-                    {formatNaira(invoice.total)}
+                    {formatNaira(outstandingBalance)}
                   </div>
                   <div className="text-[11px] text-white/70 mt-0.5">
-                    {isPaid ? 'Settlement confirmed in full' : 'Net payable for goods, shipping & clearance'}
+                    {isPaid
+                      ? 'Settlement confirmed in full'
+                      : hasPartialPayment
+                        ? `Invoice total ${formatNaira(invoice.total)} • Already paid ${formatNaira(invoice.amountPaid || 0)}`
+                        : 'Net payable for goods, shipping & clearance'}
                   </div>
                 </div>
 
                 {!isPaid && (
-                  <button
-                    type="button"
-                    onClick={handlePaystackPay}
-                    disabled={isPaying}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#C9A227] to-[#DFB738] py-3.5 px-6 text-xs font-black text-[#111111] shadow-lg hover:opacity-95 transition cursor-pointer shrink-0 disabled:opacity-50"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span>{isPaying ? 'Connecting to Paystack...' : 'Pay Online with Paystack'}</span>
-                  </button>
+                  <div className="rounded-lg border border-white/15 bg-white/5 px-4 py-3">
+                    <div className="inline-flex items-center gap-2 text-xs font-bold text-[#E7C766]">
+                      <AlertTriangle className="h-4 w-4" />
+                      Online payment is under maintenance
+                    </div>
+                    <p className="mt-1 text-[11px] text-white/65">Please pay to the official OPay account below.</p>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Direct Bank Transfer Payment Accounts */}
-            <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 space-y-3 relative z-10 text-xs">
-              <div className="flex items-center gap-2 pb-2 border-b border-[#ECE8DF]">
-                <Building2 className="h-4 w-4 text-[#C9A227]" />
-                <span className="font-extrabold text-xs text-[#111111]">
-                  Official Corporate Settlement Account (Direct Transfer)
-                </span>
+            {isPaid ? (
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-5 text-center relative z-10">
+                <CheckCircle2 className="h-6 w-6 text-green-700 mx-auto" />
+                <div className="mt-2 text-sm font-extrabold text-green-900">Payment confirmed in full</div>
+                <p className="mt-1 text-xs text-green-800">
+                  {receipt
+                    ? 'Open the Official Receipt tab above to view or download your payment receipt.'
+                    : 'BuySmart Management will issue your official receipt after final verification.'}
+                </p>
               </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                {COMPANY_BANK_ACCOUNTS.map((account) => (
-                  <div
-                    key={account.accountNumber}
-                    className="p-4 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1">
-                      <div className="font-bold text-[#111111]">{account.bankName}</div>
-                      <div className="text-[11px] text-[#66615B]">{account.accountName}</div>
-                      <div className="font-mono font-black text-xl text-[#C9A227] tracking-wide">
-                        {account.accountNumber}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAccount(account.accountNumber)}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DED9CF] bg-white px-4 py-2.5 text-[11px] font-bold text-[#111111] hover:border-[#C9A227] transition cursor-pointer shrink-0"
-                    >
-                      {copiedAccount === account.accountNumber ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-green-600" />
-                          <span>Account number copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5 text-[#C9A227]" />
-                          <span>Copy account number</span>
-                        </>
-                      )}
-                    </button>
+            ) : (
+              <>
+                {/* Direct Bank Transfer Payment Accounts */}
+                <div className="rounded-2xl border border-[#ECE8DF] bg-white p-5 space-y-3 relative z-10 text-xs">
+                  <div className="flex items-center gap-2 pb-2 border-b border-[#ECE8DF]">
+                    <Building2 className="h-4 w-4 text-[#C9A227]" />
+                    <span className="font-extrabold text-xs text-[#111111]">
+                      Official OPay Account — Direct Bank Transfer
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Action Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 relative z-10">
-              <button
-                type="button"
-                onClick={handleWhatsAppConfirm}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 px-4 text-xs font-bold text-white shadow-sm hover:opacity-95 cursor-pointer"
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>Confirm Payment via WhatsApp</span>
-              </button>
+                  <div className="grid grid-cols-1 gap-3">
+                    {COMPANY_BANK_ACCOUNTS.map((account) => (
+                      <div
+                        key={account.accountNumber}
+                        className="p-4 rounded-xl bg-[#FAFAF8] border border-[#ECE8DF] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="font-bold text-[#111111]">{account.bankName}</div>
+                          <div className="text-[11px] text-[#66615B]">{account.accountName}</div>
+                          <div className="font-mono font-black text-xl text-[#C9A227] tracking-wide">
+                            {account.accountNumber}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyAccount(account.accountNumber)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DED9CF] bg-white px-4 py-2.5 text-[11px] font-bold text-[#111111] hover:border-[#C9A227] transition cursor-pointer shrink-0"
+                        >
+                          {copiedAccount === account.accountNumber ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                              <span>Account number copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5 text-[#C9A227]" />
+                              <span>Copy account number</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => downloadInvoicePDF(invoice)}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-3.5 px-4 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
-              >
-                <Download className="h-4 w-4 text-[#C9A227]" />
-                <span>Download Official PDF Invoice</span>
-              </button>
-            </div>
+                {/* Action Bar */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 relative z-10">
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppConfirm}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 px-4 text-xs font-bold text-white shadow-sm hover:opacity-95 cursor-pointer"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Confirm Payment via WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadInvoicePDF(invoice)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] py-3.5 px-4 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
+                  >
+                    <Download className="h-4 w-4 text-[#C9A227]" />
+                    <span>Download Official PDF Invoice</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -679,7 +663,7 @@ export function PublicInvoicePage() {
         {/* VIEW 2: OFFICIAL PAYMENT RECEIPT */}
         {/* ======================================================== */}
         {activeView === 'receipt' && receipt && (
-          <div className="rounded-3xl bg-white border border-[#ECE8DF] p-6 sm:p-10 shadow-sm space-y-8 relative overflow-hidden">
+          <div className="rounded-2xl bg-white border border-[#ECE8DF] p-5 sm:p-8 space-y-7 relative overflow-hidden">
             {/* Subtle Corporate Watermark */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center select-none overflow-hidden opacity-[0.035]">
               <div className="text-center rotate-[-25deg] transform">
@@ -724,7 +708,7 @@ export function PublicInvoicePage() {
             </div>
 
             {/* Received From & Settlement Card */}
-            <div className="p-6 rounded-2xl bg-green-50/70 border border-green-200 text-center space-y-2 relative z-10">
+            <div className="p-5 rounded-xl bg-green-50/70 border border-green-200 text-center space-y-2 relative z-10">
               <span className="text-[10px] uppercase font-bold tracking-wider text-green-800">
                 Total Confirmed Settlement
               </span>
@@ -784,11 +768,11 @@ export function PublicInvoicePage() {
 
               <button
                 type="button"
-                onClick={() => setActiveView('invoice')}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DED9CF] bg-white py-3.5 px-4 text-xs font-bold text-[#111111] shadow-sm hover:border-[#C9A227] cursor-pointer"
+                onClick={handleCopyLink}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#DED9CF] bg-white py-3.5 px-4 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
               >
-                <FileText className="h-4 w-4 text-[#C9A227]" />
-                <span>View Associated Invoice</span>
+                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4 text-[#C9A227]" />}
+                <span>{copied ? 'Receipt Link Copied' : 'Copy Receipt Link'}</span>
               </button>
             </div>
           </div>

@@ -10,7 +10,7 @@
  * Format: https://buysmart.ng/#/invoice?num=BSP-2026-001&d=<snapshot>
  */
 
-import { type InvoiceRecord, type InvoiceLine, type LineType } from './auth';
+import { type InvoiceRecord, type InvoiceLine, type LineType, type ReceiptRecord } from './auth';
 
 export const CANONICAL_SITE_ORIGIN = 'https://buysmart.ng';
 
@@ -144,17 +144,95 @@ export function decodeInvoiceSnapshot(token: string): InvoiceRecord | null {
   }
 }
 
+type CompactReceipt = {
+  i: string;
+  rn: string;
+  in: string;
+  cn: string;
+  cp: string;
+  ce: string;
+  pm: ReceiptRecord['paymentMethod'];
+  bn: string;
+  ref: string;
+  ap: number;
+  aw: string;
+  br: number;
+  pf: string;
+  pd: string;
+  rb: string;
+  st: ReceiptRecord['status'];
+  nt: string;
+  c: string;
+};
+
+/** Receipt snapshots follow the same portable-link format as invoices. */
+export function encodeReceiptSnapshot(receipt: ReceiptRecord): string {
+  const compact: CompactReceipt = {
+    i: receipt.id,
+    rn: receipt.receiptNumber,
+    in: receipt.invoiceNumber,
+    cn: receipt.clientName,
+    cp: receipt.clientPhone,
+    ce: receipt.clientEmail || '',
+    pm: receipt.paymentMethod,
+    bn: receipt.bankName || '',
+    ref: receipt.referenceNumber,
+    ap: Number(receipt.amountPaid) || 0,
+    aw: receipt.amountInWords || '',
+    br: Number(receipt.balanceRemaining) || 0,
+    pf: receipt.paymentFor || '',
+    pd: receipt.paymentDate,
+    rb: receipt.receivedBy || '',
+    st: receipt.status,
+    nt: receipt.notes || '',
+    c: receipt.createdAt,
+  };
+
+  return toBase64Url(JSON.stringify(compact));
+}
+
+export function decodeReceiptSnapshot(token: string): ReceiptRecord | null {
+  try {
+    const parsed = JSON.parse(fromBase64Url(token)) as CompactReceipt;
+    if (!parsed || !parsed.rn || !parsed.cn) return null;
+
+    return {
+      id: parsed.i || `link-${parsed.rn}`,
+      receiptNumber: parsed.rn,
+      invoiceNumber: parsed.in || '',
+      clientName: parsed.cn,
+      clientPhone: parsed.cp || '',
+      clientEmail: parsed.ce || '',
+      paymentMethod: parsed.pm || 'Bank Transfer',
+      bankName: parsed.bn || '',
+      referenceNumber: parsed.ref || '',
+      amountPaid: parsed.ap || 0,
+      amountInWords: parsed.aw || '',
+      balanceRemaining: parsed.br || 0,
+      paymentFor: parsed.pf || '',
+      paymentDate: parsed.pd || '',
+      receivedBy: parsed.rb || '',
+      status: parsed.st || 'Confirmed',
+      notes: parsed.nt || '',
+      createdAt: parsed.c || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 type LinkLocation = {
   invoiceNumber?: string;
   receiptNumber?: string;
   trackingNumber?: string;
   snapshot: InvoiceRecord | null;
+  receiptSnapshot: ReceiptRecord | null;
   view?: string;
 };
 
-/** Reads num/d/receipt/tracking from either "#/invoice?..." or "?..." URLs. */
+/** Reads num/d/r/receipt/tracking from either "#/invoice?..." or "?..." URLs. */
 export function readLinkLocation(): LinkLocation {
-  if (typeof window === 'undefined') return { snapshot: null };
+  if (typeof window === 'undefined') return { snapshot: null, receiptSnapshot: null };
 
   const queryPool: URLSearchParams[] = [];
   const hash = window.location.hash || '';
@@ -174,14 +252,18 @@ export function readLinkLocation(): LinkLocation {
 
   const snapshotToken = read(SNAPSHOT_PARAM);
   const snapshot = snapshotToken ? decodeInvoiceSnapshot(snapshotToken) : null;
-  const invoiceNumber = read('num') || read('invoice') || snapshot?.invoiceNumber;
-  const view = hash.includes('receipt') || window.location.search.includes('receipt') ? 'receipt' : undefined;
+  const receiptToken = read('r');
+  const receiptSnapshot = receiptToken ? decodeReceiptSnapshot(receiptToken) : null;
+  const invoiceNumber = read('num') || read('invoice') || snapshot?.invoiceNumber || receiptSnapshot?.invoiceNumber;
+  const receiptNumber = read('receipt') || receiptSnapshot?.receiptNumber;
+  const view = receiptSnapshot || hash.includes('receipt') || window.location.search.includes('receipt') ? 'receipt' : undefined;
 
   return {
     invoiceNumber,
-    receiptNumber: read('receipt'),
+    receiptNumber,
     trackingNumber: read('track'),
     snapshot,
+    receiptSnapshot,
     view,
   };
 }
@@ -208,4 +290,18 @@ function resolveShareOrigin(): string {
 
 export function buildPublicInvoiceLink(invoice: InvoiceRecord): string {
   return buildInvoiceLink(invoice, resolveShareOrigin());
+}
+
+/** Builds a self-contained receipt link, optionally carrying its invoice snapshot too. */
+export function buildPublicReceiptLink(receipt: ReceiptRecord, invoice?: InvoiceRecord): string {
+  const base = resolveShareOrigin().replace(/\/$/, '');
+  const params = new URLSearchParams({
+    receipt: receipt.receiptNumber,
+    r: encodeReceiptSnapshot(receipt),
+  });
+  if (invoice || receipt.invoiceNumber) {
+    params.set('num', invoice?.invoiceNumber || receipt.invoiceNumber);
+    if (invoice) params.set(SNAPSHOT_PARAM, encodeInvoiceSnapshot(invoice));
+  }
+  return `${base}/#/invoice?${params.toString()}`;
 }

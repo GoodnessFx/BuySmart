@@ -10,6 +10,7 @@ import {
   type LineType,
 } from './auth';
 import { COMPANY_BANK_ACCOUNTS } from './bank';
+import { ONLINE_PAYMENTS_UNDER_MAINTENANCE, ONLINE_PAYMENT_MAINTENANCE_MESSAGE } from './paystack';
 
 const LINE_LABELS: Record<LineType, string> = {
   goods: 'Goods Purchase',
@@ -250,11 +251,30 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
     doc.text('- ' + pdfMoney(inv.discount), totalsValueX, y, { align: 'right' });
   }
 
+  const amountPaid = Number(inv.amountPaid) || 0;
+  const outstandingBalance = Math.max(0, inv.total - amountPaid);
+
+  if (amountPaid > 0 && outstandingBalance > 0) {
+    y += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(70, 70, 70);
+    doc.text('Amount Paid:', totalsLabelX, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 17, 17);
+    doc.text(pdfMoney(amountPaid), totalsValueX, y, { align: 'right' });
+  }
+
   // Total container is measured from the real text width so the amount can never
   // spill outside its border, whatever the figure is.
   y += 9;
-  const totalLabel = inv.status === 'Paid' ? 'TOTAL SETTLED:' : 'TOTAL DUE:';
-  const totalAmount = pdfMoney(inv.total);
+  const totalLabel =
+    outstandingBalance <= 0
+      ? 'TOTAL SETTLED:'
+      : amountPaid > 0
+        ? 'BALANCE DUE:'
+        : 'TOTAL DUE:';
+  const totalAmount = pdfMoney(outstandingBalance > 0 ? outstandingBalance : inv.total);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -322,12 +342,18 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   });
 
   const portalY = y + 8 + COMPANY_BANK_ACCOUNTS.length * 15;
+  const paymentStatusText =
+    outstandingBalance > 0
+      ? ONLINE_PAYMENTS_UNDER_MAINTENANCE
+        ? ONLINE_PAYMENT_MAINTENANCE_MESSAGE
+        : 'Pay the balance using the official OPay transfer account above.'
+      : 'Payment confirmed in full. No further transfer is required.';
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(17, 17, 17);
-  doc.text('Pay Online:', 26, portalY);
+  doc.text('Payment status:', 26, portalY);
   doc.setTextColor(176, 126, 16);
-  doc.text(inv.paymentLink || 'Open your BuySmart invoice link and tap Pay Online with Paystack.', 48, portalY, {
+  doc.text(paymentStatusText, 48, portalY, {
     maxWidth: pageWidth - 76,
   });
 
