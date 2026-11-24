@@ -245,13 +245,61 @@ function nextDocumentNumber(existing: string[] | undefined, prefix: string): str
   return prefix + String(highest + 1).padStart(3, '0');
 }
 
-const blankInvoiceLine = (): InvoiceLine => ({
-  id: 'line-' + Date.now(),
+const blankInvoiceLine = (overrides: Partial<InvoiceLine> = {}): InvoiceLine => ({
+  id: 'line-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
   type: 'goods',
   description: '',
   quantity: 1,
   amount: 0,
+  ...overrides,
 });
+
+type InvoiceTemplateLine = Pick<InvoiceLine, 'type' | 'description' | 'quantity' | 'amount'>;
+type InvoiceTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  lines: InvoiceTemplateLine[];
+};
+
+const INVOICE_TEMPLATES: InvoiceTemplate[] = [
+  {
+    id: 'goods',
+    name: 'Goods purchase',
+    description: 'A clean single-line invoice for products already quoted.',
+    lines: [{ type: 'goods', description: 'Goods purchase', quantity: 1, amount: 0 }],
+  },
+  {
+    id: 'goods-freight',
+    name: 'Goods + freight',
+    description: 'Product cost with a separate air or sea freight line.',
+    lines: [
+      { type: 'goods', description: 'Goods purchase', quantity: 1, amount: 0 },
+      { type: 'freight', description: 'Air / sea freight', quantity: 1, amount: 0 },
+    ],
+  },
+  {
+    id: 'full-import',
+    name: 'Full import package',
+    description: 'Goods, freight, customs, packing, and procurement service lines.',
+    lines: [
+      { type: 'goods', description: 'Goods purchase', quantity: 1, amount: 0 },
+      { type: 'freight', description: 'Air / sea freight', quantity: 1, amount: 0 },
+      { type: 'customs', description: 'Customs & port terminal clearing', quantity: 1, amount: 0 },
+      { type: 'packing', description: 'Packing & protective crating', quantity: 1, amount: 0 },
+      { type: 'service', description: 'Procurement & inspection service', quantity: 1, amount: 0 },
+    ],
+  },
+  {
+    id: 'service',
+    name: 'Professional service',
+    description: 'Sourcing or inspection service with an optional exchange charge.',
+    lines: [
+      { type: 'service', description: 'Procurement & inspection service', quantity: 1, amount: 0 },
+      { type: 'exchange', description: 'Exchange conversion charges', quantity: 1, amount: 0 },
+    ],
+  },
+];
 
 /** A completely empty invoice, numbered after the records already on file. */
 function createBlankInvoice(existingNumbers: string[] = []): InvoiceRecord {
@@ -372,6 +420,12 @@ export function AdminDashboard() {
 
   // Invoice Form State — starts empty so only real business data is entered
   const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>(createBlankInvoice());
+  const [invoiceCalculator, setInvoiceCalculator] = useState({
+    description: '',
+    quantity: 1,
+    unitPrice: 0,
+  });
+  const [selectedInvoiceTemplate, setSelectedInvoiceTemplate] = useState('full-import');
   const invoiceGeneratorRef = useRef<HTMLDivElement | null>(null);
 
   // Receipt Form State
@@ -591,47 +645,125 @@ export function AdminDashboard() {
 
   // Recalculate invoice totals
   const recalculateInvoice = (lines: InvoiceLine[], prevBal: number, disc: number) => {
-    let sub = 0;
-    lines.forEach((l) => {
-      sub += Number(l.amount) || 0;
-    });
-    const tot = Math.max(0, sub + (Number(prevBal) || 0) - (Number(disc) || 0));
+    const sub = Math.round(lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0) * 100) / 100;
+    const tot =
+      Math.round(Math.max(0, sub + (Number(prevBal) || 0) - (Number(disc) || 0)) * 100) / 100;
     return { subtotal: sub, total: tot };
   };
 
+  const calculateInvoiceState = (form: InvoiceRecord, lines: InvoiceLine[]): InvoiceRecord => {
+    const previousBalance = Math.max(0, Number(form.previousBalance) || 0);
+    const discount = Math.max(0, Number(form.discount) || 0);
+    const { subtotal, total } = recalculateInvoice(lines, previousBalance, discount);
+    const amountPaid = Math.min(Math.max(0, Number(form.amountPaid) || 0), total);
+    const status: InvoiceRecord['status'] =
+      total > 0 && amountPaid >= total
+        ? 'Paid'
+        : amountPaid > 0
+          ? 'Partial'
+          : form.status === 'Paid' || form.status === 'Partial'
+            ? 'Unpaid'
+            : form.status;
+
+    return { ...form, previousBalance, discount, lines, subtotal, total, amountPaid, status };
+  };
+
   const handleUpdateLine = (id: string, updates: Partial<InvoiceLine>) => {
-    const updatedLines = invoiceForm.lines.map((l) => {
-      if (l.id !== id) return l;
-      const next = { ...l, ...updates };
-      if (next.type === 'freight' || next.type === 'customs') {
-        if (next.weight && next.rate) {
-          next.amount = Math.round(next.weight * next.rate);
+    setInvoiceForm((current) => {
+      const updatedLines = current.lines.map((line) => {
+        if (line.id !== id) return line;
+        const next = { ...line, ...updates };
+        const amountChanged = Object.prototype.hasOwnProperty.call(updates, 'amount');
+        const calculationChanged = ['quantity', 'rate', 'weight'].some((key) =>
+          Object.prototype.hasOwnProperty.call(updates, key)
+        );
+
+        if (amountChanged) {
+          next.amount = Math.max(0, Number(next.amount) || 0);
+          if (next.weight) {
+            next.rate = next.amount / next.weight;
+          } else if (next.quantity) {
+            next.rate = next.amount / next.quantity;
+          }
+        } else if (calculationChanged) {
+          if (next.type === 'freight' || next.type === 'customs') {
+            if (next.weight && next.rate) next.amount = Math.round(next.weight * next.rate * 100) / 100;
+          } else if (next.quantity && next.rate) {
+            next.amount = Math.round(next.quantity * next.rate * 100) / 100;
+          }
         }
-      }
-      return next;
+        return next;
+      });
+      return calculateInvoiceState(current, updatedLines);
     });
-    const { subtotal, total } = recalculateInvoice(updatedLines, invoiceForm.previousBalance, invoiceForm.discount);
-    setInvoiceForm({ ...invoiceForm, lines: updatedLines, subtotal, total });
   };
 
   const handleAddLine = () => {
-    const newLine: InvoiceLine = {
-      id: Date.now().toString(),
-      type: 'goods',
-      description: 'Additional Line Item',
-      quantity: 1,
-      amount: 0,
-    };
-    const updatedLines = [...invoiceForm.lines, newLine];
-    const { subtotal, total } = recalculateInvoice(updatedLines, invoiceForm.previousBalance, invoiceForm.discount);
-    setInvoiceForm({ ...invoiceForm, lines: updatedLines, subtotal, total });
+    const newLine = blankInvoiceLine({ description: 'Additional Line Item' });
+    setInvoiceForm((current) => calculateInvoiceState(current, [...current.lines, newLine]));
   };
 
   const handleRemoveLine = (id: string) => {
-    if (invoiceForm.lines.length <= 1) return;
-    const updatedLines = invoiceForm.lines.filter((l) => l.id !== id);
-    const { subtotal, total } = recalculateInvoice(updatedLines, invoiceForm.previousBalance, invoiceForm.discount);
-    setInvoiceForm({ ...invoiceForm, lines: updatedLines, subtotal, total });
+    setInvoiceForm((current) => {
+      if (current.lines.length <= 1) return current;
+      return calculateInvoiceState(current, current.lines.filter((line) => line.id !== id));
+    });
+  };
+
+  const handleAddCalculatedLine = () => {
+    const description = invoiceCalculator.description.trim();
+    const quantity = Number(invoiceCalculator.quantity) || 0;
+    const unitPrice = Number(invoiceCalculator.unitPrice) || 0;
+    if (!description || quantity <= 0 || unitPrice < 0) {
+      showNotify('Enter a description, quantity, and valid unit price first.', 'error');
+      return;
+    }
+
+    const newLine = blankInvoiceLine({
+      description,
+      quantity,
+      rate: unitPrice,
+      amount: Math.round(quantity * unitPrice * 100) / 100,
+    });
+    setInvoiceForm((current) => {
+      const hasOnlyBlankLine =
+        current.lines.length === 1 &&
+        !current.lines[0].description.trim() &&
+        Number(current.lines[0].amount) === 0;
+      const updatedLines = hasOnlyBlankLine ? [newLine] : [...current.lines, newLine];
+      return calculateInvoiceState(current, updatedLines);
+    });
+    setInvoiceCalculator({ description: '', quantity: 1, unitPrice: 0 });
+    showNotify('Calculated line added to the invoice.');
+  };
+
+  const handleApplyInvoiceTemplate = () => {
+    const template = INVOICE_TEMPLATES.find((item) => item.id === selectedInvoiceTemplate);
+    if (!template) return;
+
+    const hasEnteredLines = invoiceForm.lines.some(
+      (line) => line.description.trim().length > 0 || Number(line.amount) > 0
+    );
+    if (
+      hasEnteredLines &&
+      !window.confirm(
+        'Replace the current line items with this template? Customer details and dates will be kept, but payment fields will reset.'
+      )
+    ) {
+      return;
+    }
+
+    const updatedLines = template.lines.map((line) => blankInvoiceLine(line));
+    setInvoiceForm((current) =>
+      calculateInvoiceState({ ...current, amountPaid: 0, status: 'Unpaid' }, updatedLines)
+    );
+    showNotify(`${template.name} template applied.`);
+  };
+
+  const handleInvoiceAdjustment = (
+    updates: Partial<Pick<InvoiceRecord, 'previousBalance' | 'discount' | 'amountPaid'>>
+  ) => {
+    setInvoiceForm((current) => calculateInvoiceState({ ...current, ...updates }, current.lines));
   };
 
   /**
@@ -712,11 +844,17 @@ export function AdminDashboard() {
       return;
     }
 
-    const client = ensureInvoiceClient({ ...invoiceForm, clientName: name });
+    const calculatedInvoice = calculateInvoiceState(invoiceForm, lines);
+    const client = ensureInvoiceClient({ ...calculatedInvoice, clientName: name });
     setClients(getStoredClients());
 
     // Never overwrite another invoice: a new record always gets a free number.
-    let number = invoiceForm.invoiceNumber.trim() || nextDocumentNumber(invoices.map((i) => i.invoiceNumber), invoiceNumberPrefix);
+    let number =
+      calculatedInvoice.invoiceNumber.trim() ||
+      nextDocumentNumber(
+        invoices.map((i) => i.invoiceNumber),
+        invoiceNumberPrefix
+      );
     const numberTaken = invoices.some(
       (i) => i.invoiceNumber.toLowerCase() === number.toLowerCase() && i.id !== invoiceForm.id
     );
@@ -726,7 +864,7 @@ export function AdminDashboard() {
 
     const isUpdate = Boolean(invoiceForm.id);
     const recordToSave: InvoiceRecord = {
-      ...invoiceForm,
+      ...calculatedInvoice,
       id: invoiceForm.id || 'inv-' + Date.now().toString(),
       invoiceNumber: number,
       clientId: client.id,
@@ -1056,6 +1194,63 @@ export function AdminDashboard() {
     }
   };
 
+  const handleDownloadCurrentInvoice = async () => {
+    const name = invoiceForm.clientName.trim();
+    const phone = (invoiceForm.clientWhatsApp || invoiceForm.clientPhone).trim();
+    if (!name) {
+      showNotify('Enter the client name before downloading the invoice.', 'error');
+      return;
+    }
+    if (!phone) {
+      showNotify('Enter the client phone or WhatsApp number before downloading the invoice.', 'error');
+      return;
+    }
+
+    const lines = invoiceForm.lines.filter((line) => line.description.trim() || Number(line.amount) > 0);
+    if (lines.length === 0) {
+      showNotify('Add at least one line with an amount before downloading the invoice.', 'error');
+      return;
+    }
+    if (lines.some((line) => !line.description.trim())) {
+      showNotify('Give every invoice line a description before downloading the invoice.', 'error');
+      return;
+    }
+
+    const draft = calculateInvoiceState(
+      {
+        ...invoiceForm,
+        clientName: name,
+        clientPhone: phone,
+        clientWhatsApp: invoiceForm.clientWhatsApp.trim() || phone,
+        clientEmail: invoiceForm.clientEmail.trim().toLowerCase(),
+        clientAddress: invoiceForm.clientAddress.trim(),
+      },
+      lines
+    );
+    if (draft.total <= 0) {
+      showNotify('The invoice total must be greater than zero before downloading.', 'error');
+      return;
+    }
+
+    let number =
+      draft.invoiceNumber.trim() ||
+      nextDocumentNumber(
+        invoices.map((invoice) => invoice.invoiceNumber),
+        invoiceNumberPrefix
+      );
+    const numberTaken = invoices.some(
+      (invoice) => invoice.invoiceNumber.toLowerCase() === number.toLowerCase() && invoice.id !== draft.id
+    );
+    if (numberTaken) {
+      number = nextDocumentNumber(
+        invoices.map((invoice) => invoice.invoiceNumber),
+        invoiceNumberPrefix
+      );
+    }
+
+    await handleDownloadInvoicePDF({ ...draft, invoiceNumber: number });
+  };
+
   const handleDownloadReceiptPDF = async (rec: ReceiptRecord) => {
     try {
       await downloadReceiptPDF(rec);
@@ -1179,6 +1374,9 @@ Thank you for choosing Buysmart Procurement Limited.`;
   const sendInvoiceBalance = sendInvoiceTarget
     ? Math.max(0, sendInvoiceTarget.total - (sendInvoiceTarget.amountPaid || 0))
     : 0;
+  const invoiceBalanceDue = Math.max(0, invoiceForm.total - (invoiceForm.amountPaid || 0));
+  const selectedInvoiceTemplateDetails =
+    INVOICE_TEMPLATES.find((template) => template.id === selectedInvoiceTemplate) || INVOICE_TEMPLATES[0];
   const sendInvoiceIsPaid =
     sendInvoiceTarget?.status === 'Paid' || (Boolean(sendInvoiceTarget) && sendInvoiceBalance <= 0);
   const currentAdminTourStep = ADMIN_TOUR_STEPS[walkthroughStep] || ADMIN_TOUR_STEPS[0];
@@ -1749,8 +1947,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
                     {invoiceForm.id ? `Editing Invoice ${invoiceForm.invoiceNumber}` : 'Create Invoice for a Customer'}
                   </h2>
                   <p className="text-xs text-[#66615B]">
-                    Pick the customer, add the items, then create the invoice — it is filed in their client folder and a
-                    shareable payment link is generated instantly.
+                    Pick the customer, start with a template or the quick calculator, then preview or download the finished invoice.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -1769,8 +1966,8 @@ Thank you for choosing Buysmart Procurement Limited.`;
                     onClick={handleSaveCurrentInvoice}
                     className="inline-flex items-center gap-2 rounded-2xl bg-[#C9A227] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90 cursor-pointer"
                   >
-                  <Save className="h-4 w-4" />
-                  <span>{invoiceForm.id ? 'Update Invoice' : 'Create Invoice'}</span>
+                    <Save className="h-4 w-4" />
+                    <span>{invoiceForm.id ? 'Update Invoice' : 'Create Invoice'}</span>
                   </button>
                 </div>
               </div>
@@ -1899,9 +2096,24 @@ Thank you for choosing Buysmart Procurement Limited.`;
                   <label className={labelStyle}>Payment Status</label>
                   <select
                     value={invoiceForm.status}
-                    onChange={(e) =>
-                      setInvoiceForm({ ...invoiceForm, status: e.target.value as InvoiceRecord['status'] })
-                    }
+                    onChange={(e) => {
+                      const status = e.target.value as InvoiceRecord['status'];
+                      setInvoiceForm((current) => {
+                        if (status === 'Paid') {
+                          return calculateInvoiceState(
+                            { ...current, status, amountPaid: current.total },
+                            current.lines
+                          );
+                        }
+                        if (status === 'Unpaid') {
+                          return calculateInvoiceState(
+                            { ...current, status, amountPaid: 0 },
+                            current.lines
+                          );
+                        }
+                        return { ...current, status };
+                      });
+                    }}
                     className={inputStyle}
                   >
                     <option value="Unpaid">Unpaid</option>
@@ -1909,6 +2121,129 @@ Thank you for choosing Buysmart Procurement Limited.`;
                     <option value="Partial">Partial</option>
                     <option value="Sent">Sent</option>
                   </select>
+                </div>
+                <div>
+                  <label className={labelStyle}>Invoice Date</label>
+                  <input
+                    type="date"
+                    value={invoiceForm.createdAt}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, createdAt: e.target.value })}
+                    className={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label className={labelStyle}>Due Date</label>
+                  <input
+                    type="date"
+                    value={invoiceForm.dueDate}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                    className={inputStyle}
+                  />
+                </div>
+              </div>
+
+              {/* Quick calculator and reusable invoice templates */}
+              <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="rounded-2xl border border-[#ECE8DF] bg-[#FAFAF8] p-4 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl border border-[#ECE8DF] bg-white p-2.5 text-[#C9A227]">
+                      <Calculator className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#111111]">Quick line calculator</h3>
+                      <p className="text-[11px] text-[#8C827A]">Multiply quantity by unit price and add it straight to the invoice.</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <div className="sm:col-span-5">
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Description</label>
+                      <input
+                        type="text"
+                        value={invoiceCalculator.description}
+                        onChange={(e) =>
+                          setInvoiceCalculator({ ...invoiceCalculator, description: e.target.value })
+                        }
+                        placeholder="e.g. 32-inch smart TV"
+                        className="w-full rounded-xl border border-[#DED9CF] bg-white px-3 py-2 text-xs"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={invoiceCalculator.quantity}
+                        onChange={(e) =>
+                          setInvoiceCalculator({ ...invoiceCalculator, quantity: parseFloat(e.target.value) || 0 })
+                        }
+                        className="w-full rounded-xl border border-[#DED9CF] bg-white px-3 py-2 text-xs font-bold"
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Unit price (NGN)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={invoiceCalculator.unitPrice}
+                        onChange={(e) =>
+                          setInvoiceCalculator({ ...invoiceCalculator, unitPrice: parseFloat(e.target.value) || 0 })
+                        }
+                        className="w-full rounded-xl border border-[#DED9CF] bg-white px-3 py-2 text-xs font-bold"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Line total</span>
+                      <div className="min-h-9 rounded-xl border border-[#C9A227]/30 bg-[#C9A227]/10 px-3 py-2 text-xs font-extrabold text-[#6B5515]">
+                        {formatNaira(invoiceCalculator.quantity * invoiceCalculator.unitPrice)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddCalculatedLine}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#111111] px-4 py-2.5 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4 text-[#C9A227]" />
+                      Add calculated line
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-[#ECE8DF] bg-white p-4 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl border border-[#ECE8DF] bg-[#FAFAF8] p-2.5 text-[#C9A227]">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#111111]">Invoice templates</h3>
+                      <p className="text-[11px] text-[#8C827A]">Start with the right structure, then enter your real amounts.</p>
+                    </div>
+                  </div>
+                  <select
+                    value={selectedInvoiceTemplate}
+                    onChange={(e) => setSelectedInvoiceTemplate(e.target.value)}
+                    className={inputStyle}
+                  >
+                    {INVOICE_TEMPLATES.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="min-h-8 text-[11px] leading-5 text-[#66615B]">
+                    {selectedInvoiceTemplateDetails.description}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleApplyInvoiceTemplate}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#C9A227]/40 bg-[#C9A227]/10 px-4 py-2.5 text-xs font-extrabold text-[#6B5515] hover:bg-[#C9A227]/20 cursor-pointer"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Use this template
+                  </button>
                 </div>
               </div>
 
@@ -1946,6 +2281,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
                           <option value="customs">Customs &amp; Terminal Port</option>
                           <option value="packing">Packing &amp; Wooden Crating</option>
                           <option value="service">Sourcing &amp; Inspection Agency</option>
+                          <option value="exchange">Exchange Conversion Charges</option>
                         </select>
                       </div>
 
@@ -1984,25 +2320,84 @@ Thank you for choosing Buysmart Procurement Limited.`;
                 </div>
               </div>
 
+              {/* Invoice adjustments */}
+              <div className="rounded-2xl border border-[#ECE8DF] bg-white p-4 space-y-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h3 className="text-sm font-extrabold text-[#111111]">Invoice adjustments</h3>
+                  <p className="text-[11px] text-[#8C827A]">Previous balances, discounts, and part-payments update the totals automatically.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Previous balance (NGN)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={invoiceForm.previousBalance}
+                      onChange={(e) =>
+                        handleInvoiceAdjustment({ previousBalance: parseFloat(e.target.value) || 0 })
+                      }
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3 py-2.5 text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Discount (NGN)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={invoiceForm.discount}
+                      onChange={(e) => handleInvoiceAdjustment({ discount: parseFloat(e.target.value) || 0 })}
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3 py-2.5 text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8C827A]">Amount paid (NGN)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={invoiceForm.total}
+                      step="0.01"
+                      value={invoiceForm.amountPaid}
+                      onChange={(e) => handleInvoiceAdjustment({ amountPaid: parseFloat(e.target.value) || 0 })}
+                      className="w-full rounded-xl border border-[#DED9CF] bg-[#FAFAF8] px-3 py-2.5 text-xs font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Total Summary */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl bg-[#111111] text-white">
+              <div className="flex flex-col gap-4 p-5 rounded-2xl bg-[#111111] text-white lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <span className="text-xs uppercase tracking-wider text-white/70">Total Calculated Invoice Due</span>
+                  <span className="text-xs uppercase tracking-wider text-white/70">Calculated invoice total</span>
                   <div className="text-2xl font-extrabold text-[#C9A227]">{formatNaira(invoiceForm.total)}</div>
+                  {invoiceForm.amountPaid > 0 && (
+                    <div className="mt-1 text-xs font-semibold text-white/70">
+                      Balance due: <span className="font-extrabold text-white">{formatNaira(invoiceBalanceDue)}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-3 mt-3 sm:mt-0">
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setPreviewInvoice(invoiceForm)}
-                    className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white hover:bg-white/20 cursor-pointer"
+                    className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20 cursor-pointer"
                   >
                     Preview
                   </button>
                   <button
                     type="button"
+                    onClick={handleDownloadCurrentInvoice}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20 cursor-pointer"
+                  >
+                    <Download className="h-4 w-4 text-[#C9A227]" />
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleSaveCurrentInvoice}
-                    className="rounded-xl bg-[#C9A227] px-5 py-2 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                    className="rounded-xl bg-[#C9A227] px-5 py-2.5 text-xs font-bold text-white hover:opacity-90 cursor-pointer"
                   >
                     Save &amp; Generate
                   </button>

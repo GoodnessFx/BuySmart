@@ -320,34 +320,70 @@ const buyerKnowledge = [
   },
 ];
 
+const longestRatingHighlight = ratingHighlights.reduce(
+  (longest, phrase) => (phrase.length > longest.length ? phrase : longest),
+  ""
+);
+
 function RatingHighlight() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
-  const swapTimer = useRef<number | undefined>(undefined);
+  const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      setVisible(false);
-      swapTimer.current = window.setTimeout(() => {
-        setActiveIndex((current) => (current + 1) % ratingHighlights.length);
-        setVisible(true);
-      }, 450);
-    }, 4200);
+    const phrase = ratingHighlights[activeIndex];
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setDisplayedText(phrase);
+      return;
+    }
 
-    return () => {
-      window.clearInterval(interval);
-      if (swapTimer.current) window.clearTimeout(swapTimer.current);
+    let position = 0;
+    let timer: number | undefined;
+    setDisplayedText("");
+
+    const erase = () => {
+      position -= 1;
+      setDisplayedText(phrase.slice(0, position));
+      if (position > 0) {
+        timer = window.setTimeout(erase, 18);
+      } else {
+        timer = window.setTimeout(
+          () => setActiveIndex((current) => (current + 1) % ratingHighlights.length),
+          220
+        );
+      }
     };
-  }, []);
+
+    const type = () => {
+      position += 1;
+      setDisplayedText(phrase.slice(0, position));
+      if (position < phrase.length) {
+        timer = window.setTimeout(type, 32);
+      } else {
+        timer = window.setTimeout(erase, 1900);
+      }
+    };
+
+    timer = window.setTimeout(type, 120);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [activeIndex]);
 
   return (
-    <div className="mt-1.5 h-5 overflow-hidden">
+    <div className="mt-1.5 grid h-5 overflow-hidden">
       <span
-        className={`block text-xs font-semibold leading-5 text-[#6B5515] transition-all duration-500 ease-out motion-reduce:transition-none ${
-          visible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
-        }`}
+        aria-hidden="true"
+        className="invisible col-start-1 row-start-1 whitespace-nowrap text-xs font-semibold leading-5"
       >
-        {ratingHighlights[activeIndex]}
+        {longestRatingHighlight}
+      </span>
+      <span className="sr-only">{ratingHighlights[activeIndex]}</span>
+      <span
+        aria-hidden="true"
+        className="col-start-1 row-start-1 whitespace-nowrap text-xs font-semibold leading-5 text-[#6B5515]"
+      >
+        {displayedText}
+        <span className="ml-0.5 inline-block h-3 w-px translate-y-[-1px] bg-[#8A6D14] motion-safe:animate-pulse" />
       </span>
     </div>
   );

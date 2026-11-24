@@ -311,7 +311,20 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
   });
 
   // Official settlement account (large, bold, high contrast)
-  const bankBoxHeight = 12 + COMPANY_BANK_ACCOUNTS.length * 15;
+  const paymentStatusText =
+    outstandingBalance > 0
+      ? ONLINE_PAYMENTS_UNDER_MAINTENANCE
+        ? ONLINE_PAYMENT_MAINTENANCE_MESSAGE
+        : 'Pay the balance using the official OPay transfer account above.'
+      : 'Payment confirmed in full. No further transfer is required.';
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  const paymentStatusLines = doc.splitTextToSize(paymentStatusText, pageWidth - 52);
+  const accountBlockHeight = COMPANY_BANK_ACCOUNTS.length * 15;
+  const paymentLabelOffset = 12 + accountBlockHeight + 4;
+  const paymentTextOffset = paymentLabelOffset + 5;
+  const bankBoxHeight = paymentTextOffset + (paymentStatusLines.length - 1) * 4.5 + 8;
+
   y = totalBoxY + totalBoxHeight + 11;
   if (y + bankBoxHeight + 34 > pageHeight - 28) {
     doc.addPage();
@@ -350,20 +363,13 @@ export async function downloadInvoicePDF(inv: InvoiceRecord): Promise<void> {
     doc.text(account.accountName, 70, rowY + 7);
   });
 
-  const portalY = y + 8 + COMPANY_BANK_ACCOUNTS.length * 15;
-  const paymentStatusText =
-    outstandingBalance > 0
-      ? ONLINE_PAYMENTS_UNDER_MAINTENANCE
-        ? ONLINE_PAYMENT_MAINTENANCE_MESSAGE
-        : 'Pay the balance using the official OPay transfer account above.'
-      : 'Payment confirmed in full. No further transfer is required.';
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(17, 17, 17);
-  doc.text('Payment status:', 26, portalY);
+  doc.text('Payment status:', 26, y + paymentLabelOffset);
   doc.setTextColor(176, 126, 16);
-  doc.text(paymentStatusText, 48, portalY, {
-    maxWidth: pageWidth - 76,
+  paymentStatusLines.forEach((line, index) => {
+    doc.text(line, 26, y + paymentTextOffset + index * 4.5);
   });
 
   // Footer seal — logo centred above its caption, never overlapping the text
