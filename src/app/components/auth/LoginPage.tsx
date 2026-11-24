@@ -6,14 +6,12 @@ import {
   User,
   ArrowRight,
   AlertCircle,
-  Truck,
   CheckCircle2,
   Building2,
   Eye,
   EyeOff,
   ArrowLeft,
   Globe2,
-  Lock,
   ChevronDown,
   FileText,
   MessageCircle,
@@ -36,28 +34,16 @@ import { setSessionPassphrase } from '../../lib/sheets';
 
 const GOOGLE_CLIENT_ID = '24300395823-bhdi9ga429mgj053afjl3gnionf53ctb.apps.googleusercontent.com';
 
-/** Plain-language guide shown on the login screen so nobody lands in a portal confused. */
-const portalGuides = {
-  client: {
-    title: 'How the Client Portal works',
-    intro: 'Sign in once — everything about your orders lives in one place.',
-    steps: [
-      { icon: User, title: '1 · Create or sign in', body: 'Use Google 1-click or email. New accounts get a client code (BSP-CL-XXXX) that ties your orders together.' },
-      { icon: PackageSearch, title: '2 · Track shipments', body: 'See live milestones — factory pickup, freight, customs, Lagos handoff — for every parcel we handle for you.' },
-      { icon: FileText, title: '3 · Invoices & receipts', body: 'View itemized invoices, download official PDF receipts, and pay only to the verified BuySmart account shown.' },
-      { icon: MessageCircle, title: '4 · Quotes & support', body: 'Request factory quotes, estimate shipping costs, and reach the desk on WhatsApp without leaving the portal.' },
-    ],
-  },
-  admin: {
-    title: 'How the Admin Console works',
-    intro: 'Restricted to BuySmart management — master credentials only, no public signup.',
-    steps: [
-      { icon: Lock, title: '1 · Master access', body: 'Enter the authorized management email and master password. Every session is tied to these credentials.' },
-      { icon: User, title: '2 · Client folders', body: 'Each registered client gets a folder holding their invoices, receipts, and shipment history in one ledger.' },
-      { icon: FileText, title: '3 · Invoices & receipts', body: 'Create numbered customer invoices, generate official receipts, and share secure payment links with clients.' },
-      { icon: Truck, title: '4 · Shipments & alerts', body: 'Update tracking milestones clients see live, and review new portal signup alerts from the bell inbox.' },
-    ],
-  },
+/** Public login guidance is client-only. Management instructions stay behind authentication. */
+const clientPortalGuide = {
+  title: 'How the Client Portal works',
+  intro: 'Sign in once — everything about your orders lives in one place.',
+  steps: [
+    { icon: User, title: '1 · Create or sign in', body: 'Use Google 1-click or email. New accounts get a client code (BSP-CL-XXXX) that ties your orders together.' },
+    { icon: PackageSearch, title: '2 · Track shipments', body: 'See live milestones — factory pickup, freight, customs, Lagos handoff — for every parcel we handle for you.' },
+    { icon: FileText, title: '3 · Invoices & receipts', body: 'View itemized invoices, download official PDF receipts, and pay only to the verified BuySmart account shown.' },
+    { icon: MessageCircle, title: '4 · Quotes & support', body: 'Request factory quotes, estimate shipping costs, and reach the desk on WhatsApp without leaving the portal.' },
+  ],
 } as const;
 
 function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
@@ -591,37 +577,39 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {/* How it works — plain-language guide for the selected workspace */}
-          <div className="mb-5 rounded-2xl border border-[#ECE8DF] bg-white overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setGuideOpen((value) => !value)}
-              aria-expanded={guideOpen}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
-            >
-              <span className="flex items-center gap-2 text-xs font-bold text-[#111111]">
-                <CheckCircle2 className="h-4 w-4 text-[#C9A227]" />
-                {portalGuides[role].title}
-              </span>
-              <ChevronDown className={`h-4 w-4 text-[#66615B] transition-transform duration-200 ${guideOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {guideOpen && (
-              <div className="px-4 pb-4">
-                <p className="text-[11px] leading-5 text-[#66615B]">{portalGuides[role].intro}</p>
-                <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-                  {portalGuides[role].steps.map((step) => (
-                    <div key={step.title} className="rounded-xl border border-[#ECE8DF] bg-[#FAFAF8] p-3">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#111111]">
-                        <step.icon className="h-3.5 w-3.5 shrink-0 text-[#C9A227]" />
-                        {step.title}
+          {/* Client-only public guide. Admin console instructions are available after login. */}
+          {role === 'client' && (
+            <div className="mb-5 rounded-2xl border border-[#ECE8DF] bg-white overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setGuideOpen((value) => !value)}
+                aria-expanded={guideOpen}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
+              >
+                <span className="flex items-center gap-2 text-xs font-bold text-[#111111]">
+                  <CheckCircle2 className="h-4 w-4 text-[#C9A227]" />
+                  {clientPortalGuide.title}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-[#66615B] transition-transform duration-200 ${guideOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {guideOpen && (
+                <div className="px-4 pb-4">
+                  <p className="text-[11px] leading-5 text-[#66615B]">{clientPortalGuide.intro}</p>
+                  <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+                    {clientPortalGuide.steps.map((step) => (
+                      <div key={step.title} className="rounded-xl border border-[#ECE8DF] bg-[#FAFAF8] p-3">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#111111]">
+                          <step.icon className="h-3.5 w-3.5 shrink-0 text-[#C9A227]" />
+                          {step.title}
+                        </div>
+                        <p className="mt-1 text-[11px] leading-4.5 text-[#66615B]">{step.body}</p>
                       </div>
-                      <p className="mt-1 text-[11px] leading-4.5 text-[#66615B]">{step.body}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* CLIENT-ONLY: Google Sign In */}
           {role === 'client' && (

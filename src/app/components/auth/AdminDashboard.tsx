@@ -45,6 +45,8 @@ import {
   Calculator,
   Bell,
   HelpCircle,
+  BookOpen,
+  Compass,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { buildPublicInvoiceLink, buildPublicReceiptLink } from '../../lib/invoice-link';
@@ -103,7 +105,86 @@ const LINE_LABELS: Record<LineType, string> = {
 
 type AdminTab = 'invoices' | 'receipts' | 'shipments' | 'clients' | 'rates' | 'reports';
 
+type AdminTourStep = {
+  target: AdminTab | 'notifications';
+  tab?: AdminTab;
+  title: string;
+  body: string;
+};
+
+type AdminTourRect = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
 const ADMIN_TIPS_KEY = 'buysmart_admin_tab_tips_dismissed';
+const ADMIN_TOUR_KEY_PREFIX = 'buysmart_admin_walkthrough_completed:';
+
+const ADMIN_TOUR_STEPS: AdminTourStep[] = [
+  {
+    target: 'notifications',
+    title: 'Review new client signups',
+    body: 'Open the bell to see new portal registrations. Use “Open Client Folder” to jump straight to a customer’s ledger.',
+  },
+  {
+    target: 'invoices',
+    tab: 'invoices',
+    title: 'Create and share invoices',
+    body: 'Choose a client, add the charges, and create the invoice. Copy its portable link or send it by WhatsApp so the client can view and pay by OPay transfer.',
+  },
+  {
+    target: 'receipts',
+    tab: 'receipts',
+    title: 'Confirm payments with official receipts',
+    body: 'Record the amount received and reference, confirm the receipt, then copy or send its link. Confirmed receipts update the related invoice balance automatically.',
+  },
+  {
+    target: 'shipments',
+    tab: 'shipments',
+    title: 'Keep shipment milestones current',
+    body: 'Create a shipment, assign it to the right client, and update each milestone. Clients see these updates in their portal.',
+  },
+  {
+    target: 'clients',
+    tab: 'clients',
+    title: 'Manage client folders',
+    body: 'Open a client folder to review their invoices, receipts, and shipment history together. Keep contact and delivery details accurate.',
+  },
+  {
+    target: 'rates',
+    tab: 'rates',
+    title: 'Maintain shipping rates and calculator',
+    body: 'Update air and sea rates, minimum charges, and exchange settings. The client estimator uses these same values.',
+  },
+  {
+    target: 'reports',
+    tab: 'reports',
+    title: 'Review the financial summary',
+    body: 'Use the summary to monitor invoice totals, payments, balances, clients, and active shipments before following up on outstanding work.',
+  },
+];
+
+function adminTourStorageKey(identity?: string): string {
+  return ADMIN_TOUR_KEY_PREFIX + (identity || '').trim().toLowerCase();
+}
+
+function hasCompletedAdminTour(identity?: string): boolean {
+  try {
+    return window.localStorage.getItem(adminTourStorageKey(identity)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markAdminTourComplete(identity?: string): void {
+  try {
+    window.localStorage.setItem(adminTourStorageKey(identity), '1');
+  } catch {
+    /* The tour still closes when browser storage is unavailable. */
+  }
+}
 
 function readDismissedTips(key: string): Record<string, boolean> {
   try {
@@ -245,11 +326,40 @@ export function AdminDashboard() {
       setReopenedTips((current) => ({ ...current, [activeTab]: true }));
     }
   };
+
+  const startAdminWalkthrough = () => {
+    setWalkthroughStep(0);
+    setActiveTab('invoices');
+    setTourRect(null);
+    setWalkthroughOpen(true);
+  };
+
+  const finishAdminWalkthrough = () => {
+    markAdminTourComplete(adminTourIdentity);
+    setTourRect(null);
+    setWalkthroughOpen(false);
+  };
+
+  const goToAdminTourStep = (step: number) => {
+    const nextStep = Math.max(0, Math.min(step, ADMIN_TOUR_STEPS.length - 1));
+    const nextTourStep = ADMIN_TOUR_STEPS[nextStep];
+    setWalkthroughStep(nextStep);
+    if (nextTourStep.tab) setActiveTab(nextTourStep.tab);
+    setTourRect(null);
+  };
+
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [shipments, setShipments] = useState<ShipmentItem[]>([]);
-  const [user, setUser] = useState(getAuthUser());
+  const [user, setUser] = useState(getAuthUser);
+  const adminTourIdentity = user?.email || user?.id || user?.role || 'management';
+  const [walkthroughOpen, setWalkthroughOpen] = useState(
+    () =>
+      (user?.role === 'admin' || user?.role === 'staff') && !hasCompletedAdminTour(adminTourIdentity)
+  );
+  const [walkthroughStep, setWalkthroughStep] = useState(0);
+  const [tourRect, setTourRect] = useState<AdminTourRect | null>(null);
 
   // Invoice Form State — starts empty so only real business data is entered
   const [invoiceForm, setInvoiceForm] = useState<InvoiceRecord>(createBlankInvoice());
@@ -279,6 +389,7 @@ export function AdminDashboard() {
   const [shippingRates, setShippingRates] = useState<ShippingRates>(getShippingRates());
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
+  const [showConsoleGuide, setShowConsoleGuide] = useState(false);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
   const [tawkConfig, setTawkConfig] = useState<TawkConfig>(getTawkConfig());
   const [paystackConfig, setPaystackConfig] = useState<PaystackConfig>(getPaystackConfig());
@@ -326,6 +437,67 @@ export function AdminDashboard() {
   useEffect(() => {
     refreshAllData();
   }, []);
+
+  // First-login and replayable admin spotlight walkthrough.
+  useEffect(() => {
+    if (!walkthroughOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const targetKey = ADMIN_TOUR_STEPS[walkthroughStep]?.target || 'invoices';
+    let measureTimer: number | undefined;
+
+    const measureTarget = () => {
+      const target = document.querySelector<HTMLElement>(`[data-admin-tour="${targetKey}"]`);
+      if (!target) {
+        setTourRect(null);
+        return;
+      }
+
+      const rect = target.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        setTourRect(null);
+        return;
+      }
+
+      setTourRect({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
+    const revealTarget = () => {
+      const target = document.querySelector<HTMLElement>(`[data-admin-tour="${targetKey}"]`);
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      measureTimer = window.setTimeout(() => {
+        measureTarget();
+        document.getElementById('admin-tour-next')?.focus({ preventScroll: true });
+      }, 220);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        markAdminTourComplete(adminTourIdentity);
+        setTourRect(null);
+        setWalkthroughOpen(false);
+      }
+    };
+
+    revealTarget();
+    window.addEventListener('resize', measureTarget);
+    window.addEventListener('scroll', measureTarget, true);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (measureTimer) window.clearTimeout(measureTimer);
+      window.removeEventListener('resize', measureTarget);
+      window.removeEventListener('scroll', measureTarget, true);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [walkthroughOpen, walkthroughStep, adminTourIdentity]);
 
   // The signup alerts popover closes on outside click/tap, Escape or its own X button.
   useEffect(() => {
@@ -998,9 +1170,119 @@ Thank you for choosing Buysmart Procurement Limited.`;
     : 0;
   const sendInvoiceIsPaid =
     sendInvoiceTarget?.status === 'Paid' || (Boolean(sendInvoiceTarget) && sendInvoiceBalance <= 0);
+  const currentAdminTourStep = ADMIN_TOUR_STEPS[walkthroughStep] || ADMIN_TOUR_STEPS[0];
+  const adminTourTooltipStyle =
+    tourRect && typeof window !== 'undefined'
+      ? {
+          width: Math.min(380, window.innerWidth - 32),
+          left: Math.max(
+            16,
+            Math.min(
+              tourRect.left + tourRect.width / 2 - Math.min(380, window.innerWidth - 32) / 2,
+              window.innerWidth - Math.min(380, window.innerWidth - 32) - 16
+            )
+          ),
+          top:
+            tourRect.top + tourRect.height + 14 + 250 <= window.innerHeight - 16
+              ? tourRect.top + tourRect.height + 14
+              : Math.max(16, tourRect.top - 264),
+        }
+      : undefined;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#111111] antialiased">
+      {/* First-login and replayable management walkthrough. */}
+      {walkthroughOpen && (user?.role === 'admin' || user?.role === 'staff') && (
+        <>
+          <div className="fixed inset-0 z-[59]" aria-hidden="true" />
+          {tourRect && (
+            <div
+              className="pointer-events-none fixed z-[60] rounded-xl border-2 border-[#C9A227] transition-[top,left,width,height] duration-200"
+              style={{
+                top: tourRect.top - 6,
+                left: tourRect.left - 6,
+                width: tourRect.width + 12,
+                height: tourRect.height + 12,
+                boxShadow: '0 0 0 9999px rgba(17, 17, 17, 0.62)',
+              }}
+            />
+          )}
+          {tourRect && adminTourTooltipStyle && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-tour-title"
+              aria-describedby="admin-tour-body"
+              className="fixed z-[70] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-[#ECE8DF] bg-white p-5 shadow-xl"
+              style={adminTourTooltipStyle}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6B5515]">
+                  <Compass className="h-3.5 w-3.5 text-[#C9A227]" /> Admin console tour
+                </span>
+                <button
+                  type="button"
+                  onClick={finishAdminWalkthrough}
+                  className="text-[11px] font-bold text-[#8C827A] hover:text-[#111111] cursor-pointer"
+                >
+                  Skip tour
+                </button>
+              </div>
+
+              <h2 id="admin-tour-title" className="mt-3 text-lg font-extrabold text-[#111111]">
+                {currentAdminTourStep.title}
+              </h2>
+              <p id="admin-tour-body" className="mt-2 text-xs leading-5 text-[#66615B]">
+                {currentAdminTourStep.body}
+              </p>
+
+              <div className="mt-4 flex items-center gap-1.5" aria-hidden="true">
+                {ADMIN_TOUR_STEPS.map((step, index) => (
+                  <span
+                    key={step.target}
+                    className={`h-1.5 flex-1 rounded-full ${
+                      index <= walkthroughStep ? 'bg-[#C9A227]' : 'bg-[#ECE8DF]'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <span className="text-[10px] font-bold text-[#8C827A]">
+                  Step {walkthroughStep + 1} of {ADMIN_TOUR_STEPS.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToAdminTourStep(walkthroughStep - 1)}
+                    disabled={walkthroughStep === 0}
+                    className="rounded-xl border border-[#DED9CF] px-3 py-2 text-[11px] font-bold text-[#4A4A4A] hover:border-[#C9A227] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    id="admin-tour-next"
+                    type="button"
+                    onClick={() =>
+                      walkthroughStep === ADMIN_TOUR_STEPS.length - 1
+                        ? finishAdminWalkthrough()
+                        : goToAdminTourStep(walkthroughStep + 1)
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] px-4 py-2 text-[11px] font-bold text-white hover:opacity-90 cursor-pointer"
+                  >
+                    {walkthroughStep === ADMIN_TOUR_STEPS.length - 1 ? 'Finish Tour' : 'Next'}
+                    {walkthroughStep === ADMIN_TOUR_STEPS.length - 1 ? (
+                      <Check className="h-3.5 w-3.5 text-[#C9A227]" />
+                    ) : (
+                      <ArrowRight className="h-3.5 w-3.5 text-[#C9A227]" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
       {/* Tap anywhere outside the alerts popover to dismiss it */}
       {showNotificationsDrawer && (
         <div
@@ -1037,6 +1319,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
               <button
                 type="button"
                 onClick={() => setShowNotificationsDrawer(!showNotificationsDrawer)}
+                data-admin-tour="notifications"
                 title="Client Signup Notifications"
                 className="relative p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
               >
@@ -1140,6 +1423,28 @@ Thank you for choosing Buysmart Procurement Limited.`;
               )}
             </div>
 
+            {(user?.role === 'admin' || user?.role === 'staff') && (
+              <>
+                <button
+                  type="button"
+                  onClick={startAdminWalkthrough}
+                  title="Replay console walkthrough"
+                  aria-label="Replay console walkthrough"
+                  className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+                >
+                  <Compass className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowConsoleGuide(true)}
+                  title="Open private console guide"
+                  aria-label="Open private console guide"
+                  className="p-2.5 rounded-full border border-[#DED9CF] bg-white text-[#4A4A4A] hover:text-[#C9A227] hover:border-[#C9A227] transition cursor-pointer"
+                >
+                  <BookOpen className="h-4 w-4" />
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={toggleCurrentTip}
@@ -1181,6 +1486,7 @@ Thank you for choosing Buysmart Procurement Limited.`;
             <button
               key={id}
               type="button"
+              data-admin-tour={id}
               onClick={() => setActiveTab(id as AdminTab)}
               className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === id
                   ? 'bg-[#111111] text-white shadow-sm'
@@ -2783,6 +3089,57 @@ Thank you for choosing Buysmart Procurement Limited.`;
                 <Copy className="h-4 w-4 text-[#C9A227]" />
                 <span>Copy Receipt Link</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Private management guide — only rendered inside the authenticated admin console. */}
+      {showConsoleGuide && (user?.role === 'admin' || user?.role === 'staff') && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-console-guide-title"
+            className="w-full max-w-lg rounded-2xl border border-[#ECE8DF] bg-white p-5 sm:p-6"
+          >
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#ECE8DF]">
+              <div>
+                <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6B5515]">
+                  <Shield className="h-3.5 w-3.5 text-[#C9A227]" /> Private management guide
+                </div>
+                <h2 id="admin-console-guide-title" className="mt-1.5 text-lg font-extrabold text-[#111111]">
+                  How the Admin Console works
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-[#66615B]">
+                  Restricted to BuySmart management — master credentials only, no public signup.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowConsoleGuide(false)}
+                aria-label="Close console guide"
+                className="shrink-0 rounded-lg p-1.5 text-[#8C827A] hover:bg-[#FAFAF8] hover:text-[#111111] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {[
+                { icon: Shield, title: '1 · Master access', body: 'Enter the authorized management email and master password. Every session is tied to these credentials.' },
+                { icon: Users, title: '2 · Client folders', body: 'Each registered client gets a folder holding their invoices, receipts, and shipment history in one ledger.' },
+                { icon: FileText, title: '3 · Invoices & receipts', body: 'Create numbered customer invoices, generate official receipts, and share secure payment links with clients.' },
+                { icon: Truck, title: '4 · Shipments & alerts', body: 'Update tracking milestones clients see live, and review new portal signup alerts from the bell inbox.' },
+              ].map((item) => (
+                <div key={item.title} className="flex items-start gap-3 rounded-xl border border-[#ECE8DF] bg-[#FAFAF8] p-3.5">
+                  <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A227]" />
+                  <div>
+                    <div className="text-xs font-extrabold text-[#111111]">{item.title}</div>
+                    <p className="mt-1 text-[11px] leading-5 text-[#66615B]">{item.body}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -34,6 +34,7 @@ import {
   Check,
   Shield,
   Clock3,
+  Compass,
 } from 'lucide-react';
 import { downloadInvoicePDF, downloadReceiptPDF } from '../../lib/pdf';
 import { ModernTrackingCard } from '../shipments/ModernTrackingCard';
@@ -62,7 +63,74 @@ import {
 
 type ClientTab = 'shipments' | 'invoices' | 'profile' | 'quote' | 'estimator' | 'support';
 
+type ClientTourStep = {
+  tab: ClientTab;
+  title: string;
+  body: string;
+};
+
+type ClientTourRect = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
 const CLIENT_TIPS_KEY = 'buysmart_client_tab_tips_dismissed';
+const CLIENT_TOUR_KEY_PREFIX = 'buysmart_client_walkthrough_completed:';
+
+const CLIENT_TOUR_STEPS: ClientTourStep[] = [
+  {
+    tab: 'shipments',
+    title: 'Track every shipment',
+    body: 'Open a shipment card to see its tracking ID and latest milestone. Keep that ID handy when contacting your account officer.',
+  },
+  {
+    tab: 'invoices',
+    title: 'Invoices and official receipts',
+    body: 'Open an invoice to see the balance and official OPay account. Download confirmed receipts from this same section.',
+  },
+  {
+    tab: 'profile',
+    title: 'Keep your details current',
+    body: 'Update your WhatsApp number, delivery address, and business details so cargo and payment updates reach you without delays.',
+  },
+  {
+    tab: 'quote',
+    title: 'Request a sourcing quote',
+    body: 'Add the product link or description, quantity, and shipping method. Your request goes directly to the BuySmart admin desk.',
+  },
+  {
+    tab: 'estimator',
+    title: 'Estimate shipping before ordering',
+    body: 'Enter carton dimensions and weight to compare air and sea freight costs before you confirm a purchase.',
+  },
+  {
+    tab: 'support',
+    title: 'Reach your account officer',
+    body: 'Call or WhatsApp your assigned officer for shipment, invoice, payment, or sourcing help.',
+  },
+];
+
+function clientTourStorageKey(identity?: string): string {
+  return CLIENT_TOUR_KEY_PREFIX + (identity || '').trim().toLowerCase();
+}
+
+function hasCompletedClientTour(identity?: string): boolean {
+  try {
+    return window.localStorage.getItem(clientTourStorageKey(identity)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markClientTourComplete(identity?: string): void {
+  try {
+    window.localStorage.setItem(clientTourStorageKey(identity), '1');
+  } catch {
+    /* The tour still closes when browser storage is unavailable. */
+  }
+}
 
 function readDismissedTips(key: string): Record<string, boolean> {
   try {
@@ -104,6 +172,12 @@ function TabHint({
 export function ClientDashboard() {
   const [user, setUser] = useState(getAuthUser());
   const [activeTab, setActiveTab] = useState<ClientTab>('shipments');
+  const clientTourIdentity = user?.email || user?.id;
+  const [walkthroughOpen, setWalkthroughOpen] = useState(
+    () => user?.role === 'client' && !hasCompletedClientTour(clientTourIdentity)
+  );
+  const [walkthroughStep, setWalkthroughStep] = useState(0);
+  const [tourRect, setTourRect] = useState<ClientTourRect | null>(null);
   const [dismissedTips, setDismissedTips] = useState<Record<string, boolean>>(() =>
     readDismissedTips(CLIENT_TIPS_KEY)
   );
@@ -130,6 +204,27 @@ export function ClientDashboard() {
       setReopenedTips((current) => ({ ...current, [activeTab]: true }));
     }
   };
+
+  const startClientWalkthrough = () => {
+    setWalkthroughStep(0);
+    setActiveTab(CLIENT_TOUR_STEPS[0].tab);
+    setTourRect(null);
+    setWalkthroughOpen(true);
+  };
+
+  const finishClientWalkthrough = () => {
+    markClientTourComplete(clientTourIdentity);
+    setTourRect(null);
+    setWalkthroughOpen(false);
+  };
+
+  const goToClientTourStep = (step: number) => {
+    const nextStep = Math.max(0, Math.min(step, CLIENT_TOUR_STEPS.length - 1));
+    setWalkthroughStep(nextStep);
+    setActiveTab(CLIENT_TOUR_STEPS[nextStep].tab);
+    setTourRect(null);
+  };
+
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [shipments, setShipments] = useState<ShipmentItem[]>([]);
@@ -200,6 +295,67 @@ export function ClientDashboard() {
       setProfEmail(user.email || '');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!walkthroughOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    let measureTimer: number | undefined;
+
+    const measureTarget = () => {
+      const target = document.querySelector<HTMLElement>(
+        `[data-client-tour="${CLIENT_TOUR_STEPS[walkthroughStep].tab}"]`
+      );
+      if (!target) {
+        setTourRect(null);
+        return;
+      }
+      const rect = target.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        setTourRect(null);
+        return;
+      }
+      setTourRect({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
+    const revealTarget = () => {
+      const target = document.querySelector<HTMLElement>(
+        `[data-client-tour="${CLIENT_TOUR_STEPS[walkthroughStep].tab}"]`
+      );
+      target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      measureTimer = window.setTimeout(() => {
+        measureTarget();
+        document.getElementById('client-tour-next')?.focus({ preventScroll: true });
+      }, 220);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        markClientTourComplete(clientTourIdentity);
+        setTourRect(null);
+        setWalkthroughOpen(false);
+      }
+    };
+
+    revealTarget();
+    window.addEventListener('resize', measureTarget);
+    window.addEventListener('scroll', measureTarget, true);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (measureTimer) window.clearTimeout(measureTimer);
+      window.removeEventListener('resize', measureTarget);
+      window.removeEventListener('scroll', measureTarget, true);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [walkthroughOpen, walkthroughStep, clientTourIdentity]);
 
   const handleSignOut = () => {
     clearAuthUser();
@@ -331,6 +487,24 @@ export function ClientDashboard() {
     ? Math.max(0, selectedInvoice.total - (selectedInvoice.amountPaid || 0))
     : 0;
   const selectedInvoiceIsPaid = selectedInvoice?.status === 'Paid' || selectedInvoiceBalance <= 0;
+  const currentTourStep = CLIENT_TOUR_STEPS[walkthroughStep] || CLIENT_TOUR_STEPS[0];
+  const tourTooltipStyle =
+    tourRect && typeof window !== 'undefined'
+      ? {
+          width: Math.min(380, window.innerWidth - 32),
+          left: Math.max(
+            16,
+            Math.min(
+              tourRect.left + tourRect.width / 2 - Math.min(380, window.innerWidth - 32) / 2,
+              window.innerWidth - Math.min(380, window.innerWidth - 32) - 16
+            )
+          ),
+          top:
+            tourRect.top + tourRect.height + 14 + 250 <= window.innerHeight - 16
+              ? tourRect.top + tourRect.height + 14
+              : Math.max(16, tourRect.top - 264),
+        }
+      : undefined;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#111111] antialiased">
@@ -384,6 +558,7 @@ export function ClientDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2 border-t border-[#FAFAF8]">
           <button
             type="button"
+            data-client-tour="shipments"
             onClick={() => setActiveTab('shipments')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'shipments'
                 ? 'bg-[#111111] text-white shadow-sm'
@@ -396,6 +571,7 @@ export function ClientDashboard() {
 
           <button
             type="button"
+            data-client-tour="invoices"
             onClick={() => setActiveTab('invoices')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'invoices'
                 ? 'bg-[#111111] text-white shadow-sm'
@@ -408,6 +584,7 @@ export function ClientDashboard() {
 
           <button
             type="button"
+            data-client-tour="profile"
             onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'profile'
                 ? 'bg-[#111111] text-white shadow-sm'
@@ -420,6 +597,7 @@ export function ClientDashboard() {
 
           <button
             type="button"
+            data-client-tour="quote"
             onClick={() => setActiveTab('quote')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'quote'
                 ? 'bg-[#111111] text-white shadow-sm'
@@ -432,6 +610,7 @@ export function ClientDashboard() {
 
           <button
             type="button"
+            data-client-tour="estimator"
             onClick={() => setActiveTab('estimator')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'estimator'
                 ? 'bg-[#111111] text-white shadow-sm'
@@ -444,6 +623,7 @@ export function ClientDashboard() {
 
           <button
             type="button"
+            data-client-tour="support"
             onClick={() => setActiveTab('support')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${activeTab === 'support'
                 ? 'bg-[#111111] text-white shadow-sm'
@@ -474,6 +654,14 @@ export function ClientDashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={startClientWalkthrough}
+              className="inline-flex items-center gap-2 rounded-2xl border border-[#DED9CF] bg-white px-5 py-3 text-xs font-bold text-[#111111] hover:border-[#C9A227] cursor-pointer"
+            >
+              <Compass className="h-4 w-4 text-[#C9A227]" />
+              <span>Portal Tour</span>
+            </button>
             <button
               type="button"
               onClick={toggleCurrentTip}
@@ -1402,6 +1590,99 @@ export function ClientDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* First-login and replayable client walkthrough. */}
+      {walkthroughOpen && (
+        <>
+          <div className="fixed inset-0 z-[59]" aria-hidden="true" />
+          {tourRect && (
+            <div
+              className="pointer-events-none fixed z-[60] rounded-xl border-2 border-[#C9A227] transition-[top,left,width,height] duration-200"
+              style={{
+                top: tourRect.top - 6,
+                left: tourRect.left - 6,
+                width: tourRect.width + 12,
+                height: tourRect.height + 12,
+                boxShadow: '0 0 0 9999px rgba(17, 17, 17, 0.62)',
+              }}
+            />
+          )}
+          {tourRect && tourTooltipStyle && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="client-tour-title"
+              aria-describedby="client-tour-body"
+              className="fixed z-[70] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl border border-[#ECE8DF] bg-white p-5 shadow-xl"
+              style={tourTooltipStyle}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6B5515]">
+                  <Compass className="h-3.5 w-3.5 text-[#C9A227]" /> Client portal tour
+                </span>
+                <button
+                  type="button"
+                  onClick={finishClientWalkthrough}
+                  className="text-[11px] font-bold text-[#8C827A] hover:text-[#111111] cursor-pointer"
+                >
+                  Skip tour
+                </button>
+              </div>
+
+              <h2 id="client-tour-title" className="mt-3 text-lg font-extrabold text-[#111111]">
+                {currentTourStep.title}
+              </h2>
+              <p id="client-tour-body" className="mt-2 text-xs leading-5 text-[#66615B]">
+                {currentTourStep.body}
+              </p>
+
+              <div className="mt-4 flex items-center gap-1.5" aria-hidden="true">
+                {CLIENT_TOUR_STEPS.map((step, index) => (
+                  <span
+                    key={step.tab}
+                    className={`h-1.5 flex-1 rounded-full ${
+                      index <= walkthroughStep ? 'bg-[#C9A227]' : 'bg-[#ECE8DF]'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <span className="text-[10px] font-bold text-[#8C827A]">
+                  Step {walkthroughStep + 1} of {CLIENT_TOUR_STEPS.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToClientTourStep(walkthroughStep - 1)}
+                    disabled={walkthroughStep === 0}
+                    className="rounded-xl border border-[#DED9CF] px-3 py-2 text-[11px] font-bold text-[#4A4A4A] hover:border-[#C9A227] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                  >
+                    Back
+                  </button>
+                  <button
+                    id="client-tour-next"
+                    type="button"
+                    onClick={() =>
+                      walkthroughStep === CLIENT_TOUR_STEPS.length - 1
+                        ? finishClientWalkthrough()
+                        : goToClientTourStep(walkthroughStep + 1)
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#111111] px-4 py-2 text-[11px] font-bold text-white hover:opacity-90 cursor-pointer"
+                  >
+                    {walkthroughStep === CLIENT_TOUR_STEPS.length - 1 ? 'Finish Tour' : 'Next'}
+                    {walkthroughStep === CLIENT_TOUR_STEPS.length - 1 ? (
+                      <Check className="h-3.5 w-3.5 text-[#C9A227]" />
+                    ) : (
+                      <ArrowRight className="h-3.5 w-3.5 text-[#C9A227]" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
