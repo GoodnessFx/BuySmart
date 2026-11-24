@@ -1395,7 +1395,7 @@ const footerLinks = [
 
 export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
   return (
-    <footer className="border-t border-white/10 bg-[#111111] py-10">
+    <footer className="border-t border-white/10 bg-[#111111] py-10 text-white">
       <Container className="grid gap-8 md:grid-cols-[1.2fr_0.8fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
@@ -1409,7 +1409,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
               </div>
             </div>
           </div>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">
+          <p className="mt-3 max-w-sm text-sm leading-6 text-white">
             Sourcing, verification, and delivery from China, Vietnam, and beyond — coordinated from Lagos.
           </p>
           <div className="mt-4">
@@ -1418,7 +1418,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         </div>
 
         <nav aria-label="Footer">
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Explore</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">Explore</div>
           <div className="mt-3 grid gap-2">
             {footerLinks.map((item) => (
               <a
@@ -1428,7 +1428,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
                   event.preventDefault();
                   onNavigate(item.href);
                 }}
-                className="text-sm font-medium text-white/85 transition hover:text-[#C9A227]"
+                className="text-sm font-medium text-white transition hover:text-[#C9A227]"
               >
                 {item.label}
               </a>
@@ -1437,17 +1437,17 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         </nav>
 
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Reach us</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">Reach us</div>
           <div className="mt-3 grid gap-2.5">
-            <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-center gap-2.5 text-sm text-white/85 transition hover:text-[#C9A227]">
+            <a href={`tel:${PHONE_DISPLAY.replace(/\s/g, "")}`} className="flex items-center gap-2.5 text-sm text-white transition hover:text-[#C9A227]">
               <Phone className="h-4 w-4 shrink-0" style={{ color: gold }} />
               {PHONE_DISPLAY}
             </a>
-            <a href={`mailto:${EMAIL}`} className="flex items-center gap-2.5 break-all text-sm text-white/85 transition hover:text-[#C9A227]">
+            <a href={`mailto:${EMAIL}`} className="flex items-center gap-2.5 break-all text-sm text-white transition hover:text-[#C9A227]">
               <Mail className="h-4 w-4 shrink-0" style={{ color: gold }} />
               {EMAIL}
             </a>
-            <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-2.5 text-sm text-white/85 transition hover:text-[#C9A227]">
+            <a href={GOOGLE_MAPS_URL} target="_blank" rel="noreferrer" className="flex items-start gap-2.5 text-sm text-white transition hover:text-[#C9A227]">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0" style={{ color: gold }} />
               <span>{ADDRESS_LINE_1}, {ADDRESS_LINE_2}</span>
             </a>
@@ -1462,7 +1462,7 @@ export function Footer({ onNavigate }: { onNavigate: (path: string) => void }) {
         </div>
       </Container>
 
-      <Container className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
+      <Container className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white sm:flex-row sm:items-center sm:justify-between">
         <span>© {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.</span>
         <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {[
