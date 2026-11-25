@@ -24,7 +24,7 @@ export type FAQItem = {
 };
 
 export type GalleryItem = {
-  category: "Vehicles & Autos" | "Electronics & Appliances" | "Beauty & Hair";
+  category: "Vehicles & Autos" | "Electronics & Appliances" | "Beauty & Hair" | "General Goods & Fashion";
   title: string;
   media: string;
   mediaType: "image" | "video";
@@ -420,20 +420,53 @@ export const galleryCategories: GalleryItem["category"][] = [
   "Vehicles & Autos",
   "Electronics & Appliances",
   "Beauty & Hair",
+  "General Goods & Fashion",
 ];
 
 export const galleryItems: GalleryItem[] = [
   {
     category: "Vehicles & Autos",
-    title: "Vehicle and auto procurement",
-    media: "/images/projects/vehicles-autos.svg",
+    title: "2024 Toyota Highlander procurement",
+    media: "/media/projects/car-2024-toyota-highlander-project.jpeg",
     mediaType: "image",
-    shippedFrom: "China & global supplier network",
-    timeline: "Air and sea freight options",
+    shippedFrom: "Global vehicle network",
+    timeline: "Sea freight or express air options",
     caption:
-      "Cars, motorcycles, commercial vehicles, and parts sourced to your specification. Project photos and videos will be added here.",
-    alt: "BuySmart vehicle and auto procurement category preview",
-    preview: true,
+      "Direct vehicle sourcing: 2024 Toyota Highlander verified, documented, and prepped for shipping to Nigeria.",
+    alt: "2024 Toyota Highlander auto procurement project by BuySmart",
+  },
+  {
+    category: "Vehicles & Autos",
+    title: "Motorcycle & bike shipment inspection",
+    media: "/media/projects/bike-autos-project-1.mp4",
+    mediaType: "video",
+    shippedFrom: "China manufacturing hub",
+    timeline: "Sea freight consolidation",
+    caption:
+      "Factory dispatch and warehouse quality check for client commercial motorcycle batch.",
+    alt: "Motorcycle auto procurement video proof",
+  },
+  {
+    category: "Vehicles & Autos",
+    title: "Motorcycle fleet verification clip",
+    media: "/media/projects/bike-autos-project-2.mp4",
+    mediaType: "video",
+    shippedFrom: "China manufacturing hub",
+    timeline: "Sea freight consolidation",
+    caption:
+      "Additional warehouse footage inspecting crated motorbikes before container stuffing.",
+    alt: "Motorcycle procurement video proof clip 2",
+  },
+  {
+    category: "Electronics & Appliances",
+    title: "Air conditioner procurement & factory test",
+    media: "/media/projects/electronic-ac-project.mp4",
+    mediaType: "video",
+    shippedFrom: "China verified supplier",
+    timeline: "Air & sea freight options",
+    caption:
+      "Factory floor operational inspection of commercial air conditioning units before export.",
+    alt: "Air conditioner electronic procurement video proof",
   },
   {
     category: "Electronics & Appliances",
@@ -514,15 +547,58 @@ export const galleryItems: GalleryItem[] = [
   },
   {
     category: "Beauty & Hair",
-    title: "Beauty and hair products procurement",
-    media: "/images/projects/beauty-hair.svg",
-    mediaType: "image",
-    shippedFrom: "China & global supplier network",
-    timeline: "Air and sea freight options",
+    title: "Hair extension quality & texture inspection",
+    media: "/media/projects/hair-extension-beauty-project.mp4",
+    mediaType: "video",
+    shippedFrom: "China factory partner",
+    timeline: "10 to 15 working days by air",
     caption:
-      "Hair extensions, wigs, styling tools, cosmetics, and salon supplies sourced to your specification. Project photos and videos will be added here.",
-    alt: "BuySmart beauty and hair procurement category preview",
-    preview: true,
+      "Detailed hair extension inspection showing natural texture, thickness, and donor quality.",
+    alt: "Hair extension beauty procurement video proof",
+  },
+  {
+    category: "Beauty & Hair",
+    title: "Premium human hair bundles package",
+    media: "/media/projects/hair-beauty-project.jpeg",
+    mediaType: "image",
+    shippedFrom: "China factory partner",
+    timeline: "Air freight express",
+    caption:
+      "Packaged bundles of virgin human hair sealed, labelled, and ready for dispatch.",
+    alt: "Beauty and hair products procurement project by BuySmart",
+  },
+  {
+    category: "General Goods & Fashion",
+    title: "Fashion accessories & apparel batch 1",
+    media: "/media/projects/fashion-items-project-1.jpeg",
+    mediaType: "image",
+    shippedFrom: "China wholesale market",
+    timeline: "Air & sea freight",
+    caption:
+      "Curated fashion apparel and accessories verified for bulk reseller clients in Nigeria.",
+    alt: "Fashion items procurement project by BuySmart",
+  },
+  {
+    category: "General Goods & Fashion",
+    title: "Fashion items order package 2",
+    media: "/media/projects/fashion-items-project-2.jpeg",
+    mediaType: "image",
+    shippedFrom: "China wholesale market",
+    timeline: "Air & sea freight",
+    caption:
+      "Additional apparel shipment batch inspected and packaged for international cargo.",
+    alt: "Fashion accessories procurement batch 2",
+  },
+  {
+    category: "General Goods & Fashion",
+    title: "Wholesale customer goods shipment",
+    media: "/media/projects/customer-goods-project.jpeg",
+    mediaType: "image",
+    shippedFrom: "Guangzhou warehouse",
+    timeline: "Sea freight cargo consolidation",
+    caption:
+      "Consolidated cartons of general merchandise verified and tagged before container loading.",
+    alt: "Customer goods procurement project",
   },
 ];
 
@@ -565,20 +641,29 @@ export const successStories = [
   },
 ];
 
-export const testimonialMedia = [
+export const testimonialMedia: TestimonialMedia[] = [
+  {
+    title: "Customer review & baby products unboxing",
+    image: "/media/projects/customer-reviews-baby-products-project.mp4",
+    mediaType: "video",
+    alt: "Customer review video and baby products order inspection",
+  },
   {
     title: "WhatsApp review screenshot",
     image: "/media/Review 1.jpeg",
+    mediaType: "image",
     alt: "Blurred WhatsApp review screenshot for BuySmart",
   },
   {
     title: "Customer delivery photo",
     image: "/media/Goods picture 11.jpeg",
+    mediaType: "image",
     alt: "Customer delivery photo for a BuySmart shipment",
   },
   {
     title: "CAC registration certificate",
     image: "/media/BUYSMART CERTIFICATE OF REGISTRATION.jpeg",
+    mediaType: "image",
     alt: "BuySmart CAC certificate of incorporation",
   },
 ];

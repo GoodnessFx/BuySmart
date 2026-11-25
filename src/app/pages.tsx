@@ -143,18 +143,18 @@ type HeroSlide = {
 };
 
 const HERO_SLIDES: HeroSlide[] = [
+  { type: "video", src: "/media/projects/bike-autos-project-1.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
+  { type: "video", src: "/media/projects/hair-extension-beauty-project.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-left" },
+  { type: "video", src: "/media/projects/electronic-ac-project.mp4", poster: "/media/hero/hero-background-3.jpg", transition: "slide-right" },
+  { type: "video", src: "/media/projects/bike-autos-project-2.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "zoom-out" },
+  { type: "video", src: "/media/projects/customer-reviews-baby-products-project.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "fade" },
   { type: "video", src: "/media/Electronic%20Video%201.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
   { type: "image", src: "/media/hero/hero-background-1.jpg", transition: "slide-left" },
   { type: "video", src: "/media/Electronic%20Video%202.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-right" },
-  { type: "image", src: "/media/hero/hero-background-2.jpg", transition: "zoom-out" },
   { type: "video", src: "/media/Good%202.mp4", poster: "/media/hero/hero-background-3.jpg", transition: "slide-left" },
   { type: "image", src: "/media/hero/hero-background-3.jpg", transition: "zoom-out" },
   { type: "video", src: "/media/Goods%203.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "fade" },
-  { type: "image", src: "/media/hero/hero-background-2.jpg", transition: "zoom-in" },
-  { type: "video", src: "/media/Goods%204.mp4", poster: "/media/hero/hero-background-1.jpg", transition: "slide-right" },
-  { type: "image", src: "/media/hero/hero-background-3.jpg", transition: "zoom-in" },
   { type: "video", src: "/media/Goods%20Video%201.mp4", poster: "/media/hero/hero-background-2.jpg", transition: "slide-left" },
-  { type: "image", src: "/media/hero/hero-background-1.jpg", transition: "zoom-in" },
 ];
 
 function getSlideStyle(transition: TransitionType, isActive: boolean): React.CSSProperties {
@@ -562,7 +562,7 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
             <div className="max-w-xl">
               <SectionTag>Recent projects</SectionTag>
               <h2 className="text-[clamp(1.75rem,3.6vw,2.5rem)] font-extrabold leading-tight tracking-[-0.035em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
-                Three categories. <span style={{ color: gold }}>One standard.</span>
+                Verified categories. <span style={{ color: gold }}>Documented standards.</span>
               </h2>
             </div>
             <ReadMoreLink href="/recent-projects" label={`View all ${galleryItems.length} projects`} onNavigate={onNavigate} />
@@ -577,12 +577,23 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
                 className={`group overflow-hidden rounded-3xl border bg-white transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(17,17,17,0.09)] ${cardBorder}`}
               >
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#ECE8DF]">
-                  <img
-                    src={item.media}
-                    alt={item.alt}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
+                  {item.mediaType === "video" ? (
+                    <video
+                      src={item.media}
+                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      muted
+                      playsInline
+                      loop
+                      autoPlay
+                    />
+                  ) : (
+                    <img
+                      src={item.media}
+                      alt={item.alt}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
+                  )}
                   <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#111111] shadow-sm backdrop-blur">
                     {item.category}
                   </span>
@@ -590,7 +601,11 @@ export function HomePage({ onNavigate }: { onNavigate?: (path: string) => void }
                     <span className="absolute bottom-3 left-3 rounded-full bg-black/75 px-3 py-1.5 text-[10px] font-bold text-white backdrop-blur">
                       Media coming soon
                     </span>
-                  ) : null}
+                  ) : (
+                    <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">
+                      {item.mediaType === "video" ? "Video proof" : "Photo proof"}
+                    </span>
+                  )}
                 </div>
                 <div className="p-5">
                   <h3 className="text-base font-bold leading-snug tracking-[-0.02em] text-[#111111]" style={{ fontFamily: "'Sora', sans-serif" }}>
@@ -1027,7 +1042,7 @@ export function VerifiedLagosPage() {
               <div className="rounded-[28px] border border-[#E5E2DA] bg-white p-5 shadow-[0_8px_20px_rgba(17,17,17,0.04)]">
                 <div className="grid gap-4 sm:grid-cols-[0.75fr_1.25fr] sm:items-center">
                   <div className="overflow-hidden rounded-2xl border border-[#E5E2DA] bg-[#FAFAF8]">
-                    <img src={testimonialMedia[2]?.image} alt={testimonialMedia[2]?.alt} className="h-48 w-full object-cover object-top" />
+                    <img src={testimonialMedia.find(m => m.title.includes("CAC"))?.image || "/media/BUYSMART CERTIFICATE OF REGISTRATION.jpeg"} alt="BuySmart CAC certificate of incorporation" className="h-48 w-full object-cover object-top" />
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-[0.18em]" style={{ color: gold }}>Business certificate</div>
@@ -1672,7 +1687,7 @@ export function ProjectsPage() {
               Every order, <span style={{ color: gold }}>documented.</span>
             </h1>
             <p className="mt-4 text-[17px] leading-relaxed text-[#4A4A4A]">
-              Explore three procurement categories with real shipment media where available. Vehicle and beauty project photos and videos will be added as they are supplied.
+              Explore genuine procurement projects with real shipment media, including vehicles, electronics, beauty supplies, and fashion merchandise.
             </p>
           </div>
 
@@ -1846,10 +1861,22 @@ export function TestimonialsPage() {
           </div>
           <div className="grid gap-5 md:grid-cols-2">
             {testimonialMedia.map((item) => (
-              <div key={item.title} className={`overflow-hidden rounded-[28px] border bg-white shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
-                <div className="relative">
-                  <img src={item.image} alt={item.alt} className="h-[28rem] w-full object-cover" />
-                  {item.image.includes("Review 1") ? <div className="absolute inset-x-0 top-0 h-20 bg-white/50 backdrop-blur-md" /> : null}
+              <div key={item.title} className={`flex flex-col overflow-hidden rounded-[28px] border bg-white shadow-[0_10px_24px_rgba(17,17,17,0.03)] ${cardBorder}`}>
+                <div className="relative aspect-[4/3] w-full bg-[#ECE8DF]">
+                  {item.mediaType === "video" ? (
+                    <video
+                      src={item.image}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <>
+                      <img src={item.image} alt={item.alt} className="h-full w-full object-cover" />
+                      {item.image.includes("Review 1") ? <div className="absolute inset-x-0 top-0 h-20 bg-white/50 backdrop-blur-md" /> : null}
+                    </>
+                  )}
                 </div>
                 <div className="p-5">
                   <div className="text-lg font-semibold text-[#111111]">{item.title}</div>
